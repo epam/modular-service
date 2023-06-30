@@ -1,0 +1,321 @@
+{
+  "Applications": {
+    "resource_type": "dynamodb_table",
+    "hash_key_name": "aid",
+    "hash_key_type": "S",
+    "read_capacity": 1,
+    "write_capacity": 1,
+    "external": true
+  },
+  "Customers": {
+    "resource_type": "dynamodb_table",
+    "hash_key_name": "n",
+    "hash_key_type": "S",
+    "read_capacity": 1,
+    "write_capacity": 1,
+    "external": true
+  },
+  "Parents": {
+    "resource_type": "dynamodb_table",
+    "hash_key_name": "pid",
+    "hash_key_type": "S",
+    "read_capacity": 1,
+    "write_capacity": 1,
+    "global_indexes": [
+      {
+        "name": "cid_t-index",
+        "index_key_name": "cid",
+        "index_key_type": "S",
+        "index_sort_key_name": "t",
+        "index_sort_key_type": "S"
+      }
+    ],
+    "external": true
+  },
+  "ModularPolicies": {
+    "resource_type": "dynamodb_table",
+    "hash_key_name": "name",
+    "hash_key_type": "S",
+    "read_capacity": 1,
+    "write_capacity": 1
+  },
+  "ModularRoles": {
+    "resource_type": "dynamodb_table",
+    "hash_key_name": "name",
+    "hash_key_type": "S",
+    "read_capacity": 1,
+    "write_capacity": 1
+  },
+  "Regions": {
+    "resource_type": "dynamodb_table",
+    "hash_key_name": "r",
+    "hash_key_type": "S",
+    "read_capacity": 1,
+    "write_capacity": 1,
+    "external": true
+  },
+  "ModularSettings": {
+    "resource_type": "dynamodb_table",
+    "hash_key_name": "name",
+    "hash_key_type": "S",
+    "read_capacity": 1,
+    "write_capacity": 1
+  },
+  "ModularJobs": {
+    "resource_type": "dynamodb_table",
+    "hash_key_name": "job",
+    "hash_key_type": "S",
+    "sort_key_name": "job_id",
+    "sort_key_type": "S",
+    "read_capacity": 1,
+    "write_capacity": 1
+  },
+  "Tenants": {
+    "resource_type": "dynamodb_table",
+    "hash_key_name": "n",
+    "hash_key_type": "S",
+    "read_capacity": 1,
+    "write_capacity": 1,
+    "global_indexes": [
+      {
+        "name": "ac-index",
+        "index_key_name": "acc",
+        "index_key_type": "S"
+      },
+      {
+        "name": "accN-index",
+        "index_key_name": "accN",
+        "index_key_type": "S"
+      },
+      {
+        "name": "c-index",
+        "index_key_name": "c",
+        "index_key_type": "S"
+      },
+      {
+        "name": "ctmr-index",
+        "index_key_name": "ctmr",
+        "index_key_type": "S"
+      },
+      {
+        "name": "dntl-c-index",
+        "index_key_name": "dntl",
+        "index_key_type": "S",
+        "index_sort_key_name": "c",
+        "index_sort_key_type": "S"
+      },
+      {
+        "name": "tg-index",
+        "index_key_name": "tgp",
+        "index_key_type": "S"
+      }
+    ],
+    "external": true
+  },
+  "TenantSettings": {
+    "resource_type": "dynamodb_table",
+    "hash_key_name": "t",
+    "hash_key_type": "S",
+    "sort_key_name": "k",
+    "sort_key_type": "S",
+    "read_capacity": 1,
+    "write_capacity": 1,
+    "external": true
+  },
+  "lambda-basic-execution": {
+    "policy_content": {
+      "Statement": [
+        {
+          "Action": [
+            "logs:CreateLogGroup",
+            "logs:CreateLogStream",
+            "logs:PutLogEvents",
+            "dynamodb:GetItem",
+            "dynamodb:Query",
+            "dynamodb:PutItem",
+            "dynamodb:Batch*",
+            "dynamodb:DeleteItem",
+            "dynamodb:DescribeTable",
+            "dynamodb:Scan",
+            "ssm:PutParameter",
+            "ssm:GetParameter",
+            "kms:Decrypt"
+          ],
+          "Effect": "Allow",
+          "Resource": "*"
+        }
+      ],
+      "Version": "2012-10-17"
+    },
+    "resource_type": "iam_policy"
+  },
+  "modular": {
+    "resource_type": "cognito_idp",
+    "region": "${region}",
+    "password_policy": {
+      "require_symbols": false
+    },
+    "custom_attributes": [
+      {
+        "name": "customer",
+        "type": "String"
+      },
+      {
+        "name": "modular_role",
+        "type": "String"
+      },
+      {
+        "name": "latest_login",
+        "type": "String"
+      }
+    ],
+    "client": {
+      "client_name": "modular_app",
+      "generate_secret": false,
+      "explicit_auth_flows": [
+        "ALLOW_ADMIN_USER_PASSWORD_AUTH",
+        "ALLOW_CUSTOM_AUTH",
+        "ALLOW_USER_SRP_AUTH",
+        "ALLOW_REFRESH_TOKEN_AUTH"
+      ]
+    }
+  },
+  "modular-api": {
+    "resource_name": "modular-api",
+    "dependencies": [],
+    "resource_type": "api_gateway",
+    "deploy_stage": "dev",
+    "authorizers": {
+      "authorizer": {
+        "type": "COGNITO_USER_POOLS",
+        "identity_source": "method.request.header.Authorization",
+        "user_pools": [
+          "modular"
+        ],
+        "ttl": 300
+      }
+    },
+    "resources": {
+      "/signup": {
+        "policy_statement_singleton": true,
+        "enable_cors": true,
+        "POST": {
+          "enable_proxy": true,
+          "integration_type": "lambda",
+          "lambda_alias": "${lambdas_alias_name}",
+          "authorization_type": "NONE",
+          "method_request_parameters": {},
+          "lambda_name": "modular-api-handler"
+        }
+      },
+      "/signin": {
+        "policy_statement_singleton": true,
+        "enable_cors": true,
+        "POST": {
+          "enable_proxy": true,
+          "integration_type": "lambda",
+          "lambda_alias": "${lambdas_alias_name}",
+          "authorization_type": "NONE",
+          "method_request_parameters": {},
+          "lambda_name": "modular-api-handler"
+        }
+      },
+      "/roles": {
+        "policy_statement_singleton": true,
+        "enable_cors": true,
+        "ANY": {
+          "enable_proxy": true,
+          "integration_type": "lambda",
+          "lambda_alias": "${lambdas_alias_name}",
+          "authorization_type": "authorizer",
+          "method_request_parameters": {},
+          "lambda_name": "modular-api-handler"
+        }
+      },
+      "/policies": {
+        "policy_statement_singleton": true,
+        "enable_cors": true,
+        "ANY": {
+          "enable_proxy": true,
+          "integration_type": "lambda",
+          "lambda_alias": "${lambdas_alias_name}",
+          "authorization_type": "authorizer",
+          "method_request_parameters": {},
+          "lambda_name": "modular-api-handler"
+        }
+      },
+      "/customers": {
+        "policy_statement_singleton": true,
+        "enable_cors": true,
+        "ANY": {
+          "enable_proxy": true,
+          "integration_type": "lambda",
+          "lambda_alias": "${lambdas_alias_name}",
+          "authorization_type": "authorizer",
+          "method_request_parameters": {},
+          "lambda_name": "modular-api-handler"
+        }
+      },
+      "/tenants": {
+        "policy_statement_singleton": true,
+        "enable_cors": true,
+        "ANY": {
+          "enable_proxy": true,
+          "integration_type": "lambda",
+          "lambda_alias": "${lambdas_alias_name}",
+          "authorization_type": "authorizer",
+          "method_request_parameters": {},
+          "lambda_name": "modular-api-handler"
+        }
+      },
+      "/tenants/regions": {
+        "policy_statement_singleton": true,
+        "enable_cors": true,
+        "ANY": {
+          "enable_proxy": true,
+          "integration_type": "lambda",
+          "lambda_alias": "${lambdas_alias_name}",
+          "authorization_type": "authorizer",
+          "method_request_parameters": {},
+          "lambda_name": "modular-api-handler"
+        }
+      },
+      "/regions": {
+        "policy_statement_singleton": true,
+        "enable_cors": true,
+        "ANY": {
+          "enable_proxy": true,
+          "integration_type": "lambda",
+          "lambda_alias": "${lambdas_alias_name}",
+          "authorization_type": "authorizer",
+          "method_request_parameters": {},
+          "lambda_name": "modular-api-handler"
+        }
+      },
+      "/applications": {
+        "policy_statement_singleton": true,
+        "enable_cors": true,
+        "ANY": {
+          "enable_proxy": true,
+          "integration_type": "lambda",
+          "lambda_alias": "${lambdas_alias_name}",
+          "authorization_type": "authorizer",
+          "method_request_parameters": {},
+          "lambda_name": "modular-api-handler"
+        }
+      },
+      "/parents": {
+        "policy_statement_singleton": true,
+        "enable_cors": true,
+        "ANY": {
+          "enable_proxy": true,
+          "integration_type": "lambda",
+          "lambda_alias": "${lambdas_alias_name}",
+          "authorization_type": "authorizer",
+          "method_request_parameters": {},
+          "lambda_name": "modular-api-handler"
+        }
+      }
+    }
+  }
+}

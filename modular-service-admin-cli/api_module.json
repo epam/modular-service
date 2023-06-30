@@ -1,0 +1,5 @@
+{
+    "module_name": "modular",
+    "cli_path": "/modular/group",
+    "mount_point": "/modular"
+}
