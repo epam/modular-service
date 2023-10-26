@@ -8,7 +8,7 @@ setup(
     include_package_data=True,
     install_requires=[
         'certifi==2023.7.22',
-        'charset-normalizer==3.2.0',
+        'charset-normalizer==3.3.1',
         'click==7.1.2',
         'colorama==0.4.5',
         'idna==3.4',
@@ -16,10 +16,11 @@ setup(
         'PyYAML==6.0.1',
         'requests==2.31.0',
         'tabulate==0.9.0',
-        'urllib3==1.26.16'
+        'urllib3==1.26.16',
+        'modular-sdk>=3.3.2,<4.0.0'
     ],
     entry_points='''
         [console_scripts]
-        modularadmin=modular_service_admin_cli.modular_admin.modularadmin
+        modularadmin=modular_service_admin_cli.modular_admin:modularadmin
     ''',
 )

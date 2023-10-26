@@ -1,9 +1,9 @@
 import os
 from pathlib import Path
 
-from service.adapter_client import AdapterClient
-from service.config import ConfigurationProvider
-from service.logger import get_logger
+from modular_service_admin_cli.service.adapter_client import AdapterClient
+from modular_service_admin_cli.service.config import ConfigurationProvider
+from modular_service_admin_cli.service.logger import get_logger
 
 SYSTEM_LOG = get_logger('modular_service_admin_cli.service.initializer')
 

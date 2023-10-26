@@ -1,7 +1,7 @@
 import click
 
-from group import cli_response, cast_to_list, ViewCommand
-from service.constants import PARAM_NAME, PARAM_PERMISSIONS, PARAM_ID, \
+from modular_service_admin_cli.group import cli_response, cast_to_list, ViewCommand
+from modular_service_admin_cli.service.constants import PARAM_NAME, PARAM_PERMISSIONS, PARAM_ID, \
     PARAM_DISPLAY_NAME, PARAM_ADMINS
 
 

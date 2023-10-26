@@ -8,7 +8,7 @@ from requests.models import Response
 import requests.exceptions
 from tabulate import tabulate
 
-from service.logger import get_logger, get_user_logger
+from modular_service_admin_cli.service.logger import get_logger, get_user_logger
 
 MODULAR_ADMIN = 'modules'
 SUCCESS_STATUS = 'SUCCESS'

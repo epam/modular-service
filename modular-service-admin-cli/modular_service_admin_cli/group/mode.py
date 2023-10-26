@@ -2,7 +2,7 @@ import click
 from modular_sdk.utils.operation_mode.generic import \
     ModularOperationModeManagerService
 
-from group import ViewCommand, cli_response
+from modular_service_admin_cli.group import ViewCommand, cli_response
 
 
 @click.group(name='mode')

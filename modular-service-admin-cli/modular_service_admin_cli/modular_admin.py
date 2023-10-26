@@ -1,17 +1,17 @@
 import click
 
-from group import cli_response, ViewCommand
-from service.config import create_configuration, clean_up_configuration, \
+from modular_service_admin_cli.group import cli_response, ViewCommand
+from modular_service_admin_cli.service.config import create_configuration, clean_up_configuration, \
     save_token
-from group.policy import policy
-from group.role import role
-from group.customer import customer
-from group.application import application
-from group.parent import parent
-from group.tenant import tenant
-from group.region import region
-from group.mode import mode
-from version import __version__
+from modular_service_admin_cli.group.policy import policy
+from modular_service_admin_cli.group.role import role
+from modular_service_admin_cli.group.customer import customer
+from modular_service_admin_cli.group.application import application
+from modular_service_admin_cli.group.parent import parent
+from modular_service_admin_cli.group.tenant import tenant
+from modular_service_admin_cli.group.region import region
+from modular_service_admin_cli.group.mode import mode
+from modular_service_admin_cli.version import __version__
 
 
 @click.group()

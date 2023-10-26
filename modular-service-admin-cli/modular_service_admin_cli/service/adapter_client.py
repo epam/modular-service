@@ -2,9 +2,9 @@ import json
 
 import requests
 
-from service.constants import *
-from service.logger import get_logger, get_user_logger
-from version import check_version_compatibility
+from modular_service_admin_cli.service.constants import *
+from modular_service_admin_cli.service.logger import get_logger, get_user_logger
+from modular_service_admin_cli.version import check_version_compatibility
 
 HTTP_GET = 'get'
 HTTP_POST = 'post'
