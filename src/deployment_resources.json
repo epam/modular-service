@@ -5,6 +5,13 @@
     "hash_key_type": "S",
     "read_capacity": 1,
     "write_capacity": 1,
+    "global_indexes": [
+      {
+        "name": "cid-index",
+        "index_key_name": "cid",
+        "index_key_type": "S"
+      }
+    ],
     "external": true
   },
   "Customers": {
@@ -13,6 +20,13 @@
     "hash_key_type": "S",
     "read_capacity": 1,
     "write_capacity": 1,
+    "global_indexes": [
+      {
+        "name": "d-index",
+        "index_key_name": "d",
+        "index_key_type": "S"
+      }
+    ],
     "external": true
   },
   "Parents": {
@@ -23,10 +37,10 @@
     "write_capacity": 1,
     "global_indexes": [
       {
-        "name": "cid_t-index",
+        "name": "cid-s-index",
         "index_key_name": "cid",
         "index_key_type": "S",
-        "index_sort_key_name": "t",
+        "index_sort_key_name": "s",
         "index_sort_key_type": "S"
       }
     ],
@@ -52,6 +66,15 @@
     "hash_key_type": "S",
     "read_capacity": 1,
     "write_capacity": 1,
+    "global_indexes": [
+      {
+        "name": "nn-c-index",
+        "index_key_name": "nn",
+        "index_key_type": "S",
+        "index_sort_key_name": "c",
+        "index_sort_key_type": "S"
+      }
+    ],
     "external": true
   },
   "ModularSettings": {
@@ -111,9 +134,16 @@
     "sort_key_type": "S",
     "read_capacity": 1,
     "write_capacity": 1,
+    "global_indexes": [
+      {
+        "name": "k-index",
+        "index_key_name": "k",
+        "index_key_type": "S"
+      }
+    ],
     "external": true
   },
-  "lambda-basic-execution": {
+  "modular-service-lambda-basic-execution": {
     "policy_content": {
       "Statement": [
         {
