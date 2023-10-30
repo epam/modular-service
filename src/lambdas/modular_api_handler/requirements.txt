@@ -29,4 +29,5 @@ tqdm==4.65.2
 urllib3==1.26.16
 wrapt==1.15.0
 typing_extensions==4.7.1
+Routes==2.5.1
 modular-sdk>=3.3.2,<4.0.0
