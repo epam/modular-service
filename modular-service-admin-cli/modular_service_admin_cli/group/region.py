@@ -1,8 +1,10 @@
 import click
 
 from modular_service_admin_cli.group import cli_response, ViewCommand
-from modular_service_admin_cli.service.constants import PARAM_NAME, PARAM_PERMISSIONS, PARAM_ID, \
-    CLOUD_PROVIDERS
+from modular_service_admin_cli.service.constants import (PARAM_NAME,
+                                                         PARAM_PERMISSIONS,
+                                                         PARAM_ID,
+                                                         CLOUD_PROVIDERS)
 
 
 @click.group(name='region')
@@ -18,7 +20,7 @@ def describe(maestro_name=None):
     """
     Describes Region.
     """
-    from service.initializer import ADAPTER_SDK
+    from modular_service_admin_cli.service.initializer import ADAPTER_SDK
     return ADAPTER_SDK.region_get(maestro_name=maestro_name)
 
 
@@ -36,7 +38,7 @@ def activate(maestro_name, native_name, cloud, region_id=None):
     """
     Activates Region.
     """
-    from service.initializer import ADAPTER_SDK
+    from modular_service_admin_cli.service.initializer import ADAPTER_SDK
     return ADAPTER_SDK.region_post(
         maestro_name=maestro_name, native_name=native_name, cloud=cloud,
         region_id=region_id)
@@ -50,5 +52,5 @@ def delete(maestro_name=None):
     """
     Deletes Region.
     """
-    from service.initializer import ADAPTER_SDK
+    from modular_service_admin_cli.service.initializer import ADAPTER_SDK
     return ADAPTER_SDK.region_delete(maestro_name=maestro_name)

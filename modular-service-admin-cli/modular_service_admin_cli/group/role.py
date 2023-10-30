@@ -2,8 +2,9 @@ from datetime import datetime
 
 import click
 from modular_service_admin_cli.group import cli_response, cast_to_list, ViewCommand
-from modular_service_admin_cli.service.constants import PARAM_NAME, PARAM_POLICIES, \
-    PARAM_EXPIRATION
+from modular_service_admin_cli.service.constants import (PARAM_NAME,
+                                                         PARAM_POLICIES,
+                                                         PARAM_EXPIRATION)
 
 
 @click.group(name='role')
@@ -18,7 +19,7 @@ def describe(name=None):
     """
     Describes roles.
     """
-    from service.initializer import ADAPTER_SDK
+    from modular_service_admin_cli.service.initializer import ADAPTER_SDK
     return ADAPTER_SDK.role_get(role_name=name)
 
 
@@ -34,7 +35,7 @@ def add(name, policies, expiration):
     """
     Creates the Role entity with the given name
     """
-    from service.initializer import ADAPTER_SDK
+    from modular_service_admin_cli.service.initializer import ADAPTER_SDK
 
     policies = cast_to_list(policies)
     if expiration:
@@ -62,7 +63,7 @@ def update(name, attach_policy, detach_policy, expiration):
     """
     Updates role configuration.
     """
-    from service.initializer import ADAPTER_SDK
+    from modular_service_admin_cli.service.initializer import ADAPTER_SDK
 
     if not attach_policy and not detach_policy:
         return {'message': 'At least one of the following arguments must be '
@@ -92,5 +93,5 @@ def delete(name):
     """
     Deletes role.
     """
-    from service.initializer import ADAPTER_SDK
+    from modular_service_admin_cli.service.initializer import ADAPTER_SDK
     return ADAPTER_SDK.role_delete(role_name=name)

@@ -33,7 +33,7 @@ def cli_response(attributes_order=None, check_api_adapter=True):
             del kwargs['json']
 
             if check_api_adapter:
-                from service.initializer import ADAPTER_SDK
+                from modular_service_admin_cli.service.initializer import ADAPTER_SDK
                 response = func(*args, **kwargs) if ADAPTER_SDK else {
                     'message': f'API link is not '
                                f'configured. Run \'configure\' command and '

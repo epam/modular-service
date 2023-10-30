@@ -1,9 +1,9 @@
 from setuptools import find_packages, setup
-from modular_service_admin_cli.version import __version__
+from modular_service_admin_cli.version import __version__ as version
 
 setup(
     name='modularadmin',
-    version=__version__,
+    version=version,
     packages=find_packages(),
     include_package_data=True,
     install_requires=[
@@ -22,5 +22,5 @@ setup(
     entry_points='''
         [console_scripts]
         modularadmin=modular_service_admin_cli.modular_admin:modularadmin
-    ''',
+    '''
 )
