@@ -20,8 +20,8 @@ def describe(application_id=None):
     """
     Describes Application.
     """
-    from modular_service_admin_cli.service.initializer import ADAPTER_SDK
-    return ADAPTER_SDK.application_get(application_id=application_id)
+    from modular_service_admin_cli.service.initializer import init_configuration
+    return init_configuration().application_get(application_id=application_id)
 
 
 @application.command(cls=ViewCommand, name='add')
@@ -37,8 +37,8 @@ def add(application_type, customer, description=None):
     """
     Describes Application.
     """
-    from modular_service_admin_cli.service.initializer import ADAPTER_SDK
-    return ADAPTER_SDK.application_post(
+    from modular_service_admin_cli.service.initializer import init_configuration
+    return init_configuration().application_post(
         application_type=application_type,
         customer_id=customer,
         description=description)
@@ -60,8 +60,8 @@ def update(application_id, application_type=None, customer=None,
     """
     Updates Application.
     """
-    from modular_service_admin_cli.service.initializer import ADAPTER_SDK
-    return ADAPTER_SDK.application_patch(
+    from modular_service_admin_cli.service.initializer import init_configuration
+    return init_configuration().application_patch(
         application_id=application_id,
         application_type=application_type,
         customer_id=customer,
@@ -76,5 +76,5 @@ def deactivate(application_id):
     """
     Deactivates Application.
     """
-    from modular_service_admin_cli.service.initializer import ADAPTER_SDK
-    return ADAPTER_SDK.application_delete(application_id=application_id)
+    from modular_service_admin_cli.service.initializer import init_configuration
+    return init_configuration().application_delete(application_id=application_id)

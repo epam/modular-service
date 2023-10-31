@@ -20,8 +20,8 @@ def describe(tenant_name=None):
     """
     Describes Tenant.
     """
-    from modular_service_admin_cli.service.initializer import ADAPTER_SDK
-    return ADAPTER_SDK.tenant_get(tenant_name=tenant_name)
+    from modular_service_admin_cli.service.initializer import init_configuration
+    return init_configuration().tenant_get(tenant_name=tenant_name)
 
 
 @tenant.command(cls=ViewCommand, name='activate')
@@ -40,8 +40,8 @@ def activate(name, display_name, customer, cloud, read_only):
     """
     Activates Tenant.
     """
-    from modular_service_admin_cli.service.initializer import ADAPTER_SDK
-    return ADAPTER_SDK.tenant_post(
+    from modular_service_admin_cli.service.initializer import init_configuration
+    return init_configuration().tenant_post(
         tenant_name=name,
         display_name=display_name,
         customer=customer,
@@ -58,8 +58,8 @@ def deactivate(tenant_name=None):
     """
     Deactivates Tenant.
     """
-    from modular_service_admin_cli.service.initializer import ADAPTER_SDK
-    return ADAPTER_SDK.tenant_delete(tenant_name=tenant_name)
+    from modular_service_admin_cli.service.initializer import init_configuration
+    return init_configuration().tenant_delete(tenant_name=tenant_name)
 
 
 tenant.add_command(region)

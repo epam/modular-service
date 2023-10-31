@@ -20,8 +20,8 @@ def describe(maestro_name=None):
     """
     Describes Region.
     """
-    from modular_service_admin_cli.service.initializer import ADAPTER_SDK
-    return ADAPTER_SDK.region_get(maestro_name=maestro_name)
+    from modular_service_admin_cli.service.initializer import init_configuration
+    return init_configuration().region_get(maestro_name=maestro_name)
 
 
 @region.command(cls=ViewCommand, name='activate')
@@ -38,8 +38,8 @@ def activate(maestro_name, native_name, cloud, region_id=None):
     """
     Activates Region.
     """
-    from modular_service_admin_cli.service.initializer import ADAPTER_SDK
-    return ADAPTER_SDK.region_post(
+    from modular_service_admin_cli.service.initializer import init_configuration
+    return init_configuration().region_post(
         maestro_name=maestro_name, native_name=native_name, cloud=cloud,
         region_id=region_id)
 
@@ -52,5 +52,5 @@ def delete(maestro_name=None):
     """
     Deletes Region.
     """
-    from modular_service_admin_cli.service.initializer import ADAPTER_SDK
-    return ADAPTER_SDK.region_delete(maestro_name=maestro_name)
+    from modular_service_admin_cli.service.initializer import init_configuration
+    return init_configuration().region_delete(maestro_name=maestro_name)

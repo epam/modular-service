@@ -22,8 +22,8 @@ def describe(parent_id=None, application_id=None):
     """
     Describes Parent.
     """
-    from modular_service_admin_cli.service.initializer import ADAPTER_SDK
-    return ADAPTER_SDK.parent_get(
+    from modular_service_admin_cli.service.initializer import init_configuration
+    return init_configuration().parent_get(
         parent_id=parent_id,
         application_id=application_id)
 
@@ -43,8 +43,8 @@ def add(application_id, customer, parent_type, description=None):
     """
     Adds Parent.
     """
-    from modular_service_admin_cli.service.initializer import ADAPTER_SDK
-    return ADAPTER_SDK.parent_post(
+    from modular_service_admin_cli.service.initializer import init_configuration
+    return init_configuration().parent_post(
         application_id=application_id,
         customer=customer,
         parent_type=parent_type,
@@ -66,8 +66,8 @@ def update(parent_id, application_id=None, parent_type=None, description=None):
     """
     Updates Parent.
     """
-    from modular_service_admin_cli.service.initializer import ADAPTER_SDK
-    return ADAPTER_SDK.parent_patch(
+    from modular_service_admin_cli.service.initializer import init_configuration
+    return init_configuration().parent_patch(
         parent_id=parent_id,
         application_id=application_id,
         parent_type=parent_type,
@@ -82,6 +82,6 @@ def deactivate(parent_id):
     """
     Deactivates Parent.
     """
-    from modular_service_admin_cli.service.initializer import ADAPTER_SDK
-    return ADAPTER_SDK.parent_delete(
+    from modular_service_admin_cli.service.initializer import init_configuration
+    return init_configuration().parent_delete(
         parent_id=parent_id)

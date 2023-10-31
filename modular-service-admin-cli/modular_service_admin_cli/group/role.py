@@ -19,8 +19,8 @@ def describe(name=None):
     """
     Describes roles.
     """
-    from modular_service_admin_cli.service.initializer import ADAPTER_SDK
-    return ADAPTER_SDK.role_get(role_name=name)
+    from modular_service_admin_cli.service.initializer import init_configuration
+    return init_configuration().role_get(role_name=name)
 
 
 @role.command(cls=ViewCommand, name='add')
@@ -35,7 +35,7 @@ def add(name, policies, expiration):
     """
     Creates the Role entity with the given name
     """
-    from modular_service_admin_cli.service.initializer import ADAPTER_SDK
+    from modular_service_admin_cli.service.initializer import init_configuration
 
     policies = cast_to_list(policies)
     if expiration:
@@ -44,7 +44,7 @@ def add(name, policies, expiration):
         except ValueError:
             return {'message': f'Invalid value for the \'expiration\' '
                                f'parameter: {expiration}'}
-    return ADAPTER_SDK.role_post(role_name=name,
+    return init_configuration().role_post(role_name=name,
                                  policies=policies,
                                  expiration=expiration)
 
@@ -63,7 +63,7 @@ def update(name, attach_policy, detach_policy, expiration):
     """
     Updates role configuration.
     """
-    from modular_service_admin_cli.service.initializer import ADAPTER_SDK
+    from modular_service_admin_cli.service.initializer import init_configuration
 
     if not attach_policy and not detach_policy:
         return {'message': 'At least one of the following arguments must be '
@@ -78,7 +78,7 @@ def update(name, attach_policy, detach_policy, expiration):
             return {'message': f'Invalid value for the \'expiration\' '
                                f'parameter: {expiration}'}
 
-    return ADAPTER_SDK.role_patch(
+    return init_configuration().role_patch(
         role_name=name,
         expiration=expiration,
         attach_policies=attach_policies,
@@ -93,5 +93,5 @@ def delete(name):
     """
     Deletes role.
     """
-    from modular_service_admin_cli.service.initializer import ADAPTER_SDK
-    return ADAPTER_SDK.role_delete(role_name=name)
+    from modular_service_admin_cli.service.initializer import init_configuration
+    return init_configuration().role_delete(role_name=name)

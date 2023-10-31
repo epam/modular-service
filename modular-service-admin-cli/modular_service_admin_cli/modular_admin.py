@@ -46,9 +46,9 @@ def login(username: str, password: str):
     """
     Authenticates user to work with Modular API.
     """
-    from modular_service_admin_cli.service.initializer import ADAPTER_SDK
+    from modular_service_admin_cli.service.initializer import init_configuration
 
-    response = ADAPTER_SDK.login(username=username, password=password)
+    response = init_configuration().login(username=username, password=password)
 
     if isinstance(response, dict):
         return response

@@ -17,7 +17,7 @@ setup(
         'requests==2.31.0',
         'tabulate==0.9.0',
         'urllib3==1.26.16',
-        'modular-sdk>=3.3.2,<4.0.0'
+        'modular-cli-sdk>=2.0.0,<3.0.0'
     ],
     entry_points='''
         [console_scripts]

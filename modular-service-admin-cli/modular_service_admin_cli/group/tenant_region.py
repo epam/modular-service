@@ -19,8 +19,8 @@ def describe(tenant_name):
     """
     Describes Tenant region.
     """
-    from modular_service_admin_cli.service.initializer import ADAPTER_SDK
-    return ADAPTER_SDK.tenant_region_get(tenant_name=tenant_name)
+    from modular_service_admin_cli.service.initializer import init_configuration
+    return init_configuration().tenant_region_get(tenant_name=tenant_name)
 
 
 @region.command(cls=ViewCommand, name='activate')
@@ -33,8 +33,8 @@ def activate(tenant_name, region_name):
     """
     Activates region in tenant.
     """
-    from modular_service_admin_cli.service.initializer import ADAPTER_SDK
-    return ADAPTER_SDK.tenant_region_post(
+    from modular_service_admin_cli.service.initializer import init_configuration
+    return init_configuration().tenant_region_post(
         tenant_name=tenant_name, region_name=region_name)
 
 
@@ -48,6 +48,6 @@ def deactivate(tenant_name, region_name):
     """
     Deactivates region in tenant.
     """
-    from modular_service_admin_cli.service.initializer import ADAPTER_SDK
-    return ADAPTER_SDK.tenant_region_delete(
+    from modular_service_admin_cli.service.initializer import init_configuration
+    return init_configuration().tenant_region_delete(
         tenant_name=tenant_name, region_name=region_name)
