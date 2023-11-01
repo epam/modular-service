@@ -92,7 +92,8 @@ class ApplicationProcessor(AbstractCommandProcessor):
             customer_id=customer_id,
             type=app_type,
             description=description,
-            is_deleted=False
+            is_deleted=False,
+            meta=meta
         )
         _LOG.debug(f'Saving application')
         self.application_service.save(application)

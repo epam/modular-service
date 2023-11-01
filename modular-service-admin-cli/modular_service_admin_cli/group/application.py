@@ -32,8 +32,9 @@ def describe(application_id=None):
               help='Customer name to link application')
 @click.option('--description', '-d', type=str, required=True,
               help='Application description.')
+@click.option('--meta', default=None, help='Application meta JSON string.')
 @cli_response(attributes_order=[PARAM_NAME, PARAM_ID, PARAM_PERMISSIONS])
-def add(application_type, customer, description=None):
+def add(application_type, customer, description=None, meta=None):
     """
     Describes Application.
     """
@@ -41,7 +42,8 @@ def add(application_type, customer, description=None):
     return init_configuration().application_post(
         application_type=application_type,
         customer_id=customer,
-        description=description)
+        description=description,
+        meta=meta)
 
 
 @application.command(cls=ViewCommand, name='update')

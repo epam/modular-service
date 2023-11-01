@@ -4,7 +4,10 @@ from modular_service_admin_cli.group import cli_response, ViewCommand
 from modular_service_admin_cli.service.constants import (PARAM_NAME,
                                                          PARAM_PERMISSIONS,
                                                          PARAM_ID,
-                                                         ALL_PARENT_TYPES)
+                                                         ALL_PARENT_TYPES,
+                                                         ALL, DISABLED, SPECIFIC,
+                                                         AVAILABLE_PARENT_SCOPES,
+                                                         AVAILABLE_CLOUDS)
 
 
 @click.group(name='parent')
@@ -33,13 +36,20 @@ def describe(parent_id=None, application_id=None):
               help='Application id to link parent.')
 @click.option('--customer', '-c', type=str, required=True,
               help='Customer name to link parent.')
-@click.option('--parent_type', '-pt',
-              type=click.Choice(ALL_PARENT_TYPES),
+@click.option('--parent_type', '-pt', type=click.Choice(ALL_PARENT_TYPES),
               required=True, help='Parent type')
-@click.option('--description', '-d', type=str,
-              help='Parent description.')
+@click.option('--description', '-d', type=str, help='Parent description.')
+@click.option('--meta', default=None, help='Parent meta JSON string.')
+@click.option('--scope', '-s', required=True,
+              type=click.Choice(AVAILABLE_PARENT_SCOPES),
+              help='Parent scope - Allowed values are: ALL, DISABLED, SPECIFIC.')
+@click.option('--tenant_name', '-tn', type=str,
+              help='Tenant name to be linked to Parent.')
+@click.option('--cloud', '-c', type=click.Choice(AVAILABLE_CLOUDS),
+              help='Parent cloud - Allowed values are: AWS, AZURE, GOOGLE.')
 @cli_response(attributes_order=[PARAM_NAME, PARAM_ID, PARAM_PERMISSIONS])
-def add(application_id, customer, parent_type, description=None):
+def add(application_id, customer, parent_type, scope, description=None, meta=None,
+        tenant_name=None, cloud=None):
     """
     Adds Parent.
     """
@@ -48,7 +58,11 @@ def add(application_id, customer, parent_type, description=None):
         application_id=application_id,
         customer=customer,
         parent_type=parent_type,
-        description=description)
+        description=description,
+        meta=meta,
+        scope=scope,
+        tenant_name=tenant_name,
+        cloud=cloud)
 
 
 @parent.command(cls=ViewCommand, name='update')

@@ -120,7 +120,11 @@ class ParentProcessor(AbstractCommandProcessor):
             customer_id=customer_id,
             parent_type=parent_type,
             description=description,
-            is_deleted=False
+            is_deleted=False,
+            meta=meta,
+            scope=scope,
+            tenant_name=tenant_name,
+            cloud=cloud
         )
 
         _LOG.debug(f'Saving parent')
