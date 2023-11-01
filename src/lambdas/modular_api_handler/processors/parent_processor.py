@@ -7,7 +7,7 @@ from commons import RESPONSE_BAD_REQUEST_CODE, validate_params, build_response, 
     RESPONSE_OK_CODE
 from commons.constants import GET_METHOD, POST_METHOD, PATCH_METHOD, \
     DELETE_METHOD, APPLICATION_ID_ATTR, TYPE_ATTR, DESCRIPTION_ATTR, \
-    PARENT_ID_ATTR, CUSTOMER_ID_ATTR
+    PARENT_ID_ATTR, CUSTOMER_ID_ATTR, META_ATTR, CLOUD_ATTR, TENANT_ATTR
 from commons.log_helper import get_logger
 from lambdas.modular_api_handler.processors.abstract_processor import \
     AbstractCommandProcessor
@@ -113,6 +113,9 @@ class ParentProcessor(AbstractCommandProcessor):
         parent_type = event.get(TYPE_ATTR)
         description = event.get(DESCRIPTION_ATTR)
         customer_id = event.get(CUSTOMER_ID_ATTR)
+        meta = event.get(META_ATTR)
+        cloud = event.get(CLOUD_ATTR)
+        tenant_name = event.get(TENANT_ATTR)
 
         _LOG.debug(f'Creating parent')
         parent = self.parent_service.create(
