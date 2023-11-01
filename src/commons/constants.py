@@ -47,6 +47,7 @@ REGION_ID_ATTR = 'region_id'
 
 PARAM_ITEMS = 'items'
 PARAM_MESSAGE = 'message'
+SCOPE_ATTR = 'scope'
 
 
 # standard for wsgi applications

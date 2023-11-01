@@ -45,7 +45,7 @@ def describe(parent_id=None, application_id=None):
               help='Parent scope - Allowed values are: ALL, DISABLED, SPECIFIC.')
 @click.option('--tenant_name', '-tn', type=str,
               help='Tenant name to be linked to Parent.')
-@click.option('--cloud', '-c', type=click.Choice(AVAILABLE_CLOUDS),
+@click.option('--cloud', type=click.Choice(AVAILABLE_CLOUDS),
               help='Parent cloud - Allowed values are: AWS, AZURE, GOOGLE.')
 @cli_response(attributes_order=[PARAM_NAME, PARAM_ID, PARAM_PERMISSIONS])
 def add(application_id, customer, parent_type, scope, description=None, meta=None,
