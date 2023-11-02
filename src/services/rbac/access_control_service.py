@@ -121,14 +121,13 @@ class AccessControlService:
         nonexistent = []
         for permission in permissions:
             args = permission.split(':')
-            if len(args) != 3:
-                # permission don't match SERVICE:PERMISSION_GROUP:ACTION format
+            if len(args) != 2:
+                # permission don't match PERMISSION_GROUP:ACTION format
                 nonexistent.append(permission)
                 continue
 
-            service, permission_group, action = args
-            group = f'{service}:{permission_group}'
-            if action not in permissions_mapping.get(group, []):
+            permission_group, action = args
+            if action not in permissions_mapping.get(permission_group, []):
                 nonexistent.append(permission)
         return nonexistent
 
