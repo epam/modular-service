@@ -1,6 +1,6 @@
 import os
 
-from modular_sdk import Modular
+from modular_sdk.modular import Modular
 
 from commons import SingletonMeta
 from connections.auth_extension.base_auth_client import AuthClient

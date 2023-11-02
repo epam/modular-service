@@ -8,7 +8,7 @@ from requests.models import Response
 import requests.exceptions
 from tabulate import tabulate
 
-from service.logger import get_logger, get_user_logger
+from modular_service_admin_cli.service.logger import get_logger, get_user_logger
 
 MODULAR_ADMIN = 'modules'
 SUCCESS_STATUS = 'SUCCESS'
@@ -33,8 +33,8 @@ def cli_response(attributes_order=None, check_api_adapter=True):
             del kwargs['json']
 
             if check_api_adapter:
-                from service.initializer import ADAPTER_SDK
-                response = func(*args, **kwargs) if ADAPTER_SDK else {
+                from modular_service_admin_cli.service.initializer import init_configuration
+                response = func(*args, **kwargs) if init_configuration() else {
                     'message': f'API link is not '
                                f'configured. Run \'configure\' command and '
                                f'try again.'

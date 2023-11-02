@@ -3,7 +3,7 @@
     "predefined_policies": [],
     "principal_service": "lambda",
     "custom_policies": [
-      "lambda-basic-execution",
+      "modular-service-lambda-basic-execution",
       "modular-api-handler-policy"
     ],
     "resource_type": "iam_role"

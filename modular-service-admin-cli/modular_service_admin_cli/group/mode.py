@@ -1,8 +1,6 @@
 import click
-from modular_sdk.utils.operation_mode.generic import \
-    ModularOperationModeManagerService
 
-from group import ViewCommand, cli_response
+from modular_service_admin_cli.group import ViewCommand, cli_response
 
 
 @click.group(name='mode')
@@ -22,5 +20,10 @@ def get_mode(application):
     """
     Describes mode of the particular application
     """
-    return ModularOperationModeManagerService().get_mode(
-        application_name=application)
+    try:
+        from modular_sdk.utils.operation_mode.generic import \
+            ModularOperationModeManagerService
+        return ModularOperationModeManagerService().get_mode(
+            application_name=application)
+    except ModuleNotFoundError:
+        return {'message': "Not available in standalone mode"}

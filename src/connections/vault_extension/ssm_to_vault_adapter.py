@@ -19,7 +19,7 @@ class SSMToVaultAdapter:
     def get_secret_value(self, secret_name):
         try:
             response = self.vault_conn.secrets.kv.v2.read_secret_version(
-                path=secret_name, mount_point=MOUNT_POINT)
+                path=secret_name, mount_point=MOUNT_POINT, raise_on_deleted_version=True)
         except InvalidPath:
             return
         return response.get('data').get('data').get(

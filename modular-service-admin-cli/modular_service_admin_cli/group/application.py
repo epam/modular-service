@@ -1,8 +1,10 @@
 import click
 
-from group import cli_response, ViewCommand
-from service.constants import PARAM_NAME, PARAM_PERMISSIONS, PARAM_ID, \
-    AVAILABLE_APPLICATION_TYPES
+from modular_service_admin_cli.group import cli_response, ViewCommand
+from modular_service_admin_cli.service.constants import (PARAM_NAME,
+                                                         PARAM_PERMISSIONS,
+                                                         PARAM_ID,
+                                                         AVAILABLE_APPLICATION_TYPES)
 
 
 @click.group(name='application')
@@ -18,8 +20,8 @@ def describe(application_id=None):
     """
     Describes Application.
     """
-    from service.initializer import ADAPTER_SDK
-    return ADAPTER_SDK.application_get(application_id=application_id)
+    from modular_service_admin_cli.service.initializer import init_configuration
+    return init_configuration().application_get(application_id=application_id)
 
 
 @application.command(cls=ViewCommand, name='add')
@@ -30,16 +32,18 @@ def describe(application_id=None):
               help='Customer name to link application')
 @click.option('--description', '-d', type=str, required=True,
               help='Application description.')
+@click.option('--meta', default=None, help='Application meta JSON string.')
 @cli_response(attributes_order=[PARAM_NAME, PARAM_ID, PARAM_PERMISSIONS])
-def add(application_type, customer, description=None):
+def add(application_type, customer, description=None, meta=None):
     """
     Describes Application.
     """
-    from service.initializer import ADAPTER_SDK
-    return ADAPTER_SDK.application_post(
+    from modular_service_admin_cli.service.initializer import init_configuration
+    return init_configuration().application_post(
         application_type=application_type,
         customer_id=customer,
-        description=description)
+        description=description,
+        meta=meta)
 
 
 @application.command(cls=ViewCommand, name='update')
@@ -58,8 +62,8 @@ def update(application_id, application_type=None, customer=None,
     """
     Updates Application.
     """
-    from service.initializer import ADAPTER_SDK
-    return ADAPTER_SDK.application_patch(
+    from modular_service_admin_cli.service.initializer import init_configuration
+    return init_configuration().application_patch(
         application_id=application_id,
         application_type=application_type,
         customer_id=customer,
@@ -74,5 +78,5 @@ def deactivate(application_id):
     """
     Deactivates Application.
     """
-    from service.initializer import ADAPTER_SDK
-    return ADAPTER_SDK.application_delete(application_id=application_id)
+    from modular_service_admin_cli.service.initializer import init_configuration
+    return init_configuration().application_delete(application_id=application_id)

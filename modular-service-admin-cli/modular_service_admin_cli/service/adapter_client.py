@@ -2,9 +2,9 @@ import json
 
 import requests
 
-from service.constants import *
-from service.logger import get_logger, get_user_logger
-from version import check_version_compatibility
+from modular_service_admin_cli.service.constants import *
+from modular_service_admin_cli.service.logger import get_logger, get_user_logger
+from modular_service_admin_cli.version import check_version_compatibility
 
 HTTP_GET = 'get'
 HTTP_POST = 'post'
@@ -199,11 +199,14 @@ class AdapterClient:
         return self.__make_request(resource=API_APPLICATION, method=HTTP_GET,
                                    payload=request)
 
-    def application_post(self, application_type, customer_id,
-                         description=None):
+    def application_post(self, application_type, customer_id, description=None,
+                         meta=None):
+        if meta is None:
+            meta = {}
         request = {
             PARAM_TYPE: application_type,
-            PARAM_CUSTOMER_ID: customer_id
+            PARAM_CUSTOMER_ID: customer_id,
+            META: meta
         }
 
         if description:
@@ -242,15 +245,23 @@ class AdapterClient:
         return self.__make_request(resource=API_PARENT, method=HTTP_GET,
                                    payload=request)
 
-    def parent_post(self, application_id, customer, parent_type,
-                    description=None):
+    def parent_post(self, application_id, customer, parent_type, scope,
+                    description=None, meta=None, tenant_name=None, cloud=None):
+        if meta is None:
+            meta = {}
         request = {
             PARAM_APPLICATION_ID: application_id,
             PARAM_CUSTOMER_ID: customer,
-            PARAM_TYPE: parent_type
+            PARAM_TYPE: parent_type,
+            META: meta,
+            SCOPE: scope
         }
         if description:
             request[PARAM_DESCRIPTION] = description
+        if tenant_name:
+            request[PARAM_TENANT] = tenant_name
+        if cloud:
+            request[PARAM_CLOUD] = cloud
         return self.__make_request(resource=API_PARENT, method=HTTP_POST,
                                    payload=request)
 

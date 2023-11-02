@@ -1,21 +1,22 @@
 import click
 
-from group import cli_response, ViewCommand
-from service.config import create_configuration, clean_up_configuration, \
-    save_token
-from group.policy import policy
-from group.role import role
-from group.customer import customer
-from group.application import application
-from group.parent import parent
-from group.tenant import tenant
-from group.region import region
-from group.mode import mode
-from version import __version__
+from modular_service_admin_cli.group import cli_response, ViewCommand
+from modular_service_admin_cli.service.config import (create_configuration,
+                                                      clean_up_configuration,
+                                                      save_token)
+from modular_service_admin_cli.group.policy import policy
+from modular_service_admin_cli.group.role import role
+from modular_service_admin_cli.group.customer import customer
+from modular_service_admin_cli.group.application import application
+from modular_service_admin_cli.group.parent import parent
+from modular_service_admin_cli.group.tenant import tenant
+from modular_service_admin_cli.group.region import region
+from modular_service_admin_cli.group.mode import mode
+from modular_service_admin_cli.version import __version__ as version
 
 
 @click.group()
-@click.version_option(__version__)
+@click.version_option(version)
 def modularadmin():
     """The main click's group to accumulate all the CLI commands"""
 
@@ -23,7 +24,7 @@ def modularadmin():
 @modularadmin.command(cls=ViewCommand, name='configure')
 @click.option('--api_link', '-api', type=str,
               required=True,
-              help='Link to the Madular API host.')
+              help='Link to the Modular API host.')
 @cli_response(check_api_adapter=False)
 def configure(api_link):
     """
@@ -45,9 +46,9 @@ def login(username: str, password: str):
     """
     Authenticates user to work with Modular API.
     """
-    from service.initializer import ADAPTER_SDK
+    from modular_service_admin_cli.service.initializer import init_configuration
 
-    response = ADAPTER_SDK.login(username=username, password=password)
+    response = init_configuration().login(username=username, password=password)
 
     if isinstance(response, dict):
         return response

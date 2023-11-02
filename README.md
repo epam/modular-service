@@ -16,7 +16,7 @@ version, or a range of versions of the software.
 
 ![Modular Service](./docs/images/modular_components.png)  
 
-### Actual for versions: 1.2.0
+### Actual for versions: 2.0.0
 
 ## Operating modes: 
 Maestro Common Domain Model module ensures that any other module within the 

@@ -5,7 +5,7 @@ from typing import List
 from routes.route import Route
 from commons.constants import GET_METHOD, POST_METHOD, PATCH_METHOD, \
     DELETE_METHOD, TYPE_ATTR, DESCRIPTION_ATTR, CUSTOMER_ID_ATTR, \
-    APPLICATION_ID_ATTR
+    APPLICATION_ID_ATTR, META_ATTR
 from commons.log_helper import get_logger
 from lambdas.modular_api_handler.processors.abstract_processor import \
     AbstractCommandProcessor
@@ -86,13 +86,15 @@ class ApplicationProcessor(AbstractCommandProcessor):
         app_type = event.get(TYPE_ATTR)
         customer_id = event.get(CUSTOMER_ID_ATTR)
         description = event.get(DESCRIPTION_ATTR)
+        meta = event.get(META_ATTR)
 
         _LOG.debug(f'Creating application')
         application = self.application_service.create(
             customer_id=customer_id,
             type=app_type,
             description=description,
-            is_deleted=False
+            is_deleted=False,
+            meta=meta
         )
         _LOG.debug(f'Saving application')
         self.application_service.save(application)
