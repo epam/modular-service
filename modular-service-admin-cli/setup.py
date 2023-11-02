@@ -16,7 +16,7 @@ setup(
         'PyYAML==6.0.1',
         'requests==2.31.0',
         'tabulate==0.9.0',
-        'urllib3==1.26.16',
+        'urllib3==1.26.18',
         'modular-cli-sdk>=2.0.0,<3.0.0'
     ],
     entry_points='''
