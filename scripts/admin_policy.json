@@ -1,0 +1,25 @@
+{
+  "name": "admin_policy",
+  "permissions": [
+    "application:describe_application",
+    "application:create_application",
+    "application:update_application",
+    "application:remove_application",
+    "parent:describe_parent",
+    "parent:create_parent",
+    "parent:update_parent",
+    "parent:remove_parent",
+    "tenant:describe_tenant",
+    "tenant:create_tenant",
+    "tenant:update_tenant",
+    "tenant:remove_tenant",
+    "role:describe_role",
+    "role:create_role",
+    "role:update_role",
+    "role:remove_role",
+    "policy:describe_policy",
+    "policy:create_policy",
+    "policy:update_policy",
+    "policy:remove_policy"
+  ]
+}

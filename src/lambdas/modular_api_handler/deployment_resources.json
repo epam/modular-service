@@ -1,0 +1,40 @@
+{
+  "modular-api-handler-role": {
+    "predefined_policies": [],
+    "principal_service": "lambda",
+    "custom_policies": [
+      "modular-service-lambda-basic-execution",
+      "modular-api-handler-policy"
+    ],
+    "resource_type": "iam_role"
+  },
+  "modular-api-handler-policy": {
+    "policy_content": {
+      "Statement": [
+        {
+          "Action": [
+            "s3:*",
+            "ssm:DescribeParameters",
+            "ssm:GetParameters",
+            "ssm:PutParameter",
+            "ssm:DeleteParameter",
+            "cognito-idp:AdminInitiateAuth",
+            "cognito-idp:SignUp",
+            "cognito-idp:AdminCreateUser",
+            "cognito-idp:AdminSetUserPassword",
+            "cognito-idp:ListUserPools",
+            "cognito-idp:AdminRespondToAuthChallenge",
+            "cognito-idp:AdminUpdateUserAttributes",
+            "cognito-idp:ListUserPoolClients",
+            "cognito-idp:ListUsers",
+            "cognito-idp:AdminUpdateUserAttributes"
+          ],
+          "Effect": "Allow",
+          "Resource": "*"
+        }
+      ],
+      "Version": "2012-10-17"
+    },
+    "resource_type": "iam_policy"
+  }
+}

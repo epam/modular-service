@@ -1,0 +1,35 @@
+{
+  "name": "IAM_PERMISSIONS",
+  "value": {
+    "application": [
+      "describe_application",
+      "create_application",
+      "update_application",
+      "remove_application"
+    ],
+    "parent": [
+      "describe_parent",
+      "create_parent",
+      "update_parent",
+      "remove_parent"
+    ],
+    "tenant": [
+      "describe_tenant",
+      "create_tenant",
+      "update_tenant",
+      "remove_tenant"
+    ],
+    "role": [
+      "describe_role",
+      "create_role",
+      "update_role",
+      "remove_role"
+    ],
+    "policy": [
+      "describe_policy",
+      "create_policy",
+      "update_policy",
+      "remove_policy"
+    ]
+  }
+}

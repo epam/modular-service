@@ -1,0 +1,21 @@
+{
+  "version": "1.0",
+  "name": "modular-api-handler",
+  "func_name": "handler.lambda_handler",
+  "resource_type": "lambda",
+  "iam_role_name": "modular-api-handler-role",
+  "runtime": "python3.10",
+  "memory": 128,
+  "timeout": 100,
+  "lambda_path": "lambdas/modular_api_handler",
+  "dependencies": [],
+  "event_sources": [],
+  "env_variables": {
+    "log_level": "${log_level}",
+    "cognito_user_pool_name": "${cognito_user_pool_name}"
+  },
+  "publish_version": true,
+  "alias": "${lambdas_alias_name}",
+  "url_config": {},
+  "ephemeral_storage": 512
+}

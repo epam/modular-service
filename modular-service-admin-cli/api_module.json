@@ -1,0 +1,5 @@
+{
+    "module_name": "modular_service",
+    "cli_path": "/modular_service_admin_cli/group",
+    "mount_point": "/modular_service"
+}
