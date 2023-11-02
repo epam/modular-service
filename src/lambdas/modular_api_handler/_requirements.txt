@@ -27,7 +27,7 @@ simplejson==3.19.1
 six==1.16.0
 tabulate==0.9.0
 tqdm==4.65.2
-urllib3==1.26.16
+urllib3==1.26.18
 wrapt==1.15.0
 typing_extensions==4.7.1
 Routes==2.5.1
