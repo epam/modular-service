@@ -116,13 +116,13 @@ def export_src_path():
 
 def main():
     print("Parsing arguments")
-    # args = parse_args()
+    args = parse_args()
 
-    # print('Exporting path to src')
-    # export_src_path()
+    print('Exporting path to src')
+    export_src_path()
 
-    # print('Exporting env variables')
-    # export_args(**args)
+    print('Exporting env variables')
+    export_args(**args)
 
     print('Creating IAM_PERMISSIONS settings')
     create_iam_permissions()
