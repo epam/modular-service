@@ -1,7 +1,11 @@
 from datetime import datetime, timedelta
 from typing import Union
 
-from commons.constants import USER_ID_ATTR
+from commons import deep_get
+from commons.constants import (
+    PARAM_REQUEST_CONTEXT, PARAM_AUTHORIZER, PARAM_CLAIMS,
+    PARAM_COGNITO_USERNAME
+)
 from commons.log_helper import get_logger
 from models.policy import Policy
 from models.role import Role
@@ -27,11 +31,14 @@ class AccessControlService:
         self.user_service = user_service
         self.setting_service = setting_service
 
-    def is_allowed_to_access(self, event: dict,
-                             target_permission: str) -> bool:
+    def is_allowed_to_access(self, event: dict, target_permission: str) -> bool:
 
-        user_id = event.get(USER_ID_ATTR)
-        user = self.user_service.get_user(user_id=user_id)
+        user_id = deep_get(
+            event, (PARAM_REQUEST_CONTEXT, PARAM_AUTHORIZER, PARAM_CLAIMS,
+                    PARAM_COGNITO_USERNAME)
+        )
+
+        user = self.user_service.get_user(user_id)
         if not user:
             _LOG.debug(f'User with id: {user_id} does not exist')
             return False
@@ -55,11 +62,6 @@ class AccessControlService:
             user_permissions.extend(policy.permissions)
 
         if target_permission in user_permissions:
-            target_user = event.get(PARAM_TARGET_USER)
-            if target_user and not AccessControlService.is_allowed_target_user(
-                    role=role, user_id=user_id, target_user=target_user):
-                return False
-
             _LOG.debug(f'Permission for user \'{user_id}\' on action: '
                        f'{target_permission} is granted')
             return True
@@ -137,15 +139,6 @@ class AccessControlService:
             if not self.policy_exists(name=policy):
                 nonexistent.append(policy)
         return nonexistent
-
-    @staticmethod
-    def is_allowed_target_user(role, user_id, target_user):
-        resource = role.resource
-        if resource and resource == '*':
-            return True
-        if user_id == target_user:
-            return True
-        return False
 
     def get_admin_permissions(self):
         permission_groups_mapping = self.setting_service.get_iam_permissions()

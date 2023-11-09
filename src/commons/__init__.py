@@ -1,7 +1,9 @@
 from datetime import datetime
 from uuid import uuid4
 from typing import Union, Iterable, Optional, Any
-from commons.constants import PARAM_MESSAGE, PARAM_ITEMS
+from commons.constants import (
+    PARAM_MESSAGE, PARAM_ITEMS, PASSWORD_ATTR, ID_TOKEN_ATTR, REFRESH_TOKEN_ATTR
+)
 import json
 from functools import reduce
 
@@ -139,3 +141,52 @@ class SingletonMeta(type):
             instance = super().__call__(*args, **kwargs)
             cls._instances[cls] = instance
         return cls._instances[cls]
+
+
+def reformat_request_path(request_path: str) -> str:
+    """
+    /hello -> /hello/
+    hello/ -> /hello/
+    hello -> /hello/
+    """
+    if not request_path.startswith('/'):
+        request_path = '/' + request_path
+    if not request_path.endswith('/'):
+        request_path += '/'
+    return request_path
+
+
+def secured_params() -> tuple:
+    return (
+        'refresh_token', 'id_token', 'password', 'authorization', 'secret',
+        'AWS_SECRET_ACCESS_KEY', 'AWS_SESSION_TOKEN', 'git_access_secret',
+        'api_key', 'AZURE_CLIENT_ID', 'AZURE_CLIENT_SECRET',
+        'GOOGLE_APPLICATION_CREDENTIALS', 'private_key', 'private_key_id',
+        'Authorization', 'Authentication', 'client_email'
+    )
+
+
+def secure_event(event: dict, secured_keys=secured_params()):
+    result_event = {}
+    if not isinstance(event, dict):
+        return event
+    for key, value in event.items():
+        if key in secured_keys:
+            result_event[key] = '*****'
+        elif isinstance(value, dict):
+            result_event[key] = secure_event(value, secured_keys)
+        elif isinstance(value, list):
+            result_event[key] = []
+            for item in value:
+                result_event[key].append(secure_event(item, secured_keys))
+        elif isinstance(value, str):
+            try:
+                result_event[key] = json.dumps(
+                    secure_event(json.loads(value), secured_keys)
+                )
+            except ValueError:
+                result_event[key] = value
+        else:
+            result_event[key] = value
+
+    return result_event

@@ -34,7 +34,7 @@ ENDPOINT_PERMISSION_MAPPING = {
         PATCH_METHOD: 'modular:region:update_region',
         DELETE_METHOD: 'modular:region:remove_region',
     },
-    '/tenants/regions': {
+    '/tenants/regions/': {
         GET_METHOD: 'modular:tenant:describe_region',
         POST_METHOD: 'modular:tenant:create_region',
         PATCH_METHOD: 'modular:tenant:update_region',
