@@ -1,6 +1,7 @@
 from abc import abstractmethod
 from typing import Optional
 
+from commons.abstract_lambda import AbstractEventProcessor
 from commons.constants import (
     PARAM_HTTP_METHOD, PARAM_REQUEST_CONTEXT, PARAM_RESOURCE_PATH,
     PARAM_COGNITO_USERNAME, PARAM_AUTHORIZER, PARAM_CLAIMS
@@ -22,6 +23,7 @@ _LOG = get_logger('abstract-api-handler-lambda')
 
 
 class AbstractApiHandlerLambda:
+    event_processor: AbstractEventProcessor
 
     @abstractmethod
     def validate_request(self, event: dict) -> dict:
@@ -85,7 +87,9 @@ class AbstractApiHandlerLambda:
                     content=errors
                 )
 
-            execution_result = self.handle_request(event, context)
+            self.event_processor.event = event
+            processed = self.event_processor.process()
+            execution_result = self.handle_request(processed, context)
             _LOG.debug(f'Response: {secure_event(execution_result)}')
             return execution_result
         except ApplicationException as e:

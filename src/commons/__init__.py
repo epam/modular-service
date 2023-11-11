@@ -98,9 +98,90 @@ def validate_params(event, required_params_list):
                              'are missing: {0}'.format(missing_params_list))
 
 
+class LambdaContextIdentity:
+    """
+    For more info:
+        https://docs.aws.amazon.com/lambda/latest/dg/python-context.html
+
+    Attributes:
+        cognito_identity_id: The authenticated Amazon Cognito identity.
+        cognito_identity_pool_id: The Amazon Cognito identity pool that
+        authorized the invocation.
+    """
+
+    cognito_identity_id: str
+    cognito_identity_pool_id: str
+
+
+class LambdaContextClient:
+    """
+    For more info:
+        https://docs.aws.amazon.com/lambda/latest/dg/python-context.html
+
+    Attributes:
+        installation_id: Identifies the installation instance of the client
+        application.
+        app_title: The title of the client application.
+        app_version_name: The version name of the client application.
+        app_version_code: The version code of the client application.
+        app_package_name: The package name of the client application.
+    """
+
+    installation_id: str
+    app_title: str
+    app_version_name: str
+    app_version_code: str
+    app_package_name: str
+
+
+class LambdaContextClientContext:
+    """
+    For more info:
+        https://docs.aws.amazon.com/lambda/latest/dg/python-context.html
+
+    Attributes:
+        client: It provides Lambda functions with details about the mobile
+        application that triggered the function.
+        custom: A dict of custom values set by the mobile client application.
+        env: A dict of environment information provided by the AWS SDK.
+    """
+
+    client: LambdaContextClient
+    custom: dict
+    env: dict
+
+
 class LambdaContext:
-    aws_request_id: str = 'mock'
+    """
+    For more info:
+        https://docs.aws.amazon.com/lambda/latest/dg/python-context.html
+
+    Attributes:
+        function_name: The name of the Lambda function.
+        function_version: The version of the function.
+        invoked_function_arn: The Amazon Resource Name (ARN) that's used to
+        invoke the function. Indicates if the invoker specified a version number
+        or alias.
+        memory_limit_in_mb: The amount of memory that's allocated for the
+        function.
+        aws_request_id: The identifier of the invocation request.
+        log_group_name: The log group for the function.
+        log_stream_name: The log stream for the function instance.
+        identity: (mobile apps) Information about the Amazon Cognito identity
+        that authorized the request.
+        client_context: (mobile apps) Client context that's provided to Lambda
+        by the client application.
+    """
+
     function_name: str
+    function_version: str
+    invoked_function_arn: str
+    memory_limit_in_mb: str
+    aws_request_id: str = 'mock'
+    log_group_name: str
+    log_stream_name: str
+    identity: LambdaContextIdentity
+    client_context: LambdaContextClientContext
 
     def __init__(self):
         self.aws_request_id = str(uuid4())
