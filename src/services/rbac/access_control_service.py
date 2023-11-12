@@ -114,6 +114,9 @@ class AccessControlService:
     @staticmethod
     def is_role_expired(role: Role):
         role_expiration_datetime = role.expiration
+        if isinstance(role_expiration_datetime, str):
+            role_expiration_datetime = datetime.fromisoformat(
+                role_expiration_datetime)
         now = datetime.now()
         return now >= role_expiration_datetime
 
