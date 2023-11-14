@@ -1,6 +1,8 @@
 from abc import abstractmethod
 from typing import Optional
 
+from modular_sdk.commons import ModularException
+
 from commons.abstract_lambda import AbstractEventProcessor
 from commons.constants import (
     PARAM_HTTP_METHOD, PARAM_REQUEST_CONTEXT, PARAM_RESOURCE_PATH,
@@ -9,7 +11,7 @@ from commons.constants import (
 from commons.log_helper import get_logger
 from commons import (
     build_response, RESPONSE_BAD_REQUEST_CODE, RESPONSE_FORBIDDEN_CODE,
-    ApplicationException, RESPONSE_INTERNAL_SERVER_ERROR
+    ApplicationException, RESPONSE_INTERNAL_SERVER_ERROR, RESPONSE_OK_CODE
 )
 from services import SERVICE_PROVIDER
 
@@ -49,6 +51,12 @@ class AbstractApiHandlerLambda:
             _LOG.debug(f'Request: {secure_event(event)}')
 
             _LOG.debug('Checking user permissions')
+
+            if event.get('warm_up'):
+                return build_response(
+                    code=RESPONSE_OK_CODE,
+                    content='Warmed up a bit'
+                )
 
             user_id = deep_get(
                 event, (PARAM_REQUEST_CONTEXT, PARAM_AUTHORIZER,
@@ -92,23 +100,26 @@ class AbstractApiHandlerLambda:
             execution_result = self.handle_request(processed, context)
             _LOG.debug(f'Response: {secure_event(execution_result)}')
             return execution_result
+        except ModularException as e:
+            _LOG.error(f'Exception occurred: {e}')
+            return ApplicationException(
+                code=e.code,
+                content=e.content
+            ).response()
         except ApplicationException as e:
             _LOG.error(
                 f'Error occurred; Event: {secure_event(event)}; Error: {e}'
             )
-            return build_response(
-                code=e.code,
-                content=e.content
-            )
+            return e.response()
         except Exception as e:
             _LOG.error(
                 f'Unexpected error occurred; Event: {secure_event(event)}; '
                 f'Error: {e}'
             )
-            return build_response(
+            return ApplicationException(
                 code=RESPONSE_INTERNAL_SERVER_ERROR,
                 content='Internal server error'
-            )
+            ).response()
 
     @staticmethod
     def _get_target_permission(event: dict) -> Optional[str]:
