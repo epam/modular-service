@@ -21,6 +21,6 @@ setup(
     ],
     entry_points='''
         [console_scripts]
-        modular_service=modular_service_admin_cli.group.modular_service:modular_service
+        modular_service=modular_service_admin_cli.group.modularservice:modularservice
     '''
 )
