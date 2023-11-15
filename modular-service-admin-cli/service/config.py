@@ -4,9 +4,9 @@ from pathlib import Path
 import requests
 import yaml
 
-from modular_service_admin_cli.service.logger import get_logger, get_user_logger
+from service.logger import get_logger, get_user_logger
 
-SYSTEM_LOG = get_logger('modular_service_admin_cli.service.config')
+SYSTEM_LOG = get_logger('service.config')
 USER_LOG = get_user_logger('user')
 
 HOME_FOLDER_NAME = '.modular_service_admin_cli'

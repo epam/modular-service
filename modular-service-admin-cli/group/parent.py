@@ -1,13 +1,10 @@
 import click
 
-from modular_service_admin_cli.group import cli_response, ViewCommand
-from modular_service_admin_cli.service.constants import (PARAM_NAME,
-                                                         PARAM_PERMISSIONS,
-                                                         PARAM_ID,
-                                                         ALL_PARENT_TYPES,
-                                                         ALL, DISABLED, SPECIFIC,
-                                                         AVAILABLE_PARENT_SCOPES,
-                                                         AVAILABLE_CLOUDS)
+from group import cli_response, ViewCommand
+from service.constants import (
+    PARAM_NAME, PARAM_PERMISSIONS, PARAM_ID, ALL_PARENT_TYPES,
+    AVAILABLE_PARENT_SCOPES, AVAILABLE_CLOUDS
+)
 
 
 @click.group(name='parent')
@@ -25,7 +22,7 @@ def describe(parent_id=None, application_id=None):
     """
     Describes Parent.
     """
-    from modular_service_admin_cli.service.initializer import init_configuration
+    from service.initializer import init_configuration
     return init_configuration().parent_get(
         parent_id=parent_id,
         application_id=application_id)
@@ -53,7 +50,7 @@ def add(application_id, customer, parent_type, scope, description=None, meta=Non
     """
     Adds Parent.
     """
-    from modular_service_admin_cli.service.initializer import init_configuration
+    from service.initializer import init_configuration
     return init_configuration().parent_post(
         application_id=application_id,
         customer=customer,
@@ -80,7 +77,7 @@ def update(parent_id, application_id=None, parent_type=None, description=None):
     """
     Updates Parent.
     """
-    from modular_service_admin_cli.service.initializer import init_configuration
+    from service.initializer import init_configuration
     return init_configuration().parent_patch(
         parent_id=parent_id,
         application_id=application_id,
@@ -96,6 +93,6 @@ def deactivate(parent_id):
     """
     Deactivates Parent.
     """
-    from modular_service_admin_cli.service.initializer import init_configuration
+    from service.initializer import init_configuration
     return init_configuration().parent_delete(
         parent_id=parent_id)

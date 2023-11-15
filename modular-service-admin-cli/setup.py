@@ -1,5 +1,5 @@
 from setuptools import find_packages, setup
-from modular_service_admin_cli.version import __version__ as version
+from version import __version__ as version
 
 setup(
     name='modular_service',
@@ -21,6 +21,6 @@ setup(
     ],
     entry_points='''
         [console_scripts]
-        modular_service=modular_service_admin_cli.group.modularservice:modularservice
+        modular_service=group.modularservice:modular_service
     '''
 )

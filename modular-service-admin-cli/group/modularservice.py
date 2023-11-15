@@ -1,22 +1,22 @@
 import click
 
-from modular_service_admin_cli.group import cli_response, ViewCommand
-from modular_service_admin_cli.service.config import (create_configuration,
-                                                      clean_up_configuration,
-                                                      save_token)
-from modular_service_admin_cli.group.policy import policy
-from modular_service_admin_cli.group.role import role
-from modular_service_admin_cli.group.customer import customer
-from modular_service_admin_cli.group.application import application
-from modular_service_admin_cli.group.parent import parent
-from modular_service_admin_cli.group.tenant import tenant
-from modular_service_admin_cli.group.region import region
-from modular_service_admin_cli.group.mode import mode
-from modular_service_admin_cli.version import __version__ as version
+from group import cli_response, ViewCommand
+from service.config import (
+    create_configuration, clean_up_configuration, save_token
+)
+from group.policy import policy
+from group.role import role
+from group.customer import customer
+from group.application import application
+from group.parent import parent
+from group.tenant import tenant
+from group.region import region
+from group.mode import mode
+from importlib.metadata import version as lib_version
 
 
 @click.group()
-@click.version_option(version)
+@click.version_option(lib_version('modular_service'), '-v', '--version')
 def modular_service():
     """The main click's group to accumulate all the CLI commands"""
 
@@ -46,7 +46,7 @@ def login(username: str, password: str):
     """
     Authenticates user to work with Modular API.
     """
-    from modular_service_admin_cli.service.initializer import init_configuration
+    from service.initializer import init_configuration
 
     response = init_configuration().login(username=username, password=password)
 

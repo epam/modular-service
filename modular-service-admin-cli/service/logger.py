@@ -4,7 +4,7 @@ import traceback
 from logging import (DEBUG, getLogger, Formatter, StreamHandler, INFO,
                      NullHandler)
 
-FILE_NAME = 'modular_service_admin_cli.service.log'
+FILE_NAME = 'service.log'
 LOG_FOLDER = 'logs'
 
 user_name = getpass.getuser()

@@ -1,11 +1,9 @@
 import click
 
-from modular_service_admin_cli.group import cli_response, cast_to_list, ViewCommand
-from modular_service_admin_cli.service.constants import (PARAM_NAME,
-                                                         PARAM_PERMISSIONS,
-                                                         PARAM_ID,
-                                                         PARAM_DISPLAY_NAME,
-                                                         PARAM_ADMINS)
+from group import cli_response, cast_to_list, ViewCommand
+from service.constants import (
+    PARAM_NAME, PARAM_PERMISSIONS, PARAM_ID, PARAM_DISPLAY_NAME, PARAM_ADMINS
+)
 
 
 @click.group(name='customer')
@@ -21,7 +19,7 @@ def describe(name=None):
     """
     Describes Customer.
     """
-    from modular_service_admin_cli.service.initializer import init_configuration
+    from service.initializer import init_configuration
     return init_configuration().customer_get(name=name)
 
 
@@ -38,7 +36,7 @@ def add(name, display_name, admin):
     """
     Adds Customer.
     """
-    from modular_service_admin_cli.service.initializer import init_configuration
+    from service.initializer import init_configuration
     admin_emails = cast_to_list(admin)
     return init_configuration().customer_post(name=name, display_name=display_name,
                                      admins=admin_emails)
@@ -57,7 +55,7 @@ def update(name, admin, override):
     """
     Updates Customer.
     """
-    from modular_service_admin_cli.service.initializer import init_configuration
+    from service.initializer import init_configuration
     admin_emails = cast_to_list(admin)
     return init_configuration().customer_patch(name=name,
                                       admins=admin_emails, override=override)

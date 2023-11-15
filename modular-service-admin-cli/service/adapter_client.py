@@ -2,9 +2,9 @@ import json
 
 import requests
 
-from modular_service_admin_cli.service.constants import *
-from modular_service_admin_cli.service.logger import get_logger, get_user_logger
-from modular_service_admin_cli.version import check_version_compatibility
+from service.constants import *
+from service.logger import get_logger, get_user_logger
+from version import check_version_compatibility
 
 HTTP_GET = 'get'
 HTTP_POST = 'post'
@@ -13,7 +13,7 @@ HTTP_DELETE = 'delete'
 
 ALLOWED_METHODS = [HTTP_GET, HTTP_POST, HTTP_PATCH, HTTP_DELETE]
 
-SYSTEM_LOG = get_logger('modular_service_admin_cli.service.adapter_client')
+SYSTEM_LOG = get_logger('service.adapter_client')
 USER_LOG = get_user_logger('user')
 
 
@@ -344,7 +344,6 @@ class AdapterClient:
         }
         return self.__make_request(resource=API_TENANT_REGION, method=HTTP_GET,
                                    payload=request)
-
 
     def tenant_region_post(self, tenant_name, region_name):
         request = {
