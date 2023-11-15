@@ -4,7 +4,7 @@ import requests
 
 from service.constants import *
 from service.logger import get_logger, get_user_logger
-from version import check_version_compatibility
+from __version__ import check_version_compatibility
 
 HTTP_GET = 'get'
 HTTP_POST = 'post'

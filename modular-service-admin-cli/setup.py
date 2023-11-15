@@ -1,9 +1,9 @@
 from setuptools import find_packages, setup
-from version import __version__ as version
+from __version__ import __version__
 
 setup(
     name='modular_service',
-    version=version,
+    version=__version__,
     packages=find_packages(),
     include_package_data=True,
     install_requires=[
@@ -21,6 +21,6 @@ setup(
     ],
     entry_points='''
         [console_scripts]
-        modular_service=group.modularservice:modular_service
+        modular_service=group.modularservice:modularservice
     '''
 )
