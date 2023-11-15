@@ -4,8 +4,7 @@ from routes import Mapper
 from functools import cached_property
 
 from commons import RESPONSE_RESOURCE_NOT_FOUND_CODE, LambdaContext
-from commons.abstract_lambda import EventProcessorLambdaHandler, \
-    ApiGatewayEventProcessor
+from commons.abstract_lambda import ApiGatewayEventProcessor
 from commons.constants import REQUEST_METHOD_WSGI_ENV
 from commons.exception import ApplicationException
 from commons.log_helper import get_logger
