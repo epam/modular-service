@@ -17,11 +17,11 @@ from modular_service_admin_cli.version import __version__ as version
 
 @click.group()
 @click.version_option(version)
-def modularadmin():
+def modular_service():
     """The main click's group to accumulate all the CLI commands"""
 
 
-@modularadmin.command(cls=ViewCommand, name='configure')
+@modular_service.command(cls=ViewCommand, name='configure')
 @click.option('--api_link', '-api', type=str,
               required=True,
               help='Link to the Modular API host.')
@@ -34,7 +34,7 @@ def configure(api_link):
     return {'message': response}
 
 
-@modularadmin.command(cls=ViewCommand, name='login')
+@modular_service.command(cls=ViewCommand, name='login')
 @click.option('--username', '-u', type=str,
               required=True,
               help='Modular user username.')
@@ -57,7 +57,7 @@ def login(username: str, password: str):
     return {'message': response}
 
 
-@modularadmin.command(cls=ViewCommand, name='cleanup')
+@modular_service.command(cls=ViewCommand, name='cleanup')
 @cli_response(check_api_adapter=False)
 def cleanup():
     """
@@ -67,11 +67,11 @@ def cleanup():
     return {'message': response}
 
 
-modularadmin.add_command(policy)
-modularadmin.add_command(role)
-modularadmin.add_command(customer)
-modularadmin.add_command(application)
-modularadmin.add_command(parent)
-modularadmin.add_command(tenant)
-modularadmin.add_command(region)
-modularadmin.add_command(mode)
+modular_service.add_command(policy)
+modular_service.add_command(role)
+modular_service.add_command(customer)
+modular_service.add_command(application)
+modular_service.add_command(parent)
+modular_service.add_command(tenant)
+modular_service.add_command(region)
+modular_service.add_command(mode)

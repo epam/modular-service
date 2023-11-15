@@ -2,7 +2,7 @@ from setuptools import find_packages, setup
 from modular_service_admin_cli.version import __version__ as version
 
 setup(
-    name='modularadmin',
+    name='modular_service',
     version=version,
     packages=find_packages(),
     include_package_data=True,
@@ -21,6 +21,6 @@ setup(
     ],
     entry_points='''
         [console_scripts]
-        modularadmin=modular_service_admin_cli.modular_admin:modularadmin
+        modular_service=modular_service_admin_cli.group.modular_service:modular_service
     '''
 )
