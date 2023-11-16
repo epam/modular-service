@@ -176,9 +176,9 @@ class PolicyProcessor(AbstractCommandProcessor):
         else:
             if to_attach:
                 _LOG.debug(f'going to attach permissions to policy: '
-                           f'\'{to_attach}\'')
+                           f'\'{policy_name}\'')
                 non_existing = self.access_control_service. \
-                    get_non_existing_permissions(permissions=permissions)
+                    get_non_existing_permissions(permissions=to_attach)
 
                 if non_existing:
                     _LOG.debug(
