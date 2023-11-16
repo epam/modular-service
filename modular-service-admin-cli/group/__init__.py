@@ -26,7 +26,7 @@ def cli_response(attributes_order=None, check_api_adapter=True):
         @wraps(func)
         def wrapper(*args, **kwargs):
             modular_mode = False
-            if Path(__file__).parents[3].name == MODULAR_ADMIN:
+            if Path(__file__).parents[2].name == MODULAR_ADMIN:
                 modular_mode = True
 
             json_view = kwargs['json']
