@@ -4,17 +4,17 @@ PATCH_METHOD = 'PATCH'
 DELETE_METHOD = 'DELETE'
 
 ENDPOINT_PERMISSION_MAPPING = {
-    '/customers/': {
-        GET_METHOD: 'customer:describe_customer',
-        POST_METHOD: 'customer:create_customer',
-        PATCH_METHOD: 'customer:update_customer',
-        DELETE_METHOD: 'customer:remove_customer',
-    },
     '/applications/': {
         GET_METHOD: 'application:describe_application',
         POST_METHOD: 'application:create_application',
         PATCH_METHOD: 'application:update_application',
         DELETE_METHOD: 'application:remove_application',
+    },
+    '/customers/': {
+        GET_METHOD: 'customer:describe_customer',
+        POST_METHOD: 'customer:create_customer',
+        PATCH_METHOD: 'customer:update_customer',
+        DELETE_METHOD: 'customer:remove_customer',
     },
     '/parents/': {
         GET_METHOD: 'parent:describe_parent',
