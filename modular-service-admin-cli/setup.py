@@ -8,7 +8,7 @@ setup(
     include_package_data=True,
     install_requires=[
         'certifi==2023.7.22',
-        'charset-normalizer==3.3.1',
+        'charset-normalizer==3.3.2',
         'click==7.1.2',
         'colorama==0.4.5',
         'idna==3.4',
