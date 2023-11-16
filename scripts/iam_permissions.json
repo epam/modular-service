@@ -7,7 +7,7 @@
       "update_application",
       "remove_application"
     ],
-    "customers": [
+    "customer": [
       "describe_customer",
       "create_customer",
       "update_customer",
