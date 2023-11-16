@@ -16,9 +16,33 @@ FAILED_STATUS = 'FAILED'
 STATUS_ATTR = 'status'
 CODE_ATTR = 'code'
 TABLE_TITLE_ATTR = 'table_title'
+MESSAGE = 'message'
+ITEMS = 'items'
+WARNINGS = 'warnings'
 
 SYSTEM_LOG = get_logger('modular_admin_cli.group')
 USER_LOG = get_user_logger('user')
+
+
+class LocalCommandResponse:
+    def __init__(self, body, code=200):
+        self.status_code = code
+        message = body.get(MESSAGE)
+        items = body.get(ITEMS)
+        warnings = body.get(WARNINGS, [])
+        table_title = body.get(TABLE_TITLE_ATTR)
+        content = {WARNINGS: warnings}
+        if message:
+            content.update({MESSAGE: message})
+        elif table_title and items:
+            content.update({MESSAGE: items, TABLE_TITLE_ATTR: table_title})
+        else:
+            content[WARNINGS].append(f'Please provide "{TABLE_TITLE_ATTR}" '
+                                     f'and "{ITEMS}" or "{MESSAGE}" parameter')
+        self.text = json.dumps(content)
+
+    def json(self):
+        return json.loads(self.text)
 
 
 def cli_response(attributes_order=None, check_api_adapter=True):
@@ -26,7 +50,7 @@ def cli_response(attributes_order=None, check_api_adapter=True):
         @wraps(func)
         def wrapper(*args, **kwargs):
             modular_mode = False
-            if Path(__file__).parents[3].name == MODULAR_ADMIN:
+            if Path(__file__).parents[2].name == MODULAR_ADMIN:
                 modular_mode = True
 
             json_view = kwargs['json']

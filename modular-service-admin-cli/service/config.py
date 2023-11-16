@@ -4,6 +4,7 @@ from pathlib import Path
 import requests
 import yaml
 
+from group import LocalCommandResponse
 from service.logger import get_logger, get_user_logger
 
 SYSTEM_LOG = get_logger('service.config')
@@ -21,12 +22,12 @@ def create_configuration(api_link):
         #     return f'Invalid API link: {api_link}. Status code: 404.'
     except (requests.exceptions.MissingSchema,
             requests.exceptions.ConnectionError):
-        return f'Invalid API link: {api_link}'
+        return {'message': f'Invalid API link: {api_link}'}
     except requests.exceptions.InvalidURL:
-        return f'Invalid URL \'{api_link}\': No host specified.'
+        return {'message': f'Invalid URL \'{api_link}\': No host specified.'}
     except requests.exceptions.InvalidSchema:
-        return f'Invalid URL \'{api_link}\': No network protocol specified ' \
-               f'(http/https).'
+        return {'message': f'Invalid URL \'{api_link}\': No network protocol specified '
+                f'(http/https).'}
 
     try:
         Path(HOME_FOLDER_FULL_PATH).mkdir(exist_ok=True)
@@ -38,7 +39,8 @@ def create_configuration(api_link):
     with open(config_file_path, 'w+') as config_file:
         config_file.write(yaml.dump(config_data))
     # todo review:fix
-    return 'Great! has been configured.'
+    return LocalCommandResponse(
+        body={'message': 'Great! has been configured.'})
 
 
 def save_token(access_token: str):

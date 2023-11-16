@@ -30,8 +30,7 @@ def configure(api_link):
     """
     Configures modularadmin tool to work with Modular API.
     """
-    response = create_configuration(api_link=api_link)
-    return {'message': response}
+    return create_configuration(api_link=api_link)
 
 
 @modularservice.command(cls=ViewCommand, name='login')
