@@ -1,6 +1,6 @@
 import click
 from group import cli_response, ViewCommand
-from group.tenant_region import region
+from group.tenant_regions import region
 from service.constants import (
     PARAM_NAME, PARAM_PERMISSIONS, PARAM_ID, CLOUD_PROVIDERS
 )
