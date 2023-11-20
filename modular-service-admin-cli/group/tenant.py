@@ -1,6 +1,6 @@
 import click
 from group import cli_response, ViewCommand
-from group.tenant_regions import region
+from group.tenant_regions import regions
 from service.constants import (
     PARAM_NAME, PARAM_PERMISSIONS, PARAM_ID, CLOUD_PROVIDERS
 )
@@ -61,4 +61,4 @@ def deactivate(tenant_name=None):
     return init_configuration().tenant_delete(tenant_name=tenant_name)
 
 
-tenant.add_command(region)
+tenant.add_command(regions)
