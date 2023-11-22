@@ -7,7 +7,7 @@ setup(
     packages=find_packages(),
     include_package_data=True,
     install_requires=[
-        'certifi==2023.7.22',
+        'certifi==2023.11.17',
         'charset-normalizer==3.3.2',
         'click==7.1.2',
         'colorama==0.4.5',
