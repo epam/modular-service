@@ -26,7 +26,7 @@ def describe(name=None):
 @click.option('--policies', '-p', multiple=True,
               required=True,
               help='List of policies to attach to the role')
-@click.option('--expiration', '-e', type=str,
+@click.option('--expiration', '-e', type=str, required=True,
               help='Expiration date, ISO 8601. Example: 2021-08-01T15:30:00')
 @cli_response(attributes_order=[PARAM_NAME, PARAM_POLICIES, PARAM_EXPIRATION])
 def add(name, policies, expiration):

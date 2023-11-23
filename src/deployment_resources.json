@@ -158,6 +158,7 @@
             "dynamodb:DeleteItem",
             "dynamodb:DescribeTable",
             "dynamodb:Scan",
+            "dynamodb:UpdateItem",
             "ssm:PutParameter",
             "ssm:GetParameter",
             "kms:Decrypt"
