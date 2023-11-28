@@ -176,7 +176,7 @@ class ApplicationProcessor(AbstractCommandProcessor):
             )
 
         _LOG.debug(f'Deleting application \'{application_id}\'')
-        application = self.application_service.mark_deleted(
+        self.application_service.mark_deleted(
             application=application
         )
 
