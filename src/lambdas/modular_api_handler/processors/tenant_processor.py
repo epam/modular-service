@@ -90,6 +90,7 @@ class TenantProcessor(AbstractCommandProcessor):
 
         tenant_customer = event.get(TENANT_CUSTOMER_ATTR)
         cloud = event.get(CLOUD_ATTR)
+        acc = event.get('acc')
         display_name = event.get(DISPLAY_NAME_ATTR)
 
         read_only = event.get(READ_ONLY_ATTR, 'f')
@@ -97,11 +98,12 @@ class TenantProcessor(AbstractCommandProcessor):
             read_only = True if read_only.lower() in ('y', 'true') else False
 
         _LOG.debug(f'Creating tenant')
-        tenant = self.tenant_service.create(
+        tenant = self.tenant_service.create(#
             tenant_name=name,
             display_name=display_name,
             customer_name=tenant_customer,
             cloud=cloud,
+            acc=acc,
             is_active=True,
             read_only=read_only
         )
