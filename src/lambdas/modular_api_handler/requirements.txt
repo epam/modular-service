@@ -7,7 +7,7 @@ charset-normalizer==3.2.0
 click==7.1.2
 colorama==0.4.5
 configobj==5.0.8
-cryptography==41.0.3
+cryptography==41.0.6
 Deprecated==1.2.14
 dynamodb-json==1.3
 hvac==1.2.1
