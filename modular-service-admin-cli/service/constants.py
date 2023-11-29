@@ -25,6 +25,7 @@ PARAM_PARENT_ID = 'parent_id'
 PARAM_MAESTRO_NAME = 'maestro_name'
 PARAM_NATIVE_NAME = 'native_name'
 PARAM_REGION_ID = 'region_id'
+PARAM_ACC = 'acc'
 
 AWS_ROLE = 'AWS_ROLE'
 AWS_CREDENTIALS = 'AWS_CREDENTIALS'

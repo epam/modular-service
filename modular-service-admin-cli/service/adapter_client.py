@@ -295,12 +295,13 @@ class AdapterClient:
                                    payload=request)
 
     def tenant_post(self, tenant_name, display_name, customer, cloud,
-                    read_only=False):
+                    account_id, read_only=False):
         request = {
             PARAM_NAME: tenant_name,
             PARAM_DISPLAY_NAME: display_name,
             PARAM_TENANT_CUSTOMER: customer,
             PARAM_CLOUD: cloud,
+            PARAM_ACC: account_id,
             PARAM_READ_ONLY: read_only
         }
         return self.__make_request(resource=API_TENANT, method=HTTP_POST,

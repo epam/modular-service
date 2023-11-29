@@ -32,10 +32,12 @@ def describe(tenant_name=None):
               help='Customer name to attach tenant.')
 @click.option('--cloud', '-c', type=click.Choice(CLOUD_PROVIDERS),
               required=True, help='Tenant cloud')
+@click.option('--account_id', '-acc', required=True,
+              help='Tenant account ID')
 @click.option('--read_only', '-ro', is_flag=True, required=False,
               default=False, help='Mark tenant as read only')
 @cli_response(attributes_order=[PARAM_NAME, PARAM_ID, PARAM_PERMISSIONS])
-def activate(name, display_name, customer, cloud, read_only):
+def activate(name, display_name, customer, cloud, account_id, read_only):
     """
     Activates Tenant.
     """
@@ -45,6 +47,7 @@ def activate(name, display_name, customer, cloud, read_only):
         display_name=display_name,
         customer=customer,
         cloud=cloud,
+        account_id=account_id,
         read_only=read_only
     )
 
