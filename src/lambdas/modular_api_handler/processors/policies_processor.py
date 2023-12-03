@@ -177,18 +177,7 @@ class PolicyProcessor(AbstractCommandProcessor):
             if to_attach:
                 _LOG.debug(f'going to attach permissions to policy: '
                            f'\'{to_attach}\'')
-                non_existing = self.access_control_service. \
-                    get_non_existing_permissions(permissions=permissions)
 
-                if non_existing:
-                    _LOG.debug(
-                        f'Some of the specified permissions don\'t exist: '
-                        f'{", ".join(non_existing)}')
-                    return build_response(
-                        code=RESPONSE_BAD_REQUEST_CODE,
-                        content=f'Some of the specified permissions don\'t '
-                                f'exist: {", ".join(non_existing)}'
-                    )
                 policy_permissions = list(policy.permissions)
                 policy_permissions.extend(to_attach)
                 policy_permissions = list(set(policy_permissions))
