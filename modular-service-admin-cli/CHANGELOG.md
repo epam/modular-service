@@ -6,16 +6,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 # [2.0.6] - 2023-12-04
 * Update `modular_service` for compatibility with `modular-cli`
-
-# [2.0.5] - 2023-11-22
 * Update library:
   * `certifi` from 2023.7.2 to 2023.11.17
-
-# [2.0.4] - 2023-11-15
 * Rename root group name and filename from `modular_service` to `modularservice`
 * Rename `version.py` to `__version__.py`
-
-# [2.0.3] - 2023-11-15
 * Rename CLI module name to properly work with modular-api
 
 # [2.0.0] - 2023-10-02
