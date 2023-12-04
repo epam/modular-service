@@ -7,6 +7,12 @@
       "update_application",
       "remove_application"
     ],
+    "customer": [
+      "describe_customer",
+      "create_customer",
+      "update_customer",
+      "remove_customer"
+    ],
     "parent": [
       "describe_parent",
       "create_parent",
@@ -18,6 +24,12 @@
       "create_tenant",
       "update_tenant",
       "remove_tenant"
+    ],
+    "regions": [
+      "describe_region",
+      "create_region",
+      "update_region",
+      "remove_region"
     ],
     "role": [
       "describe_role",

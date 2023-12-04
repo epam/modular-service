@@ -1,9 +1,7 @@
 import click
 
-from modular_service_admin_cli.group import cli_response, cast_to_list, ViewCommand
-from modular_service_admin_cli.service.constants import (PARAM_NAME,
-                                                         PARAM_PERMISSIONS,
-                                                         PARAM_ID)
+from group import cli_response, cast_to_list, ViewCommand
+from service.constants import (PARAM_NAME, PARAM_PERMISSIONS, PARAM_ID)
 
 
 @click.group(name='policy')
@@ -19,7 +17,7 @@ def describe(policy_name=None):
     """
     Describes policies.
     """
-    from modular_service_admin_cli.service.initializer import init_configuration
+    from service.initializer import init_configuration
     return init_configuration().policy_get(policy_name=policy_name)
 
 
@@ -40,7 +38,7 @@ def add(policy_name, permission, permissions_admin,
     """
     Creates policy.
     """
-    from modular_service_admin_cli.service.initializer import init_configuration
+    from service.initializer import init_configuration
     permissions = cast_to_list(permission)
     return init_configuration().policy_post(policy_name=policy_name,
                                    permissions=permissions,
@@ -62,7 +60,7 @@ def update(policy_name, attach_permission,
     """
     Updates list of permissions attached to the policy.
     """
-    from modular_service_admin_cli.service.initializer import init_configuration
+    from service.initializer import init_configuration
 
     if not attach_permission and not detach_permission:
         return {'message': 'At least one of the following arguments must be '
@@ -84,7 +82,7 @@ def delete(policy_name):
     """
     Deletes policy.
     """
-    from modular_service_admin_cli.service.initializer import init_configuration
+    from service.initializer import init_configuration
     if policy_name:
         policy_name = policy_name.lower()
     return init_configuration().policy_delete(policy_name=policy_name.lower())

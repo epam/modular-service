@@ -3,9 +3,8 @@ from typing import Optional, Dict, Type, List
 from routes import Mapper
 from functools import cached_property
 
-from commons import RESPONSE_RESOURCE_NOT_FOUND_CODE
-from commons.abstract_lambda import EventProcessorLambdaHandler, \
-    ApiGatewayEventProcessor
+from commons import RESPONSE_RESOURCE_NOT_FOUND_CODE, LambdaContext
+from commons.abstract_lambda import ApiGatewayEventProcessor
 from commons.constants import REQUEST_METHOD_WSGI_ENV
 from commons.exception import ApplicationException
 from commons.log_helper import get_logger
@@ -30,6 +29,7 @@ from lambdas.modular_api_handler.processors.tenant_in_region_processor import \
     TenantRegionProcessor
 from lambdas.modular_api_handler.processors.tenant_processor import \
     TenantProcessor
+from services.abstract_api_handler_lambda import AbstractApiHandlerLambda
 
 _LOG = get_logger('ModularApiHandler')
 
@@ -45,7 +45,7 @@ PARENT_ACTION = 'parent'
 REGION_ACTION = 'region'
 
 
-class ModularApiHandler(EventProcessorLambdaHandler):
+class ModularApiHandler(AbstractApiHandlerLambda):
     event_processor = ApiGatewayEventProcessor()
 
     def __init__(self):
@@ -90,7 +90,10 @@ class ModularApiHandler(EventProcessorLambdaHandler):
             _LOG.debug('Mapper was built')
         return self._mapper
 
-    def handle_request(self, event, context):
+    def validate_request(self, event: dict) -> dict:
+        pass
+
+    def handle_request(self, event: dict, context: LambdaContext):
         path, method = event.get('path'), event.get('method')
         match_result = self.mapper.match(
             path, {REQUEST_METHOD_WSGI_ENV: method})
@@ -111,5 +114,5 @@ class ModularApiHandler(EventProcessorLambdaHandler):
 HANDLER = ModularApiHandler()
 
 
-def lambda_handler(event, context):
+def lambda_handler(event: dict, context: LambdaContext):
     return HANDLER.lambda_handler(event=event, context=context)

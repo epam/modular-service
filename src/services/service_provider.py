@@ -120,9 +120,9 @@ class ServiceProvider(metaclass=SingletonMeta):
     def parent_service(self):
         if not self.__parent_mutator_service:
             self.__parent_mutator_service = ParentMutatorService(
-                self.tenant_service(),
-                self.application_service(),
-                self.customer_service()
+                application_service=self.application_service(),
+                tenant_service=self.tenant_service(),
+                customer_service=self.customer_service()
             )
         return self.__parent_mutator_service
 

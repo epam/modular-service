@@ -1,10 +1,9 @@
 import click
 
-from modular_service_admin_cli.group import cli_response, ViewCommand
-from modular_service_admin_cli.service.constants import (PARAM_NAME,
-                                                         PARAM_PERMISSIONS,
-                                                         PARAM_ID,
-                                                         AVAILABLE_APPLICATION_TYPES)
+from group import cli_response, ViewCommand
+from service.constants import (
+    PARAM_NAME, PARAM_PERMISSIONS, PARAM_ID, AVAILABLE_APPLICATION_TYPES
+)
 
 
 @click.group(name='application')
@@ -20,7 +19,7 @@ def describe(application_id=None):
     """
     Describes Application.
     """
-    from modular_service_admin_cli.service.initializer import init_configuration
+    from service.initializer import init_configuration
     return init_configuration().application_get(application_id=application_id)
 
 
@@ -38,7 +37,7 @@ def add(application_type, customer, description=None, meta=None):
     """
     Describes Application.
     """
-    from modular_service_admin_cli.service.initializer import init_configuration
+    from service.initializer import init_configuration
     return init_configuration().application_post(
         application_type=application_type,
         customer_id=customer,
@@ -62,7 +61,7 @@ def update(application_id, application_type=None, customer=None,
     """
     Updates Application.
     """
-    from modular_service_admin_cli.service.initializer import init_configuration
+    from service.initializer import init_configuration
     return init_configuration().application_patch(
         application_id=application_id,
         application_type=application_type,
@@ -78,5 +77,5 @@ def deactivate(application_id):
     """
     Deactivates Application.
     """
-    from modular_service_admin_cli.service.initializer import init_configuration
+    from service.initializer import init_configuration
     return init_configuration().application_delete(application_id=application_id)

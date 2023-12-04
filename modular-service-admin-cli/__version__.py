@@ -1,4 +1,4 @@
-__version__ = '2.0.2'
+__version__ = '2.0.6'
 
 import sys
 from distutils.version import LooseVersion

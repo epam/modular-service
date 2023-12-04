@@ -1,14 +1,14 @@
 from setuptools import find_packages, setup
-from modular_service_admin_cli.version import __version__ as version
+from __version__ import __version__
 
 setup(
-    name='modularadmin',
-    version=version,
+    name='modular_service',
+    version=__version__,
     packages=find_packages(),
     include_package_data=True,
     install_requires=[
-        'certifi==2023.7.22',
-        'charset-normalizer==3.3.1',
+        'certifi==2023.11.17',
+        'charset-normalizer==3.3.2',
         'click==7.1.2',
         'colorama==0.4.5',
         'idna==3.4',
@@ -21,6 +21,6 @@ setup(
     ],
     entry_points='''
         [console_scripts]
-        modularadmin=modular_service_admin_cli.modular_admin:modularadmin
+        modular_service=group.modularservice:modularservice
     '''
 )

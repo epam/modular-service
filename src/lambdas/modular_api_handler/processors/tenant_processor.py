@@ -90,6 +90,7 @@ class TenantProcessor(AbstractCommandProcessor):
 
         tenant_customer = event.get(TENANT_CUSTOMER_ATTR)
         cloud = event.get(CLOUD_ATTR)
+        acc = event.get('acc')
         display_name = event.get(DISPLAY_NAME_ATTR)
 
         read_only = event.get(READ_ONLY_ATTR, 'f')
@@ -102,6 +103,7 @@ class TenantProcessor(AbstractCommandProcessor):
             display_name=display_name,
             customer_name=tenant_customer,
             cloud=cloud,
+            acc=acc,
             is_active=True,
             read_only=read_only
         )
