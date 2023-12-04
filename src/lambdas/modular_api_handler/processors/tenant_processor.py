@@ -98,7 +98,7 @@ class TenantProcessor(AbstractCommandProcessor):
             read_only = True if read_only.lower() in ('y', 'true') else False
 
         _LOG.debug(f'Creating tenant')
-        tenant = self.tenant_service.create(#
+        tenant = self.tenant_service.create(
             tenant_name=name,
             display_name=display_name,
             customer_name=tenant_customer,
