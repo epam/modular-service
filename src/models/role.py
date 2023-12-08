@@ -8,7 +8,7 @@ from modular_sdk.models.pynamodb_extension.base_safe_update_model import \
 
 class Role(BaseSafeUpdateModel):
     class Meta(BaseMeta):
-        table_name = 'ModularRoles'
+        table_name = 'ModularServiceRoles'
 
     name = UnicodeAttribute(hash_key=True)
     expiration = UnicodeAttribute(null=True)  # ISO8601, valid to date

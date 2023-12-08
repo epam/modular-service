@@ -9,7 +9,7 @@ from modular_sdk.models.pynamodb_extension.base_safe_update_model import \
 
 class Setting(BaseSafeUpdateModel):
     class Meta(BaseMeta):
-        table_name = 'ModularSettings'
+        table_name = 'ModularServiceSettings'
 
     name = UnicodeAttribute(hash_key=True, attr_name='name')
     value = DynamicAttribute(attr_name='value')
