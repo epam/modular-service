@@ -7,7 +7,7 @@ from modular_sdk.models.pynamodb_extension.base_safe_update_model import \
 
 class Policy(BaseSafeUpdateModel):
     class Meta(BaseMeta):
-        table_name = 'ModularPolicies'
+        table_name = 'ModularServicePolicies'
 
     name = UnicodeAttribute(hash_key=True)
     permissions = ListAttribute(default=list)
