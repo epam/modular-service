@@ -39,6 +39,8 @@ def add(policy_name, permission, permissions_admin,
     Creates policy.
     """
     from service.initializer import init_configuration
+    if policy_name:
+        policy_name = policy_name.lower()
     permissions = cast_to_list(permission)
     return init_configuration().policy_post(policy_name=policy_name,
                                    permissions=permissions,
