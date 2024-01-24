@@ -42,6 +42,11 @@
         "index_key_type": "S",
         "index_sort_key_name": "s",
         "index_sort_key_type": "S"
+      },
+      {
+        "name": "aid-index",
+        "index_key_name": "aid",
+        "index_key_type": "S"
       }
     ],
     "external": true
