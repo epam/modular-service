@@ -8,6 +8,7 @@
   "memory": 128,
   "timeout": 100,
   "lambda_path": "lambdas/modular_api_handler",
+  "logs_expiration": "${logs_expiration}",
   "dependencies": [],
   "event_sources": [],
   "env_variables": {
