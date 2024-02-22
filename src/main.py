@@ -1,25 +1,23 @@
+from abc import ABC, abstractmethod
 import argparse
 import base64
 import logging
-from dotenv import load_dotenv
 import logging.config
 import multiprocessing
 import os
+from pathlib import Path
 import secrets
 import string
-from abc import abstractmethod, ABC
-from pathlib import Path
-from typing import Callable, Literal
+from typing import Callable, Literal, TYPE_CHECKING
 
-from bottle import Bottle
-from swagger_ui import api_doc
-
-from commons import urljoin
 from commons.__version__ import __version__
 from commons.constants import Env, PRIVATE_KEY_SECRET_NAME
-from onprem.app import OnPremApiBuilder
-from services import SP
-from services.openapi_spec_generator import OpenApiGenerator
+
+# NOTE, all imports are inside corresponding methods in order to make
+# CLI more or less fast
+if TYPE_CHECKING:
+    from models import BaseModel
+    from bottle import Bottle
 
 DEFAULT_HOST = '0.0.0.0'
 DEFAULT_PORT = 8000
@@ -107,6 +105,10 @@ def build_parser() -> argparse.ArgumentParser:
     parser_init.add_argument('--username', required=True, type=str,
                              help='Admin username')
 
+    # create-indexes
+    _ = sub_parsers.add_parser(
+        CREATE_INDEXES_ACTION, help='Creates indexes for mongo'
+    )
     return parser
 
 
@@ -118,6 +120,7 @@ class ActionHandler(ABC):
 
 class InitVault(ABC):
     def __call__(self):
+        from services import SP
         ssm = SP.ssm
         if ssm.enable_secrets_engine():
             _LOG.info('Vault engine was enabled')
@@ -155,7 +158,9 @@ class InitVault(ABC):
 
 
 class Run(ActionHandler):
-    def _init_swagger(self, app: Bottle, prefix: str) -> None:
+    def _init_swagger(self, app: 'Bottle', prefix: str) -> None:
+        from swagger_ui import api_doc
+        from services.openapi_spec_generator import OpenApiGenerator
         url = f'http://{self._host}:{self._port}'
         # TODO get from handlers
         generator = OpenApiGenerator(
@@ -174,12 +179,13 @@ class Run(ActionHandler):
             url_prefix=prefix,
             title='Rule engine'
         )
-        _LOG.info(f'Serving swagger on {urljoin(url, prefix)}')
+        _LOG.info(f'Serving swagger on {url + prefix}')
 
     def __call__(self, host: str = DEFAULT_HOST, port: int = DEFAULT_PORT,
                  gunicorn: bool = False, workers: int | None = None,
                  swagger: bool = False,
                  swagger_prefix: str = DEFAULT_SWAGGER_PREFIX):
+        from onprem.app import OnPremApiBuilder
         self._host = host
         self._port = port
 
@@ -247,6 +253,67 @@ class Init(ActionHandler):
         print(password)
 
 
+class CreateIndexes(ActionHandler):
+    @staticmethod
+    def convert_index(key_schema: dict) -> str | list[tuple]:
+        if len(key_schema) == 1:
+            _LOG.info('Only hash key found for the index')
+            return key_schema[0]['AttributeName']
+        elif len(key_schema) == 2:
+            _LOG.info('Both hash and range keys found for the index')
+            result = [None, None]
+            for key in key_schema:
+                if key['KeyType'] == 'HASH':
+                    _i = 0
+                elif key['KeyType'] == 'RANGE':
+                    _i = 1
+                else:
+                    raise ValueError(f'Unknown key type: {key["KeyType"]}')
+                result[_i] = (key['AttributeName'], -1)  # descending
+            return result
+        else:
+            raise ValueError(f'Unknown key schema: {key_schema}')
+
+    def create_indexes_for_model(self, model: type['BaseModel']):
+        table_name = model.Meta.table_name
+        collection = model.mongodb_handler().mongodb.collection(table_name)
+        collection.drop_indexes()
+
+        hash_key = getattr(model._hash_key_attribute(), 'attr_name', None)
+        range_key = getattr(model._range_key_attribute(), 'attr_name', None)
+        _LOG.info(f'Creating main indexes for \'{table_name}\'')
+        if hash_key and range_key:
+            collection.create_index([(hash_key, 1),
+                                     (range_key, 1)],
+                                    name='main')
+        elif hash_key:
+            collection.create_index(hash_key, name='main')
+        else:
+            _LOG.error(f'Table \'{table_name}\' has no hash_key and range_key')
+
+        indexes = model._get_schema()  # GSIs & LSIs,  # only PynamoDB 5.2.1+
+        gsi = indexes.get('global_secondary_indexes')
+        lsi = indexes.get('local_secondary_indexes')
+        if gsi:
+            _LOG.info(f'Creating global indexes for \'{table_name}\'')
+            for i in gsi:
+                index_name = i['index_name']
+                _LOG.info(f'Processing index \'{index_name}\'')
+                collection.create_index(
+                    self.convert_index(i['key_schema']), name=index_name)
+                _LOG.info(f'Index \'{index_name}\' was created')
+            _LOG.info(f'Global indexes for \'{table_name}\' were created!')
+        if lsi:
+            pass  # write this part if at least one LSI is used
+
+    def __call__(self):
+        from models.policy import Policy
+        from models.role import Role
+        from models.user import User
+        for model in (Policy, Role, User):
+            self.create_indexes_for_model(model)
+
+
 def main(args: list[str] | None = None):
     parser = build_parser()
     arguments = parser.parse_args(args)
@@ -257,12 +324,14 @@ def main(args: list[str] | None = None):
     mapping: dict[tuple[str, ...], Callable] = {
         (RUN_ACTION,): Run(),
         (INIT_VAULT_ACTION,): InitVault(),
-        (INIT_ACTION,): Init()
+        (INIT_ACTION,): Init(),
+        (CREATE_INDEXES_ACTION,): CreateIndexes()
     }
     func = mapping.get(key) or (lambda **kwargs: _LOG.error('Hello'))
     for dest in ALL_NESTING:
         if hasattr(arguments, dest):
             delattr(arguments, dest)
+    from dotenv import load_dotenv
     load_dotenv(verbose=True)
     func(**vars(arguments))
 
