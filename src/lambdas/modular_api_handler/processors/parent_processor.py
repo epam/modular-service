@@ -1,16 +1,27 @@
-from typing import List
+
+from http import HTTPStatus
 
 from routes.route import Route
 
-from commons import RESPONSE_BAD_REQUEST_CODE, validate_params, build_response, \
-    RESPONSE_RESOURCE_NOT_FOUND_CODE, \
-    RESPONSE_OK_CODE
-from commons.constants import GET_METHOD, POST_METHOD, PATCH_METHOD, \
-    DELETE_METHOD, APPLICATION_ID_ATTR, TYPE_ATTR, DESCRIPTION_ATTR, \
-    PARENT_ID_ATTR, CUSTOMER_ID_ATTR, META_ATTR, CLOUD_ATTR, TENANT_ATTR, SCOPE_ATTR
+from commons import validate_params
+from commons.constants import (
+    APPLICATION_ID_ATTR,
+    CLOUD_ATTR,
+    CUSTOMER_ID_ATTR,
+    DESCRIPTION_ATTR,
+    Endpoint,
+    HTTPMethod,
+    META_ATTR,
+    PARENT_ID_ATTR,
+    SCOPE_ATTR,
+    TENANT_ATTR,
+    TYPE_ATTR,
+)
+from commons.lambda_response import ResponseFactory, build_response
 from commons.log_helper import get_logger
-from lambdas.modular_api_handler.processors.abstract_processor import \
-    AbstractCommandProcessor
+from lambdas.modular_api_handler.processors.abstract_processor import (
+    AbstractCommandProcessor,
+)
 from services import SERVICE_PROVIDER
 from services.application_mutator_service import ApplicationMutatorService
 from services.customer_mutator_service import CustomerMutatorService
@@ -33,24 +44,25 @@ class ParentProcessor(AbstractCommandProcessor):
     @classmethod
     def build(cls) -> 'ParentProcessor':
         return cls(
-            customer_service=SERVICE_PROVIDER.customer_service(),
-            parent_service=SERVICE_PROVIDER.parent_service(),
-            application_service=SERVICE_PROVIDER.application_service(),
-            tenant_service=SERVICE_PROVIDER.tenant_service()
+            customer_service=SERVICE_PROVIDER.customer_service,
+            parent_service=SERVICE_PROVIDER.parent_service,
+            application_service=SERVICE_PROVIDER.application_service,
+            tenant_service=SERVICE_PROVIDER.tenant_service
         )
 
     @classmethod
-    def routes(cls) -> List[Route]:
+    def routes(cls) -> list[Route]:
         name = cls.controller_name()
+        endpoint  = Endpoint.PARENTS.value
         return [
-            Route(None, '/parents', controller=name, action='get',
-                  conditions={'method': [GET_METHOD]}),
-            Route(None, '/parents', controller=name, action='post',
-                  conditions={'method': [POST_METHOD]}),
-            Route(None, '/parents', controller=name, action='patch',
-                  conditions={'method': [PATCH_METHOD]}),
-            Route(None, '/parents', controller=name, action='delete',
-                  conditions={'method': [DELETE_METHOD]}),
+            Route(None, endpoint, controller=name, action='get',
+                  conditions={'method': [HTTPMethod.GET]}),
+            Route(None, endpoint, controller=name, action='post',
+                  conditions={'method': [HTTPMethod.POST]}),
+            Route(None, endpoint, controller=name, action='patch',
+                  conditions={'method': [HTTPMethod.PATCH]}),
+            Route(None, endpoint, controller=name, action='delete',
+                  conditions={'method': [HTTPMethod.DELETE]}),
         ]
 
     def get(self, event):
@@ -70,25 +82,21 @@ class ParentProcessor(AbstractCommandProcessor):
                 only_active=False
             )
         else:
-            _LOG.debug(f'Describing all parents')
+            _LOG.debug('Describing all parents')
             parents = self.parent_service.list()
         parents = [item for item in parents if item]
         if not parents:
-            _LOG.error(f'No parents found matching given query.')
-            return build_response(
-                code=RESPONSE_RESOURCE_NOT_FOUND_CODE,
-                content=f'No parents found matching given query.'
-            )
+            _LOG.warning('No parents found matching given query.')
+            raise ResponseFactory(HTTPStatus.NOT_FOUND).message(
+                'No parents found matching given query.'
+            ).exc()
 
-        _LOG.debug(f'Describing parent dto.')
+        _LOG.debug('Describing parent dto.')
         response = [self.parent_service.get_dto(parent=parent)
                     for parent in parents]
 
         _LOG.debug(f'Response: {response}')
-        return build_response(
-            code=RESPONSE_OK_CODE,
-            content=response
-        )
+        return build_response(content=response)
 
     def post(self, event):
         _LOG.debug(f'Add parent event: {event}')
@@ -102,13 +110,11 @@ class ParentProcessor(AbstractCommandProcessor):
             application_id=application_id
         )
         if not application:
-            _LOG.error(f'Application with id \'{application_id}\' does not '
-                       f'exist.')
-            return build_response(
-                code=RESPONSE_RESOURCE_NOT_FOUND_CODE,
-                content=f'Application with id \'{application_id}\' does not '
-                        f'exist.'
-            )
+            _LOG.warning(f'Application with id \'{application_id}\' does not '
+                         f'exist.')
+            raise ResponseFactory(HTTPStatus.NOT_FOUND).message(
+                f'Application with id \'{application_id}\' does not exist.'
+            ).exc()
 
         parent_type = event.get(TYPE_ATTR)
         description = event.get(DESCRIPTION_ATTR)
@@ -118,7 +124,7 @@ class ParentProcessor(AbstractCommandProcessor):
         tenant_name = event.get(TENANT_ATTR)
         scope = event.get(SCOPE_ATTR)
 
-        _LOG.debug(f'Creating parent')
+        _LOG.debug('Creating parent')
         parent = self.parent_service.create(
             application_id=application_id,
             customer_id=customer_id,
@@ -131,16 +137,13 @@ class ParentProcessor(AbstractCommandProcessor):
             cloud=cloud
         )
 
-        _LOG.debug(f'Saving parent')
+        _LOG.debug('Saving parent')
         self.parent_service.save(parent=parent)
 
-        _LOG.debug(f'Describing parent dto.')
+        _LOG.debug('Describing parent dto.')
         response = self.parent_service.get_dto(parent=parent)
         _LOG.debug(f'Response: {response}')
-        return build_response(
-            code=RESPONSE_OK_CODE,
-            content=response
-        )
+        return build_response(content=response)
 
     def patch(self, event):
         _LOG.debug(f'Update parent event: {event}')
@@ -148,13 +151,11 @@ class ParentProcessor(AbstractCommandProcessor):
 
         optional_attrs = (APPLICATION_ID_ATTR, TYPE_ATTR, DESCRIPTION_ATTR)
         if not any([attr in event for attr in optional_attrs]):
-            _LOG.error(f'At least one of the following attributes must be '
-                       f'specifies: \'{optional_attrs}\'.')
-            return build_response(
-                code=RESPONSE_BAD_REQUEST_CODE,
-                content=f'At least one of the following attributes must be '
-                        f'specifies: \'{optional_attrs}\'.'
-            )
+            _LOG.warning(f'At least one of the following attributes must be '
+                         f'specifies: \'{optional_attrs}\'.')
+            raise ResponseFactory(HTTPStatus.BAD_REQUEST).message(
+                f'At least one of the following attributes must be specifies: \'{optional_attrs}\'.'
+            ).exc()
 
         parent_id = event.get(PARENT_ID_ATTR)
 
@@ -163,33 +164,28 @@ class ParentProcessor(AbstractCommandProcessor):
             parent_id=parent_id
         )
         if not parent:
-            _LOG.error(f'Parent with id \'{parent_id}\' does not '
-                       f'exist.')
-            return build_response(
-                code=RESPONSE_RESOURCE_NOT_FOUND_CODE,
-                content=f'Parent with id \'{parent_id}\' does not '
-                        f'exist.'
-            )
+            _LOG.warning(f'Parent with id \'{parent_id}\' does not '
+                         f'exist.')
+            raise ResponseFactory(HTTPStatus.NOT_FOUND).message(
+                f'Parent with id \'{parent_id}\' does not exist.'
+            ).exc()
         app_id = event.get(APPLICATION_ID_ATTR)
         parent_type = event.get(TYPE_ATTR)
         description = event.get(DESCRIPTION_ATTR)
-        _LOG.debug(f'Updating parent')
+        _LOG.debug('Updating parent')
         self.parent_service.update(
             parent=parent, application_id=app_id,
             parent_type=parent_type, description=description
         )
 
-        _LOG.debug(f'Saving updated parent')
+        _LOG.debug('Saving updated parent')
         self.parent_service.save(parent=parent)
 
-        _LOG.debug(f'Describing parent dto.')
+        _LOG.debug('Describing parent dto.')
         response = self.parent_service.get_dto(parent=parent)
         _LOG.debug(f'Response: {response}')
 
-        return build_response(
-            code=RESPONSE_OK_CODE,
-            content=response
-        )
+        return build_response(content=response)
 
     def delete(self, event):
         _LOG.debug(f'Delete parent event: {event}')
@@ -201,25 +197,20 @@ class ParentProcessor(AbstractCommandProcessor):
             parent_id=parent_id
         )
         if not parent:
-            _LOG.error(f'Parent with id \'{parent_id}\' does not '
-                       f'exist.')
-            return build_response(
-                code=RESPONSE_RESOURCE_NOT_FOUND_CODE,
-                content=f'Parent with id \'{parent_id}\' does not '
-                        f'exist.'
-            )
+            _LOG.warning(f'Parent with id \'{parent_id}\' does not '
+                         f'exist.')
+            raise ResponseFactory(HTTPStatus.NOT_FOUND).message(
+                f'Parent with id \'{parent_id}\' does not exist.'
+            ).exc()
 
-        _LOG.debug(f'Deleting parent')
+        _LOG.debug('Deleting parent')
         self.parent_service.mark_deleted(parent=parent)
 
-        _LOG.debug(f'Saving parent')
+        _LOG.debug('Saving parent')
         self.parent_service.save(parent=parent)
 
-        _LOG.debug(f'Describing parent dto.')
+        _LOG.debug('Describing parent dto.')
         response = self.parent_service.get_dto(parent=parent)
 
         _LOG.debug(f'Response: {response}')
-        return build_response(
-            code=RESPONSE_OK_CODE,
-            content=response
-        )
+        return build_response(content=response)

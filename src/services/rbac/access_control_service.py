@@ -1,16 +1,10 @@
 from datetime import datetime, timedelta
-from typing import Union
 
-from commons import deep_get
-from commons.constants import (
-    PARAM_REQUEST_CONTEXT, PARAM_AUTHORIZER, PARAM_CLAIMS,
-    PARAM_COGNITO_USERNAME
-)
 from commons.log_helper import get_logger
 from models.policy import Policy
 from models.role import Role
+from services.rbac.endpoint_to_permission_mapping import ALL_PERMISSIONS
 from services.rbac.iam_service import IamService
-from services.setting_service import SettingsService
 from services.user_service import CognitoUserService
 
 _LOG = get_logger(__name__)
@@ -25,28 +19,16 @@ PARAM_TARGET_USER = 'target_user'
 class AccessControlService:
 
     def __init__(self, iam_service: IamService,
-                 user_service: CognitoUserService,
-                 setting_service: SettingsService):
+                 user_service: CognitoUserService):
         self.iam_service = iam_service
         self.user_service = user_service
-        self.setting_service = setting_service
 
-    def is_allowed_to_access(self, event: dict, target_permission: str) -> bool:
+    def is_allowed_to_access(self, username: str,
+                             target_permission: str) -> bool:
 
-        user_id = deep_get(
-            event, (PARAM_REQUEST_CONTEXT, PARAM_AUTHORIZER, PARAM_CLAIMS,
-                    PARAM_COGNITO_USERNAME)
-        )
-
-        user = self.user_service.get_user(user_id)
-        if not user:
-            _LOG.debug(f'User with id: {user_id} does not exist')
-            return False
-        if isinstance(user, dict):
-            user = user.get('Username')
         _LOG.debug(f'Checking user permissions '
                    f'on \'{target_permission}\' action')
-        role_name = self.user_service.get_user_role_name(user=user)
+        role_name = self.user_service.get_user_role_name(user=username)
         role = self.iam_service.role_get(role_name=role_name)
 
         if not role:
@@ -55,16 +37,9 @@ class AccessControlService:
         if AccessControlService.is_role_expired(role=role):
             _LOG.debug(f'Specified role with name: {role_name}  is expired')
             return False
-        user_policies = self.iam_service.policy_batch_get(
-            keys=role.policies)
-        user_permissions = []
-        for policy in user_policies:
-            user_permissions.extend(policy.permissions)
-
-        if target_permission in user_permissions:
-            _LOG.debug(f'Permission for user \'{user_id}\' on action: '
-                       f'{target_permission} is granted')
-            return True
+        for policy in self.iam_service.iter_policies(set(role.policies)):
+            if target_permission in policy.permissions:
+                return True
         return False
 
     def get_role(self, name: str):
@@ -74,11 +49,11 @@ class AccessControlService:
         return self.iam_service.policy_get(policy_name=name)
 
     def policy_exists(self, name: str) -> bool:
-        # todo
+        # todo remove
         return bool(self.get_policy(name=name))
 
     def role_exists(self, name: str) -> bool:
-        # todo
+        # todo remove
         return bool(self.get_role(name=name))
 
     @staticmethod
@@ -90,7 +65,7 @@ class AccessControlService:
         return policy.get_json()
 
     @staticmethod
-    def delete_entity(entity: Union[Role, Policy]):
+    def delete_entity(entity: Role | Policy):
         return entity.delete()
 
     def create_policy(self, policy_data: dict):
@@ -108,7 +83,7 @@ class AccessControlService:
         return Role(**role_data)
 
     @staticmethod
-    def save(access_conf_object: Union[Role, Policy]):
+    def save(access_conf_object: Role | Policy):
         access_conf_object.save()
 
     @staticmethod
@@ -120,21 +95,9 @@ class AccessControlService:
         now = datetime.now()
         return now >= role_expiration_datetime
 
-    def get_non_existing_permissions(self, permissions: list):
-        permissions_mapping = self.setting_service.get_iam_permissions()
-
-        nonexistent = []
-        for permission in permissions:
-            args = permission.split(':')
-            if len(args) != 2:
-                # permission don't match PERMISSION_GROUP:ACTION format
-                nonexistent.append(permission)
-                continue
-
-            permission_group, action = args
-            if action not in permissions_mapping.get(permission_group, []):
-                nonexistent.append(permission)
-        return nonexistent
+    @staticmethod
+    def get_non_existing_permissions(permissions: list) -> set:
+        return set(permissions) - ALL_PERMISSIONS
 
     def get_non_existing_policies(self, policies: list):
         nonexistent = []
@@ -143,14 +106,9 @@ class AccessControlService:
                 nonexistent.append(policy)
         return nonexistent
 
-    def get_admin_permissions(self):
-        permission_groups_mapping = self.setting_service.get_iam_permissions()
-        permissions_list = []
-        for group, available_actions in permission_groups_mapping.items():
-            permissions_list.extend(
-                [f'{group}:{action}' for action in available_actions])
-
-        return permissions_list
+    @staticmethod
+    def get_admin_permissions() -> list:
+        return list(ALL_PERMISSIONS)
 
     @staticmethod
     def get_role_default_expiration():

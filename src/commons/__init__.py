@@ -1,85 +1,14 @@
-from datetime import datetime
-from uuid import uuid4
-from typing import Union, Iterable, Optional, Any
-from commons.constants import (
-    PARAM_MESSAGE, PARAM_ITEMS, PASSWORD_ATTR, ID_TOKEN_ATTR, REFRESH_TOKEN_ATTR
-)
 import json
+import math
+import uuid
+from datetime import datetime
 from functools import reduce
-
-from commons.exception import ApplicationException
-
-RESPONSE_BAD_REQUEST_CODE = 400
-RESPONSE_UNAUTHORIZED = 401
-RESPONSE_FORBIDDEN_CODE = 403
-RESPONSE_RESOURCE_NOT_FOUND_CODE = 404
-RESPONSE_CONFLICT_CODE = 409
-RESPONSE_OK_CODE = 200
-RESPONSE_INTERNAL_SERVER_ERROR = 500
-RESPONSE_NOT_IMPLEMENTED = 501
-RESPONSE_SERVICE_UNAVAILABLE_CODE = 503
-
-MISSING_PARAMETER_ERROR_PATTERN = '{0} must be specified'
-
-
-def build_response(content: Union[str, dict, list, Iterable],
-                   code: int = RESPONSE_OK_CODE, meta: Optional[dict] = None):
-    meta = meta or {}
-    _body = {
-        **meta
-    }
-    if isinstance(content, str):
-        _body.update({PARAM_MESSAGE: content})
-    elif isinstance(content, dict) and content:
-        _body.update({PARAM_ITEMS: [content, ]})
-    elif isinstance(content, list):
-        _body.update({PARAM_ITEMS: content})
-    elif isinstance(content, Iterable):
-        _body.update({PARAM_ITEMS: list(content)})
-    else:
-        _body.update({PARAM_ITEMS: []})
-
-    if 200 <= code <= 206:
-        return {
-            'statusCode': code,
-            'headers': {
-                'Content-Type': 'application/json',
-                'Access-Control-Allow-Headers': 'Content-Type,X-Amz-Date,Authorization,X-Api-Key,X-Amz-Security-Token',
-                'Access-Control-Allow-Origin': '*',
-                'Access-Control-Allow-Methods': '*'
-            },
-            'isBase64Encoded': False,
-            'multiValueHeaders': {},
-            'body': json.dumps(_body)
-        }
-    raise ApplicationException(
-        code=code,
-        content=content
-    )
-
-
-def raise_error_response(code, content):
-    raise ApplicationException(code=code, content=content)
-
-
-def assert_param_is_not_none(parameter, parameter_name,
-                             raise_if_none=True):
-    if not parameter and raise_if_none:
-        return build_response(
-            code=RESPONSE_BAD_REQUEST_CODE,
-            content=MISSING_PARAMETER_ERROR_PATTERN.format(parameter_name))
+from types import NoneType
+from typing import Any
 
 
 def get_iso_timestamp():
     return datetime.now().isoformat()
-
-
-def get_missing_parameters(event, required_params_list):
-    missing_params_list = []
-    for param in required_params_list:
-        if event.get(param) is None:
-            missing_params_list.append(param)
-    return missing_params_list
 
 
 def validate_params(event, required_params_list):
@@ -90,36 +19,22 @@ def validate_params(event, required_params_list):
     :return: bad request response if some parameter[s] is/are missing,
         otherwise - none
     """
-    missing_params_list = get_missing_parameters(event, required_params_list)
-
-    if missing_params_list:
-        raise_error_response(RESPONSE_BAD_REQUEST_CODE,
-                             'Bad Request. The following parameters '
-                             'are missing: {0}'.format(missing_params_list))
+    # TODO remove
 
 
-class LambdaContext:
-    """
-    For more info:
-        https://docs.aws.amazon.com/lambda/latest/dg/python-context.html
+class RequestContext:
+    __slots__ = ('aws_request_id', 'function_name')
 
-    Attributes:
-        function_name: The name of the Lambda function.
-        aws_request_id: The identifier of the invocation request.
-    """
+    def __init__(self, request_id: str | None = None):
+        self.aws_request_id: str = request_id or str(uuid.uuid4())
+        self.function_name: str = 'modular-api-handler'  # currently only one
 
-    function_name: str
-    aws_request_id: str = 'mock'
-
-    def __init__(self):
-        self.aws_request_id = str(uuid4())
+    @staticmethod
+    def get_remaining_time_in_millis():
+        return math.inf
 
 
-def generate_id():
-    return str(uuid4())
-
-
-def deep_get(dct: dict, path: Union[list, tuple]) -> Any:
+def deep_get(dct: dict, path: list | tuple) -> Any:
     """
     >>> d = {'a': {'b': 1}}
     >>> deep_get(d, ('a', 'b'))
@@ -129,7 +44,8 @@ def deep_get(dct: dict, path: Union[list, tuple]) -> Any:
     """
     return reduce(
         lambda d, key: d.get(key, None) if isinstance(d, dict) else None,
-        path, dct)
+        path, dct
+    )
 
 
 def deep_set(dct: dict, path: tuple, item: Any):
@@ -142,6 +58,46 @@ def deep_set(dct: dict, path: tuple, item: Any):
         deep_set(dct[path[0]], path[1:], item)
 
 
+def dereference_json(obj: dict) -> None:
+    """
+    Changes the given dict in place de-referencing all $ref. Does not support
+    files and http references. If you need them, better use jsonref
+    lib. Works only for dict as root object.
+    Note that it does not create new objects but only replaces {'$ref': ''}
+    with objects that ref(s) are referring to, so:
+    - works really fast, 20x faster than jsonref, at least relying on my
+      benchmarks;
+    - changes your existing object;
+    - can reference the same object multiple times so changing some arbitrary
+      values afterward can change object in multiple places.
+    Though, it's perfectly fine in case you need to dereference obj, dump it
+    to file and forget
+    :param obj:
+    :return:
+    """
+
+    def _inner(o):
+        if isinstance(o, (str, int, float, bool, NoneType)):
+            return
+        # dict or list
+        if isinstance(o, dict):
+            for k, v in o.items():
+                if isinstance(v, dict) and isinstance(v.get('$ref'), str):
+                    _path = v['$ref'].strip('#/').split('/')
+                    o[k] = deep_get(obj, _path)
+                else:
+                    _inner(v)
+        else:  # isinstance(o, list)
+            for i, v in enumerate(o):
+                if isinstance(v, dict) and isinstance(v.get('$ref'), str):
+                    _path = v['$ref'].strip('#/').split('/')
+                    o[i] = deep_get(obj, _path)
+                else:
+                    _inner(v)
+
+    _inner(obj)
+
+
 class SingletonMeta(type):
     _instances = {}
 
@@ -152,19 +108,6 @@ class SingletonMeta(type):
         return cls._instances[cls]
 
 
-def reformat_request_path(request_path: str) -> str:
-    """
-    /hello -> /hello/
-    hello/ -> /hello/
-    hello -> /hello/
-    """
-    if not request_path.startswith('/'):
-        request_path = '/' + request_path
-    if not request_path.endswith('/'):
-        request_path += '/'
-    return request_path
-
-
 def secured_params() -> tuple:
     return (
         'refresh_token', 'id_token', 'password', 'authorization', 'secret',
@@ -172,6 +115,7 @@ def secured_params() -> tuple:
     )
 
 
+# todo remove
 def secure_event(event: dict, secured_keys=secured_params()):
     result_event = {}
     if not isinstance(event, dict):
@@ -196,3 +140,12 @@ def secure_event(event: dict, secured_keys=secured_params()):
             result_event[key] = value
 
     return result_event
+
+
+def urljoin(*args: str) -> str:
+    """
+    Joins all the parts with one "/"
+    :param args:
+    :return:
+    """
+    return '/'.join(map(lambda x: str(x).strip('/'), args))

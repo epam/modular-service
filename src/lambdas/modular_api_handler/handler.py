@@ -1,12 +1,12 @@
-from typing import Optional, Dict, Type, List
+from http import HTTPStatus
 
 from routes import Mapper
-from functools import cached_property
 
-from commons import RESPONSE_RESOURCE_NOT_FOUND_CODE, LambdaContext
-from commons.abstract_lambda import ApiGatewayEventProcessor
-from commons.constants import REQUEST_METHOD_WSGI_ENV
-from commons.exception import ApplicationException
+from commons import RequestContext
+from commons.abstract_lambda import ApiGatewayEventProcessor, \
+    CheckPermissionEventProcessor, EventProcessorLambdaHandler, ProcessedEvent
+from commons.constants import REQUEST_METHOD_WSGI_ENV, HTTPMethod
+from commons.lambda_response import ResponseFactory
 from commons.log_helper import get_logger
 from lambdas.modular_api_handler.processors.abstract_processor import \
     AbstractCommandProcessor
@@ -29,51 +29,39 @@ from lambdas.modular_api_handler.processors.tenant_in_region_processor import \
     TenantRegionProcessor
 from lambdas.modular_api_handler.processors.tenant_processor import \
     TenantProcessor
-from services.abstract_api_handler_lambda import AbstractApiHandlerLambda
 
-_LOG = get_logger('ModularApiHandler')
-
-SIGNIN_ACTION = 'signin'
-SIGNUP_ACTION = 'signup'
-POLICY_ACTION = 'policy'
-ROLE_ACTION = 'role'
-CUSTOMER_ACTION = 'customer'
-TENANT_ACTION = 'tenant'
-TENANT_REGION_ACTION = 'tenant_region'
-APPLICATION_ACTION = 'application'
-PARENT_ACTION = 'parent'
-REGION_ACTION = 'region'
+_LOG = get_logger('modular_api_handler')
 
 
-class ModularApiHandler(AbstractApiHandlerLambda):
-    event_processor = ApiGatewayEventProcessor()
+class ModularApiHandler(EventProcessorLambdaHandler):
+    processors = (
+        ApiGatewayEventProcessor(),
+        CheckPermissionEventProcessor()
+    )
+    controller_classes = (
+        SignUpProcessor,
+        SignInProcessor,
+        PolicyProcessor,
+        RoleProcessor,
+        CustomerProcessor,
+        TenantProcessor,
+        TenantRegionProcessor,
+        ApplicationProcessor,
+        ParentProcessor,
+        RegionProcessor
+    )
+    __slots__ = ('_mapper', '_controllers')
 
     def __init__(self):
-        self._mapper: Optional[Mapper] = None
+        self._mapper: Mapper | None = None
+        self._controllers: dict[str, AbstractCommandProcessor] = {}
 
-        self._controllers: Dict[str, AbstractCommandProcessor] = {}
-
-    def get_controller(self, controller_class: Type[AbstractCommandProcessor]
+    def get_controller(self, controller_class: type[AbstractCommandProcessor]
                        ) -> AbstractCommandProcessor:
         name = controller_class.controller_name()
         if name not in self._controllers:
             self._controllers[name] = controller_class.build()
         return self._controllers[name]
-
-    @cached_property
-    def controller_classes(self) -> List[Type[AbstractCommandProcessor]]:
-        return [
-            SignUpProcessor,
-            SignInProcessor,
-            PolicyProcessor,
-            RoleProcessor,
-            CustomerProcessor,
-            TenantProcessor,
-            TenantRegionProcessor,
-            ApplicationProcessor,
-            ParentProcessor,
-            RegionProcessor
-        ]
 
     def _build_mapper(self) -> Mapper:
         mapper = Mapper()
@@ -90,29 +78,32 @@ class ModularApiHandler(AbstractApiHandlerLambda):
             _LOG.debug('Mapper was built')
         return self._mapper
 
-    def validate_request(self, event: dict) -> dict:
-        pass
-
-    def handle_request(self, event: dict, context: LambdaContext):
-        path, method = event.get('path'), event.get('method')
+    def handle_request(self, event: ProcessedEvent, context: RequestContext):
+        path, method = event['path'], event['method']
         match_result = self.mapper.match(
-            path, {REQUEST_METHOD_WSGI_ENV: method})
+            path, {REQUEST_METHOD_WSGI_ENV: method}
+        )
         if not match_result:
-            raise ApplicationException(
-                code=RESPONSE_RESOURCE_NOT_FOUND_CODE,
-                content=f'{method} {path} not found'
-            )
+            raise ResponseFactory(HTTPStatus.NOT_FOUND).message(
+                f'{method} {path} not found'
+            ).exc()
         controller = match_result.pop('controller')
         action = match_result.pop('action')
         # it's expected that the mapper is configured properly because
         # if it is, there could be no KeyError
         handler = self._controllers[controller].get_action_handler(action)
         # give the handler kwargs
-        return handler(event=event['body'], **match_result)
+        # TODO insert other kwargs if needed
+        match method:
+            case HTTPMethod.GET:
+                body = event['query']
+            case _:
+                body = event['body']
+        return handler(event=body, **match_result)
 
 
 HANDLER = ModularApiHandler()
 
 
-def lambda_handler(event: dict, context: LambdaContext):
+def lambda_handler(event: dict, context: RequestContext):
     return HANDLER.lambda_handler(event=event, context=context)

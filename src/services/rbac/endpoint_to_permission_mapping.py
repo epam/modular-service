@@ -1,61 +1,66 @@
-GET_METHOD = 'GET'
-POST_METHOD = 'POST'
-PATCH_METHOD = 'PATCH'
-DELETE_METHOD = 'DELETE'
+from typing import Final
 
-ENDPOINT_PERMISSION_MAPPING = {
-    '/applications/': {
-        GET_METHOD: 'application:describe_application',
-        POST_METHOD: 'application:create_application',
-        PATCH_METHOD: 'application:update_application',
-        DELETE_METHOD: 'application:remove_application',
+from commons.constants import HTTPMethod, Endpoint
+
+ENDPOINT_PERMISSION_MAPPING: Final[dict] = {
+    Endpoint.APPLICATIONS: {
+        HTTPMethod.GET: 'application:describe_application',
+        HTTPMethod.POST: 'application:create_application',
+        HTTPMethod.PATCH: 'application:update_application',
+        HTTPMethod.DELETE: 'application:remove_application',
     },
-    '/customers/': {
-        GET_METHOD: 'customer:describe_customer',
-        POST_METHOD: 'customer:create_customer',
-        PATCH_METHOD: 'customer:update_customer',
-        DELETE_METHOD: 'customer:remove_customer',
+    Endpoint.CUSTOMERS: {
+        HTTPMethod.GET: 'customer:describe_customer',
+        HTTPMethod.POST: 'customer:create_customer',
+        HTTPMethod.PATCH: 'customer:update_customer',
+        HTTPMethod.DELETE: 'customer:remove_customer',
     },
-    '/parents/': {
-        GET_METHOD: 'parent:describe_parent',
-        POST_METHOD: 'parent:create_parent',
-        PATCH_METHOD: 'parent:update_parent',
-        DELETE_METHOD: 'parent:remove_parent',
+    Endpoint.PARENTS: {
+        HTTPMethod.GET: 'parent:describe_parent',
+        HTTPMethod.POST: 'parent:create_parent',
+        HTTPMethod.PATCH: 'parent:update_parent',
+        HTTPMethod.DELETE: 'parent:remove_parent',
     },
-    '/tenants/': {
-        GET_METHOD: 'tenant:describe_tenant',
-        POST_METHOD: 'tenant:create_tenant',
-        PATCH_METHOD: 'tenant:update_tenant',
-        DELETE_METHOD: 'tenant:remove_tenant',
+    Endpoint.TENANTS: {
+        HTTPMethod.GET: 'tenant:describe_tenant',
+        HTTPMethod.POST: 'tenant:create_tenant',
+        HTTPMethod.PATCH: 'tenant:update_tenant',
+        HTTPMethod.DELETE: 'tenant:remove_tenant',
     },
-    '/regions/': {
-        GET_METHOD: 'region:describe_region',
-        POST_METHOD: 'region:create_region',
-        PATCH_METHOD: 'region:update_region',
-        DELETE_METHOD: 'region:remove_region',
+    Endpoint.REGIONS: {
+        HTTPMethod.GET: 'region:describe_region',
+        HTTPMethod.POST: 'region:create_region',
+        HTTPMethod.PATCH: 'region:update_region',
+        HTTPMethod.DELETE: 'region:remove_region',
     },
-    '/tenants/regions/': {
-        GET_METHOD: 'tenant:describe_region',
-        POST_METHOD: 'tenant:create_region',
-        PATCH_METHOD: 'tenant:update_region',
-        DELETE_METHOD: 'tenant:remove_region',
+    Endpoint.TENANTS_REGIONS: {
+        HTTPMethod.GET: 'tenant:describe_region',
+        HTTPMethod.POST: 'tenant:create_region',
+        HTTPMethod.PATCH: 'tenant:update_region',
+        HTTPMethod.DELETE: 'tenant:remove_region',
     },
-    '/policies/': {
-        GET_METHOD: 'iam:describe_policy',
-        POST_METHOD: 'iam:create_policy',
-        PATCH_METHOD: 'iam:update_policy',
-        DELETE_METHOD: 'iam:remove_policy',
+    Endpoint.POLICIES: {
+        HTTPMethod.GET: 'iam:describe_policy',
+        HTTPMethod.POST: 'iam:create_policy',
+        HTTPMethod.PATCH: 'iam:update_policy',
+        HTTPMethod.DELETE: 'iam:remove_policy',
     },
-    '/roles/': {
-        GET_METHOD: 'iam:describe_role',
-        POST_METHOD: 'iam:create_role',
-        PATCH_METHOD: 'iam:update_role',
-        DELETE_METHOD: 'iam:remove_role',
+    Endpoint.ROLES: {
+        HTTPMethod.GET: 'iam:describe_role',
+        HTTPMethod.POST: 'iam:create_role',
+        HTTPMethod.PATCH: 'iam:update_role',
+        HTTPMethod.DELETE: 'iam:remove_role',
     },
-    '/signup/': {
-        POST_METHOD: None,
+    Endpoint.SIGNUP: {
+        HTTPMethod.POST: None,
     },
-    '/signin/': {
-        POST_METHOD: None
+    Endpoint.SIGNIN: {
+        HTTPMethod.POST: None
     },
 }
+
+ALL_PERMISSIONS = {
+    permission for method_data in ENDPOINT_PERMISSION_MAPPING.values()
+    for permission in method_data.values()
+}
+ALL_PERMISSIONS.discard(None)

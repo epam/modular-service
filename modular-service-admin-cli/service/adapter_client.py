@@ -77,9 +77,7 @@ class AdapterClient:
                                    'Please contact support team '
                                    'for assistance.'}
         response = response.json()
-        check_version_compatibility(
-            response.get('items')[0].pop(PARAM_API_VERSION, None))
-        return response.get('items')[0].get('id_token')
+        return response['access_token']
 
     def policy_get(self, policy_name):
         request = {}

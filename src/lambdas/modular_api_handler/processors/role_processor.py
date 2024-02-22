@@ -1,17 +1,23 @@
 from datetime import datetime
-from typing import List
+from http import HTTPStatus
 
 from routes.route import Route
 
-from commons import RESPONSE_BAD_REQUEST_CODE, build_response, \
-    RESPONSE_RESOURCE_NOT_FOUND_CODE, RESPONSE_OK_CODE, \
-    validate_params
-from commons.constants import GET_METHOD, POST_METHOD, PATCH_METHOD, \
-    DELETE_METHOD, NAME_ATTR, EXPIRATION_ATTR, POLICIES_ATTR, \
-    POLICIES_TO_ATTACH, POLICIES_TO_DETACH
+from commons import validate_params
+from commons.constants import (
+    EXPIRATION_ATTR,
+    Endpoint,
+    HTTPMethod,
+    NAME_ATTR,
+    POLICIES_ATTR,
+    POLICIES_TO_ATTACH,
+    POLICIES_TO_DETACH,
+)
+from commons.lambda_response import ResponseFactory, build_response
 from commons.log_helper import get_logger
-from lambdas.modular_api_handler.processors.abstract_processor import \
-    AbstractCommandProcessor
+from lambdas.modular_api_handler.processors.abstract_processor import (
+    AbstractCommandProcessor,
+)
 from services import SERVICE_PROVIDER
 from services.rbac.access_control_service import AccessControlService
 from services.rbac.iam_service import IamService
@@ -31,23 +37,24 @@ class RoleProcessor(AbstractCommandProcessor):
     @classmethod
     def build(cls) -> 'RoleProcessor':
         return cls(
-            user_service=SERVICE_PROVIDER.user_service(),
-            access_control_service=SERVICE_PROVIDER.access_control_service(),
-            iam_service=SERVICE_PROVIDER.iam_service()
+            user_service=SERVICE_PROVIDER.user_service,
+            access_control_service=SERVICE_PROVIDER.access_control_service,
+            iam_service=SERVICE_PROVIDER.iam_service,
         )
 
     @classmethod
-    def routes(cls) -> List[Route]:
+    def routes(cls) -> list[Route]:
         name = cls.controller_name()
+        endpoint = Endpoint.ROLES.value
         return [
-            Route(None, '/roles', controller=name, action='get',
-                  conditions={'method': [GET_METHOD]}),
-            Route(None, '/roles', controller=name, action='post',
-                  conditions={'method': [POST_METHOD]}),
-            Route(None, '/roles', controller=name, action='patch',
-                  conditions={'method': [PATCH_METHOD]}),
-            Route(None, '/roles', controller=name, action='delete',
-                  conditions={'method': [DELETE_METHOD]}),
+            Route(None, endpoint, controller=name, action='get',
+                  conditions={'method': [HTTPMethod.GET]}),
+            Route(None, endpoint, controller=name, action='post',
+                  conditions={'method': [HTTPMethod.POST]}),
+            Route(None, endpoint, controller=name, action='patch',
+                  conditions={'method': [HTTPMethod.PATCH]}),
+            Route(None, endpoint, controller=name, action='delete',
+                  conditions={'method': [HTTPMethod.DELETE]}),
         ]
 
     def get(self, event):
@@ -57,23 +64,19 @@ class RoleProcessor(AbstractCommandProcessor):
             _LOG.debug(f'Extracting role with name \'{role_name}\'')
             roles = [self.iam_service.role_get(role_name=role_name)]
         else:
-            _LOG.debug(f'Extracting all available roles')
+            _LOG.debug('Extracting all available roles')
             roles = self.iam_service.list_roles()
 
         if not roles:
             _LOG.debug('No roles found matching given query.')
-            return build_response(
-                code=RESPONSE_RESOURCE_NOT_FOUND_CODE,
-                content='No roles found matching given query.'
-            )
+            raise ResponseFactory(HTTPStatus.NOT_FOUND).message(
+                'No roles found matching given query.'
+            ).exc()
 
         roles_dto = [self.iam_service.get_role_dto(role=role) for role
                      in roles]
         _LOG.debug(f'Roles to return: {roles_dto}')
-        return build_response(
-            code=RESPONSE_OK_CODE,
-            content=roles_dto
-        )
+        return build_response(content=roles_dto)
 
     def post(self, event):
         _LOG.debug(f'Create role event: {event}')
@@ -82,39 +85,32 @@ class RoleProcessor(AbstractCommandProcessor):
         expiration = event.get(EXPIRATION_ATTR)
         error = self._validate_expiration(value=expiration)
         if error:
-            return build_response(
-                code=RESPONSE_BAD_REQUEST_CODE,
-                content=error
-            )
+            raise ResponseFactory(HTTPStatus.BAD_REQUEST).message(error).exc()
 
         role_name = event.get(NAME_ATTR)
         policies = event.get(POLICIES_ATTR)
 
         if not isinstance(policies, list) and \
                 not all([isinstance(i, str) for i in policies]):
-            _LOG.error(f'\'{POLICIES_ATTR}\' attribute must be a list of '
-                       f'strings.')
-            return build_response(
-                code=RESPONSE_BAD_REQUEST_CODE,
-                content=f'\'{POLICIES_ATTR}\' attribute must be a list of '
-                        f'strings.'
-            )
+            _LOG.warning(f'\'{POLICIES_ATTR}\' attribute must be a list of '
+                         f'strings.')
+            raise ResponseFactory(HTTPStatus.BAD_REQUEST).message(
+                f'\'{POLICIES_ATTR}\' attribute must be a list of strings.'
+            ).exc()
 
         if self.access_control_service.role_exists(name=role_name):
-            _LOG.error(f'Role with name \'{role_name}\' already exists.')
-            return build_response(
-                code=RESPONSE_BAD_REQUEST_CODE,
-                content=f'Role with name \'{role_name}\' already exists.'
-            )
+            _LOG.warning(f'Role with name \'{role_name}\' already exists.')
+            raise ResponseFactory(HTTPStatus.BAD_REQUEST).message(
+                f'Role with name \'{role_name}\' already exists.'
+            ).exc()
 
         non_existing_policies = self.access_control_service. \
             get_non_existing_policies(policies=policies)
         if non_existing_policies:
             error_message = f'Some of the policies provided in the event ' \
                             f'don\'t exist: {", ".join(non_existing_policies)}'
-            _LOG.error(error_message)
-            return build_response(code=RESPONSE_BAD_REQUEST_CODE,
-                                  content=error_message)
+            _LOG.warning(error_message)
+            raise ResponseFactory(HTTPStatus.BAD_REQUEST).message(error_message).exc()
 
         role_data = {
             NAME_ATTR: role_name,
@@ -123,40 +119,33 @@ class RoleProcessor(AbstractCommandProcessor):
         }
         _LOG.debug(f'Creating role from data: {role_data}')
         role = self.access_control_service.create_role(role_data=role_data)
-        _LOG.debug(f'Role has been created. Saving.')
+        _LOG.debug('Role has been created. Saving.')
         self.access_control_service.save(role)
 
-        _LOG.debug(f'Extracting role dto')
+        _LOG.debug('Extracting role dto')
         role_dto = self.iam_service.get_role_dto(role=role)
         _LOG.debug(f'Response: {role_dto}')
-        return build_response(
-            code=RESPONSE_OK_CODE,
-            content=role_dto
-        )
+        return build_response(content=role_dto)
 
     def patch(self, event):
         _LOG.debug(f'Patch role event" {event}')
         validate_params(event, (NAME_ATTR,))
 
         role_name = event.get(NAME_ATTR)
-        if not self.access_control_service.role_exists(name=role_name):
-            _LOG.error(f'Role with name \'{role_name}\' does not exist.')
-            return build_response(
-                code=RESPONSE_RESOURCE_NOT_FOUND_CODE,
-                content=f'Role with name \'{role_name}\' does not exist.'
-            )
 
         _LOG.debug(f'Extracting role with name \'{role_name}\'')
         role = self.access_control_service.get_role(name=role_name)
+        if not role:
+            _LOG.warning(f'Role with name \'{role_name}\' does not exist.')
+            raise ResponseFactory(HTTPStatus.NOT_FOUND).message(
+                f'Role with name \'{role_name}\' does not exist.'
+            ).exc()
 
         expiration = event.get(EXPIRATION_ATTR)
         if expiration:
             error = self._validate_expiration(expiration)
             if error:
-                return build_response(
-                    code=RESPONSE_BAD_REQUEST_CODE,
-                    content=error
-                )
+                raise ResponseFactory(HTTPStatus.BAD_REQUEST).message(error).exc()
             _LOG.debug(f'Setting role expiration to \'{expiration}\'')
             role.expiration = expiration
 
@@ -166,13 +155,11 @@ class RoleProcessor(AbstractCommandProcessor):
             non_existing = self.access_control_service. \
                 get_non_existing_policies(policies=to_attach)
             if non_existing:
-                _LOG.error(f'Some of the policies provided in the request '
-                           f'do not exist: \'{non_existing}\'')
-                return build_response(
-                    code=RESPONSE_BAD_REQUEST_CODE,
-                    content=f'Some of the policies provided in the request '
-                            f'do not exist: \'{", ".join(non_existing)}\''
-                )
+                _LOG.warning(f'Some of the policies provided in the request '
+                             f'do not exist: \'{non_existing}\'')
+                raise ResponseFactory(HTTPStatus.BAD_REQUEST).message(
+                    f'Some of the policies provided in the request do not exist: \'{", ".join(non_existing)}\''
+                ).exc()
             role_policies = list(role.policies)
             role_policies.extend(to_attach)
             role_policies = list(set(role_policies))
@@ -191,38 +178,31 @@ class RoleProcessor(AbstractCommandProcessor):
             _LOG.debug(f'Setting role policies: {role_policies}')
             role.policies = role_policies
 
-        _LOG.debug(f'Saving role')
+        _LOG.debug('Saving role')
         self.access_control_service.save(role)
 
-        _LOG.debug(f'Extracting role dto')
+        _LOG.debug('Extracting role dto')
         role_dto = self.iam_service.get_role_dto(role=role)
 
         _LOG.debug(f'Response: {role_dto}')
-        return build_response(
-            code=RESPONSE_OK_CODE,
-            content=role_dto
-        )
+        return build_response(content=role_dto)
 
     def delete(self, event):
         _LOG.debug(f'Delete role event: {event}')
         validate_params(event, (NAME_ATTR,))
 
         role_name = event.get(NAME_ATTR)
-        if not self.access_control_service.role_exists(name=role_name):
+        role = self.access_control_service.get_role(name=role_name)
+        if not role:
             _LOG.debug(f'Role with name \'{role_name}\' does not exist.')
             return build_response(
-                code=RESPONSE_OK_CODE,
                 content=f'Role with name \'{role_name}\' does not exist.'
             )
-        _LOG.debug(f'Extracting role with name \'{role_name}\'')
-        role = self.access_control_service.get_role(name=role_name)
-        _LOG.debug(f'Deleting role')
+
+        _LOG.debug('Deleting role')
         self.access_control_service.delete_entity(role)
         _LOG.debug(f'Role with name \'{role_name}\' has been deleted.')
-        return build_response(
-            code=RESPONSE_OK_CODE,
-            content=f'Role with name \'{role_name}\' has been deleted.'
-        )
+        return build_response(content=f'Role with name \'{role_name}\' has been deleted.')
 
     @staticmethod
     def _validate_expiration(value):

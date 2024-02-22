@@ -1,5 +1,5 @@
 from abc import abstractmethod
-from typing import List, Optional, Callable
+from typing import Callable
 from routes.route import Route
 
 from commons.log_helper import get_logger
@@ -14,13 +14,13 @@ class AbstractCommandProcessor:
 
     @classmethod
     @abstractmethod
-    def routes(cls) -> List[Route]:
+    def routes(cls) -> list[Route]:
         """
         Must return a list of routes. See how it's built in some controller
         :return: List[Route]
         """
 
-    def get_action_handler(self, action: str) -> Optional[Callable]:
+    def get_action_handler(self, action: str) -> Callable | None:
         """
         By default, returns class method with the same name as action.
         :return: Callable

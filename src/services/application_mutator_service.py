@@ -6,7 +6,7 @@ from modular_sdk.models.application import Application
 from modular_sdk.services.application_service import ApplicationService
 from modular_sdk.services.customer_service import CustomerService
 
-_LOG = get_logger('modular_application_mutator_service')
+_LOG = get_logger(__name__)
 
 
 class ApplicationMutatorService(ApplicationService):

@@ -1,13 +1,20 @@
-from typing import List
+
+from http import HTTPStatus
 
 from routes.route import Route
 
-from commons import RESPONSE_BAD_REQUEST_CODE, build_response, RESPONSE_OK_CODE
-from commons.constants import POST_METHOD, USERNAME_ATTR, PASSWORD_ATTR, \
-    ROLE_ATTR
+from commons.constants import (
+    Endpoint,
+    HTTPMethod,
+    PASSWORD_ATTR,
+    ROLE_ATTR,
+    USERNAME_ATTR,
+)
+from commons.lambda_response import ResponseFactory, build_response
 from commons.log_helper import get_logger
-from lambdas.modular_api_handler.processors.abstract_processor import \
-    AbstractCommandProcessor
+from lambdas.modular_api_handler.processors.abstract_processor import (
+    AbstractCommandProcessor,
+)
 from services import SERVICE_PROVIDER
 from services.rbac.access_control_service import AccessControlService
 from services.user_service import CognitoUserService
@@ -24,16 +31,16 @@ class SignUpProcessor(AbstractCommandProcessor):
     @classmethod
     def build(cls) -> 'SignUpProcessor':
         return cls(
-            user_service=SERVICE_PROVIDER.user_service(),
-            access_control_service=SERVICE_PROVIDER.access_control_service()
+            user_service=SERVICE_PROVIDER.user_service,
+            access_control_service=SERVICE_PROVIDER.access_control_service,
         )
 
     @classmethod
-    def routes(cls) -> List[Route]:
+    def routes(cls) -> list[Route]:
         name = cls.controller_name()
         return [
-            Route(None, '/signup', controller=name, action='post',
-                  conditions={'method': [POST_METHOD]}),
+            Route(None, Endpoint.SIGNUP.value, controller=name, action='post',
+                  conditions={'method': [HTTPMethod.POST]}),
         ]
 
     def post(self, event):
@@ -41,22 +48,19 @@ class SignUpProcessor(AbstractCommandProcessor):
         username = event.get(USERNAME_ATTR)
         password = event.get(PASSWORD_ATTR)
         role = event.get(ROLE_ATTR)
-        if not all([username, password, role]):
-            _LOG.error('You must specify all required parameters: username, '
-                       'password, customer, role.')
-            raise build_response(
-                code=RESPONSE_BAD_REQUEST_CODE,
-                content='You must specify all required parameters: username, '
-                        'password, customer, role.')
+        if not all((username, password, role)):
+            _LOG.warning('You must specify all required parameters: username, '
+                         'password, customer, role.')
+            raise ResponseFactory(HTTPStatus.BAD_REQUEST).message(
+                'You must specify all required parameters: username, password, customer, role.'
+            ).exc()
 
         if not self.access_control_service.role_exists(role):
-            _LOG.error(f'Invalid role name: {role}')
-            raise build_response(
-                code=RESPONSE_BAD_REQUEST_CODE,
-                content=f'Invalid role name: {role}')
+            _LOG.warning(f'Invalid role name: {role}')
+            raise ResponseFactory(HTTPStatus.BAD_REQUEST).message(
+                f'Invalid role name: {role}'
+            ).exc()
         _LOG.debug(f'Role \'{role}\' exists')
         self.user_service.save(username=username, password=password, role=role)
         _LOG.debug(f'Saving user: {username}')
-        return build_response(
-            code=RESPONSE_OK_CODE,
-            content=f'The user {username} was created')
+        return build_response(content=f'The user {username} was created')

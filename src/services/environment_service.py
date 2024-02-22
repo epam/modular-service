@@ -1,20 +1,42 @@
-import os
+from typing import MutableMapping
+
+from commons.constants import Env
 
 
 class EnvironmentService:
+    def __init__(self, source: MutableMapping):
+        self._env = source
 
-    @staticmethod
-    def aws_region():
-        return os.environ.get('AWS_REGION')
+    def aws_region(self) -> str:
+        return (self._env.get('AWS_REGION')
+                or self._env.get('AWS_DEFAULT_REGION') or 'us-east-1')
 
-    @staticmethod
-    def is_docker():
-        return os.environ.get('service_mode') == 'docker'
+    def is_docker(self) -> bool:
+        return (self._env.get(Env.SERVICE_MODE) == 'docker'
+                or self._env.get(Env.OLD_SERVICE_MODE) == 'docker')
 
-    @staticmethod
-    def get_user_pool_name():
-        return os.environ.get('cognito_user_pool_name')
+    def user_pool_name(self) -> str | None:
+        return (self._env.get(Env.COGNITO_USER_POOL_NAME)
+                or self._env.get(Env.OLD_COGNITO_USER_POOL_NAME))
 
-    @staticmethod
-    def get_user_pool_id():
-        return os.environ.get('user_pool_id')
+    def user_pool_id(self) -> str | None:
+        return (self._env.get(Env.COGNITO_USER_POOL_ID)
+                or self._env.get(Env.OLD_COGNITO_USER_POOL_ID))
+
+    def _ensure_env(self, name: Env) -> str:
+        val = self._env.get(name)
+        if not val:
+            raise RuntimeError(f'Env {val} is required')
+        return val
+
+    def vault_endpoint(self) -> str:
+        return self._ensure_env(Env.VAULT_ENDPOINT)
+
+    def vault_token(self) -> str:
+        return self._ensure_env(Env.VAULT_TOKEN)
+
+    def mongo_uri(self) -> str:
+        return self._ensure_env(Env.MONGO_URI)
+
+    def mongo_database(self) -> str:
+        return self._ensure_env(Env.MONGO_DATABASE)

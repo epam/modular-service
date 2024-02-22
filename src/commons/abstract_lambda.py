@@ -1,33 +1,25 @@
-from abc import abstractmethod, ABC
-from typing import Optional
 import json
+from abc import abstractmethod, ABC
+from http import HTTPStatus
+from typing import TypedDict
 
-from commons import build_response, deep_get, RESPONSE_BAD_REQUEST_CODE
+from modular_sdk.commons.exception import ModularException
+
+from services.rbac.endpoint_to_permission_mapping import ENDPOINT_PERMISSION_MAPPING
+from commons import deep_get, RequestContext
+from commons.constants import Endpoint, HTTPMethod
+from commons.lambda_response import ApplicationException, ResponseFactory
 from commons.log_helper import get_logger
+from services import SERVICE_PROVIDER
 
 _LOG = get_logger(__name__)
 
-ACTION_PARAM = 'action'
-PARAM_HTTP_METHOD = 'http_method'
-
 
 class AbstractEventProcessor(ABC):
-    def __init__(self, event: Optional[dict] = None):
-        self._event = event or {}  # the crudest event we can get
-
-    @property
-    def event(self) -> dict:
-        return self._event
-
-    @event.setter
-    def event(self, value: dict):
-        self._event = value
-
     @abstractmethod
-    def process(self) -> dict:
+    def __call__(self, event: dict) -> dict:
         """
-        Returns somehow changed dict.
-        :return: dict
+        Returns somehow changed dict
         """
 
 
@@ -35,39 +27,106 @@ class NullEventProcessor(AbstractEventProcessor):
     """
     Makes nothing with an incoming event
     """
+    def __call__(self, event: dict) -> dict:
+        return event
 
-    def process(self) -> dict:
-        return self._event
+
+class ProcessedEvent(TypedDict):
+    method: HTTPMethod
+    resource: Endpoint | None  # our resource if it can be matched: /jobs/{id}
+    path: str  # real path without stage: /jobs/123
+    fullpath: str  # full real path with stage /dev/jobs/123
+    cognito_username: str | None
+    cognito_user_id: str | None
+    cognito_user_role: str | None
+    body: dict  # maybe better str in order not to bind to json
+    query: dict
+    path_params: dict
 
 
 class ApiGatewayEventProcessor(AbstractEventProcessor):
-    """
-    Should somehow process or/and validated event in case we decide
-    to use API Gateway.
-    Returns an event in such a format:
-    {
-        'path': '/path/without/stage',
-        'method': 'POST',
-        'body': {
-            'one': 'two'
-        }
-    }
-    """
-
-    def process(self) -> dict:
-        event = self._event
-        path = deep_get(event, ['requestContext', 'resourcePath'])
-        method = event.get('httpMethod')
-        assert path and method, 'Invalid lambda proxy integration event'
+    def __call__(self, event: dict) -> ProcessedEvent:
         try:
             body = json.loads(event.get('body') or '{}')
         except json.JSONDecodeError as e:
-            return build_response(code=RESPONSE_BAD_REQUEST_CODE,
-                                  content=f'Invalid request body: \'{e}\'')
-        body.update(event.get('queryStringParameters') or {})
-        #  body.update(event.get('pathParameters') or {})
+            raise ResponseFactory(HTTPStatus.BAD_REQUEST).message(
+                f'Invalid request body: \'{e}\''
+            ).exc()
+        rc = event.get('requestContext') or {}
         return {
-            'path': path,
-            'method': method,
-            'body': body
+            'method': HTTPMethod(event['httpMethod']),
+            'resource': Endpoint.match(event['requestContext']['resourcePath']),
+            'path': event['path'],
+            'fullpath': event['requestContext']['path'],
+            'cognito_username': deep_get(rc, ('authorizer', 'claims',
+                                              'cognito:username')),
+            'cognito_user_id': deep_get(rc, ('authorizer', 'claims', 'sub')),
+            'cognito_user_role': deep_get(rc, ('authorizer', 'claims',
+                                               'custom:role')),
+            'body': body,
+            'query': dict(event.get('queryStringParameters') or {}),
+            'path_params': dict(event.get('pathParameters') or {})
         }
+
+
+class CheckPermissionEventProcessor(AbstractEventProcessor):
+    def __call__(self, event: ProcessedEvent) -> ProcessedEvent:
+        username = event['cognito_username']
+        if not username:
+            return event
+        _service = SERVICE_PROVIDER.access_control_service
+        try:
+            permission = ENDPOINT_PERMISSION_MAPPING[event['resource']][event['method']]
+        except KeyError:
+            permission = None
+
+        if not permission:
+            _LOG.info('No permission exist for endpoint, allowing')
+        elif not _service.is_allowed_to_access(username, permission):
+            _LOG.info('Not allowed to access')
+            raise ResponseFactory(HTTPStatus.FORBIDDEN).message(
+                f'You don\'t have the necessary permission: {permission}'
+            ).exc()
+        return event
+
+
+class AbstractLambdaHandler(ABC):
+    @abstractmethod
+    def handle_request(self, event: dict, context: RequestContext) -> dict:
+        """
+        Should be implemented. May raise TelegramBotException or any
+        other kind of exception
+        """
+
+    @abstractmethod
+    def lambda_handler(self, event: dict, context: RequestContext) -> dict:
+        """
+        Main lambda's method that is executed
+        """
+
+
+class EventProcessorLambdaHandler(AbstractLambdaHandler):
+    processors: tuple[AbstractEventProcessor, ...] = ()
+
+    @abstractmethod
+    def handle_request(self, event: dict, context: RequestContext) -> dict:
+        ...
+
+    def lambda_handler(self, event: dict, context: RequestContext) -> dict:
+        _LOG.info(f'Starting request: {context.aws_request_id}')
+        _LOG.debug(json.dumps(event))
+
+        try:
+            for processor in self.processors:
+                event = processor(event)
+            return self.handle_request(event=event, context=context)
+        except ModularException as e:
+            _LOG.warning(f'Modular exception occurred: {e}')
+            return ResponseFactory(int(e.code)).message(e.content).build()
+        except ApplicationException as e:
+            _LOG.error(f'Application exception occurred: {e}')
+            return e.build()
+        except Exception:
+            _LOG.exception('Unexpected exception occurred')
+            return ResponseFactory(
+                HTTPStatus.INTERNAL_SERVER_ERROR).default().build()

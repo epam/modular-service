@@ -3,7 +3,7 @@ from modular_sdk.commons import ModularException, RESPONSE_BAD_REQUEST_CODE
 from modular_sdk.models.customer import Customer
 from modular_sdk.services.customer_service import CustomerService
 
-_LOG = get_logger('modular-customer-mutator-service')
+_LOG = get_logger(__name__)
 
 
 class CustomerMutatorService(CustomerService):

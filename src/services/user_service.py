@@ -1,27 +1,29 @@
-from commons import ApplicationException, \
-    build_response, RESPONSE_BAD_REQUEST_CODE
 from commons.log_helper import get_logger
 from services.clients.cognito import CognitoClient
+from services.clients.cognito import BaseAuthClient
+from commons.lambda_response import ResponseFactory
+from http import HTTPStatus
 
 _LOG = get_logger(__name__)
 
 
 class CognitoUserService:
 
-    def __init__(self, client: CognitoClient):
-        self.client: CognitoClient = client
+    def __init__(self, client: BaseAuthClient):
+        self.client = client
 
     def save(self, username, password, role):
         _LOG.debug(f'Validating password for user {username}')
+        # TODO move to pydantic
         errors = self.__validate_password(password)
         if errors:
-            return build_response(
-                code=RESPONSE_BAD_REQUEST_CODE,
-                content='; '.join(errors))
+            raise ResponseFactory(HTTPStatus.BAD_REQUEST).message(
+                '; '.join(errors)
+            ).exc()
         if self.client.is_user_exists(username):
-            raise ApplicationException(
-                code=RESPONSE_BAD_REQUEST_CODE,
-                content=f'The user with name {username} already exists.')
+            raise ResponseFactory(HTTPStatus.BAD_REQUEST).message(
+                f'The user with name {username} already exists.'
+            ).exc()
 
         _LOG.debug(f'Creating the user with username {username}')
         self.client.sign_up(username=username, password=password, role=role)
@@ -29,12 +31,7 @@ class CognitoUserService:
         self.client.set_password(username=username,
                                  password=password)
 
-    def get_user(self, user_id):
-        if isinstance(self.client, CognitoClient):
-            return self.client.get_user(user_id)['Username']
-        return self.client.get_user(user_id)
-
-    def get_user_role_name(self, user):
+    def get_user_role_name(self, user: str):
         return self.client.get_user_role(user)
 
     @staticmethod
@@ -58,22 +55,3 @@ class CognitoUserService:
     def initiate_auth(self, username, password):
         return self.client.admin_initiate_auth(username=username,
                                                password=password)
-
-    def respond_to_auth_challenge(self, challenge_name):
-        return self.client.respond_to_auth_challenge(
-            challenge_name=challenge_name)
-
-    def update_role(self, username, role):
-        self.client.update_role(username=username, role=role)
-
-    def is_user_exists(self, username):
-        return self.client.is_user_exists(username)
-
-    def delete_role(self, username):
-        self.client.delete_role(username=username)
-
-    def is_system_user_exists(self):
-        return self.client.is_system_user_exists()
-
-    def get_system_user(self):
-        return self.client.get_system_user()

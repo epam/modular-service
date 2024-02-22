@@ -19,7 +19,7 @@ console_handler.setFormatter(
 logger.addHandler(console_handler)
 
 
-log_level = _name_to_level.get(os.environ.get('log_level'))
+log_level = _name_to_level.get(os.environ.get('LOG_LEVEL'))
 if not log_level:
     log_level = logging.INFO
 logging.captureWarnings(True)

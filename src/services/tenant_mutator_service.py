@@ -7,7 +7,7 @@ from modular_sdk.models.tenant import Tenant
 from modular_sdk.services.customer_service import CustomerService
 from modular_sdk.services.tenant_service import TenantService
 
-_LOG = get_logger('TenantService')
+_LOG = get_logger(__name__)
 
 
 class TenantMutatorService(TenantService):

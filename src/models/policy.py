@@ -1,8 +1,7 @@
 from pynamodb.attributes import UnicodeAttribute, ListAttribute
 
 from modular_sdk.models.base_meta import BaseMeta
-from modular_sdk.models.pynamodb_extension.base_safe_update_model import \
-    BaseSafeUpdateModel
+from models import BaseSafeUpdateModel
 
 
 class Policy(BaseSafeUpdateModel):

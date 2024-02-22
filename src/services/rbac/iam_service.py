@@ -1,29 +1,24 @@
 from models.policy import Policy
+from typing import Iterable, Iterator
 from models.role import Role
 
 
 class IamService:
     @staticmethod
-    def role_get(role_name):
+    def role_get(role_name: str) -> Role | None:
         return Role.get_nullable(hash_key=role_name)
 
     @staticmethod
-    def policy_get(policy_name: str):
+    def policy_get(policy_name: str) -> Policy | None:
         return Policy.get_nullable(hash_key=policy_name)
 
     @staticmethod
-    def policy_batch_get(keys: list):
-        policies = []
-        for policy in Policy.batch_get(items=keys):
-            policies.append(policy)
-        return policies
-
-    def role_batch_get(self, keys: list):
-        # keys[(hash, range), (hash, range), ...]
-        roles = []
-        for role in Role.batch_get(items=keys):
-            roles.append(role)
-        return roles
+    def iter_policies(names: Iterable[str]) -> Iterator[Policy]:
+        for name in names:
+            item = IamService.policy_get(name)
+            if not item:
+                continue
+            yield item
 
     @staticmethod
     def list_policies():
