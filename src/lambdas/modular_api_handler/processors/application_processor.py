@@ -45,7 +45,8 @@ class ApplicationProcessor(AbstractCommandProcessor):
             Route(None, endpoint, controller=name, action='patch',
                   conditions={'method': [HTTPMethod.PATCH]}),
             Route(None, endpoint, controller=name, action='delete',
-                  conditions={'method': [HTTPMethod.DELETE]}),
+                  conditions={'method': [HTTPMethod.DELETE]},
+                  description='Marks an applications as removed application'),
         ]
 
     @classmethod

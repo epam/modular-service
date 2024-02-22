@@ -1,7 +1,11 @@
 from http import HTTPStatus
 
+from pydantic import BaseModel
 from routes import Mapper
+from routes.route import Route
 
+from typing import Generator
+from services.openapi_spec_generator import EndpointInfo
 from commons import RequestContext
 from commons.abstract_lambda import ApiGatewayEventProcessor, \
     CheckPermissionEventProcessor, EventProcessorLambdaHandler, ProcessedEvent
@@ -100,6 +104,38 @@ class ModularApiHandler(EventProcessorLambdaHandler):
             case _:
                 body = event['body']
         return handler(event=body, **match_result)
+
+    def iter_endpoint(self) -> Generator[EndpointInfo, None, None]:
+        """
+        Assuming that this is only API lambda.
+        This iterator is more convenient that the one from validators.registry,
+        but here we cannot easily retrieve all the specific response codes,
+        models, etc. We could of course but it requires some refactoring. So,
+        I just leave it for future.
+        :return:
+        """
+        for route in self.mapper.matchlist:
+            route: Route
+            kargs = route._kargs
+            controller, action = kargs['controller'], kargs['action']
+            handler = self._controllers[controller].get_action_handler(action)
+            annotations = handler.__annotations__
+            req = annotations.get('event')
+            if not isinstance(req, type) or not issubclass(req, BaseModel):
+                req = None
+            resp = annotations.get('return')
+            if not isinstance(resp, type) or not issubclass(resp, BaseModel):
+                resp = None
+            for method in route.conditions['method']:
+                yield EndpointInfo(
+                    path=route.routepath,
+                    method=method if isinstance(method, HTTPMethod) else HTTPMethod(method.upper()),
+                    summary=kargs.get('summary'),
+                    description=kargs.get('description'),
+                    request_model=req,
+                    responses=[(HTTPStatus.OK, resp, None)],
+                    auth=route.routepath not in ('/signin', '/signup')
+                )
 
 
 HANDLER = ModularApiHandler()

@@ -53,7 +53,7 @@ class ParentProcessor(AbstractCommandProcessor):
     @classmethod
     def routes(cls) -> list[Route]:
         name = cls.controller_name()
-        endpoint  = Endpoint.PARENTS.value
+        endpoint = Endpoint.PARENTS.value
         return [
             Route(None, endpoint, controller=name, action='get',
                   conditions={'method': [HTTPMethod.GET]}),

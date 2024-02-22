@@ -69,7 +69,6 @@ class RegionProcessor(AbstractCommandProcessor):
                 'No regions found matching given query'
             ).exc()
 
-
         _LOG.debug('Extracting region dto')
         response = [self.region_service.get_dto(region=region)
                     for region in regions]

@@ -158,18 +158,24 @@ class InitVault(ABC):
 
 
 class Run(ActionHandler):
-    def _init_swagger(self, app: 'Bottle', prefix: str) -> None:
+    def _init_swagger(self, app: 'Bottle', prefix: str, stage: str) -> None:
+        """
+        :param app:
+        :param prefix: prefix for swagger UI
+        :param stage: stage where all endpoints are, the same as API gw
+        :return:
+        """
         from swagger_ui import api_doc
         from services.openapi_spec_generator import OpenApiGenerator
+        from validators import registry
         url = f'http://{self._host}:{self._port}'
-        # TODO get from handlers
         generator = OpenApiGenerator(
             title='Modular service API',
             description='Modular service rest API',
             url=url,
-            stages='dev',
+            stages=stage,
             version=__version__,
-            endpoints=[]
+            endpoints=registry.iter_all()
         )
         if not prefix.startswith('/'):
             prefix = f'/{prefix}'
@@ -177,7 +183,7 @@ class Run(ActionHandler):
             app,
             config=generator.generate(),
             url_prefix=prefix,
-            title='Rule engine'
+            title='Modular service'
         )
         _LOG.info(f'Serving swagger on {url + prefix}')
 
@@ -196,9 +202,10 @@ class Run(ActionHandler):
 
         os.environ[Env.SERVICE_MODE] = 'docker'
 
-        app = OnPremApiBuilder().build()
+        stage = 'dev'  # get from somewhere
+        app = OnPremApiBuilder().build(stage)
         if swagger:
-            self._init_swagger(app, swagger_prefix)
+            self._init_swagger(app, swagger_prefix, stage)
 
         if gunicorn:
             workers = workers or DEFAULT_NUMBER_OF_WORKERS

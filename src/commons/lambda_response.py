@@ -206,10 +206,13 @@ class ResponseFactory:
 
 
 def build_response(content: Content = None,
-                   code: HTTPStatus | int = HTTPStatus.OK) -> LambdaOutput:
+                   code: HTTPStatus | int = HTTPStatus.OK) -> Any:
     """
     Auxiliary function. Use ResponseFactory in case you want your own response
     format
+    :rtype: Any, but it's actually LambdaOutput. We need Any in order to be
+    able to put different response models in handlers for swagger without
+    type checker failure
     """
     f = ResponseFactory(code)
     match content:

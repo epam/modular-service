@@ -5,7 +5,6 @@ from routes.route import Route
 from commons import validate_params
 from commons.constants import (
     ADMINS_ATTR,
-    DISPLAY_NAME_ATTR,
     Endpoint,
     HTTPMethod,
     NAME_ATTR,
@@ -18,6 +17,8 @@ from lambdas.modular_api_handler.processors.abstract_processor import (
 )
 from services import SERVICE_PROVIDER
 from services.customer_mutator_service import CustomerMutatorService
+from validators.request import CustomerPost
+from validators.utils import validate_kwargs
 
 _LOG = get_logger(__name__)
 
@@ -69,19 +70,14 @@ class CustomerProcessor(AbstractCommandProcessor):
         _LOG.debug(f'Response: {response}')
         return build_response(content=response)
 
-    def post(self, event):
-        _LOG.debug(f'Add customer event: {event}')
-        validate_params(event, (NAME_ATTR, DISPLAY_NAME_ATTR))
+    @validate_kwargs
+    def post(self, event: CustomerPost):
 
-        name = event.get(NAME_ATTR)
-        display_name = event.get(DISPLAY_NAME_ATTR)
-        admins = event.get(ADMINS_ATTR, [])
-
-        _LOG.debug(f'Creating customer \'{name}\'')
+        _LOG.debug(f'Creating customer \'{event.name}\'')
         customer = self.customer_service.create(
-            name=name,
-            display_name=display_name,
-            admins=admins
+            name=event.name,
+            display_name=event.display_name,
+            admins=event.admins
         )
 
         _LOG.debug('Saving customer')
