@@ -3,15 +3,9 @@ from http import HTTPStatus
 
 from routes.route import Route
 
-from commons import validate_params
 from commons.constants import (
-    CLOUD_ATTR,
-    DISPLAY_NAME_ATTR,
     Endpoint,
     HTTPMethod,
-    NAME_ATTR,
-    READ_ONLY_ATTR,
-    TENANT_CUSTOMER_ATTR,
 )
 from commons.lambda_response import ResponseFactory, build_response
 from commons.log_helper import get_logger
@@ -21,6 +15,8 @@ from lambdas.modular_api_handler.processors.abstract_processor import (
 from services import SERVICE_PROVIDER
 from services.customer_mutator_service import CustomerMutatorService
 from services.tenant_mutator_service import TenantMutatorService
+from validators.request import TenantDelete, TenantGet, TenantPost
+from validators.utils import validate_kwargs
 
 _LOG = get_logger(__name__)
 
@@ -51,10 +47,9 @@ class TenantProcessor(AbstractCommandProcessor):
                   conditions={'method': [HTTPMethod.DELETE]}),
         ]
 
-    def get(self, event):
-        _LOG.debug(f'Describe tenant event: {event}')
-
-        name = event.get(NAME_ATTR)
+    @validate_kwargs
+    def get(self, event: TenantGet):
+        name = event.name
 
         if name:
             _LOG.debug(f'Describing tenant by name \'{name}\'')
@@ -78,12 +73,10 @@ class TenantProcessor(AbstractCommandProcessor):
 
         return build_response(content=response)
 
-    def post(self, event):
-        _LOG.debug(f'Activate tenant event: {event}')
-        validate_params(event, (NAME_ATTR, DISPLAY_NAME_ATTR,
-                                TENANT_CUSTOMER_ATTR, CLOUD_ATTR))
+    @validate_kwargs
+    def post(self, event: TenantPost):
 
-        name = event.get(NAME_ATTR)
+        name = event.name
         tenant_exist = self.tenant_service.get(tenant_name=name)
         if tenant_exist:
             _LOG.warning(f'Tenant with name \'{name}\' already exist.')
@@ -91,24 +84,15 @@ class TenantProcessor(AbstractCommandProcessor):
                 f'Tenant with name \'{name}\' already exist.'
             ).exc()
 
-        tenant_customer = event.get(TENANT_CUSTOMER_ATTR)
-        cloud = event.get(CLOUD_ATTR)
-        acc = event.get('acc')
-        display_name = event.get(DISPLAY_NAME_ATTR)
-
-        read_only = event.get(READ_ONLY_ATTR, 'f')
-        if not isinstance(read_only, bool):
-            read_only = True if read_only.lower() in ('y', 'true') else False
-
         _LOG.debug('Creating tenant')
         tenant = self.tenant_service.create(
             tenant_name=name,
-            display_name=display_name,
-            customer_name=tenant_customer,
-            cloud=cloud,
-            acc=acc,
+            display_name=event.display_name,
+            customer_name=event.tenant_customer,
+            cloud=event.cloud.value,
+            acc=event.acc,
             is_active=True,
-            read_only=read_only
+            read_only=event.read_only
         )
         _LOG.debug('Saving tenant')
         self.tenant_service.save(tenant=tenant)
@@ -119,11 +103,10 @@ class TenantProcessor(AbstractCommandProcessor):
 
         return build_response(content=response)
 
-    def delete(self, event):
-        _LOG.debug(f'Deactivate tenant event: {event}')
-        validate_params(event, (NAME_ATTR,))
+    @validate_kwargs
+    def delete(self, event: TenantDelete):
 
-        name = event.get(NAME_ATTR)
+        name = event.name
         _LOG.debug(f'Describing tenant by name \'{name}\'')
         tenant = self.tenant_service.get(tenant_name=name)
 

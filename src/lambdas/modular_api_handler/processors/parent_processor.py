@@ -3,18 +3,12 @@ from http import HTTPStatus
 
 from routes.route import Route
 
-from commons import validate_params
 from commons.constants import (
     APPLICATION_ID_ATTR,
-    CLOUD_ATTR,
-    CUSTOMER_ID_ATTR,
     DESCRIPTION_ATTR,
     Endpoint,
     HTTPMethod,
-    META_ATTR,
     PARENT_ID_ATTR,
-    SCOPE_ATTR,
-    TENANT_ATTR,
     TYPE_ATTR,
 )
 from commons.lambda_response import ResponseFactory, build_response
@@ -27,6 +21,8 @@ from services.application_mutator_service import ApplicationMutatorService
 from services.customer_mutator_service import CustomerMutatorService
 from services.parent_mutator_service import ParentMutatorService
 from services.tenant_mutator_service import TenantMutatorService
+from validators.request import ParentDelete, ParentGet, ParentPatch, ParentPost
+from validators.utils import validate_kwargs
 
 _LOG = get_logger(__name__)
 
@@ -65,11 +61,11 @@ class ParentProcessor(AbstractCommandProcessor):
                   conditions={'method': [HTTPMethod.DELETE]}),
         ]
 
-    def get(self, event):
-        _LOG.debug(f'Describe parent event: {event}')
+    @validate_kwargs
+    def get(self, event: ParentGet):
 
-        parent_id = event.get(PARENT_ID_ATTR)
-        application_id = event.get(APPLICATION_ID_ATTR)
+        parent_id = event.parent_id
+        application_id = event.application_id
 
         if parent_id:
             _LOG.debug(f'Describing parent by id \'{parent_id}\'')
@@ -98,12 +94,10 @@ class ParentProcessor(AbstractCommandProcessor):
         _LOG.debug(f'Response: {response}')
         return build_response(content=response)
 
-    def post(self, event):
-        _LOG.debug(f'Add parent event: {event}')
-        validate_params(event, (APPLICATION_ID_ATTR, TYPE_ATTR,
-                                CUSTOMER_ID_ATTR))
+    @validate_kwargs
+    def post(self, event: ParentPost):
 
-        application_id = event.get(APPLICATION_ID_ATTR)
+        application_id = event.application_id
 
         _LOG.debug(f'Describing application by id \'{application_id}\'')
         application = self.application_service.get_application_by_id(
@@ -116,25 +110,17 @@ class ParentProcessor(AbstractCommandProcessor):
                 f'Application with id \'{application_id}\' does not exist.'
             ).exc()
 
-        parent_type = event.get(TYPE_ATTR)
-        description = event.get(DESCRIPTION_ATTR)
-        customer_id = event.get(CUSTOMER_ID_ATTR)
-        meta = event.get(META_ATTR)
-        cloud = event.get(CLOUD_ATTR)
-        tenant_name = event.get(TENANT_ATTR)
-        scope = event.get(SCOPE_ATTR)
-
         _LOG.debug('Creating parent')
         parent = self.parent_service.create(
             application_id=application_id,
-            customer_id=customer_id,
-            parent_type=parent_type,
-            description=description,
+            customer_id=event.customer_id,
+            parent_type=event.type.value,
+            description=event.description,
             is_deleted=False,
-            meta=meta,
-            scope=scope,
-            tenant_name=tenant_name,
-            cloud=cloud
+            meta=event.meta,
+            scope=event.scope.value,
+            tenant_name=event.tenant,
+            cloud=event.cloud.value
         )
 
         _LOG.debug('Saving parent')
@@ -145,10 +131,11 @@ class ParentProcessor(AbstractCommandProcessor):
         _LOG.debug(f'Response: {response}')
         return build_response(content=response)
 
-    def patch(self, event):
+    @validate_kwargs
+    def patch(self, event: ParentPatch):
         _LOG.debug(f'Update parent event: {event}')
-        validate_params(event, (PARENT_ID_ATTR,))
 
+        # TODO rewrite
         optional_attrs = (APPLICATION_ID_ATTR, TYPE_ATTR, DESCRIPTION_ATTR)
         if not any([attr in event for attr in optional_attrs]):
             _LOG.warning(f'At least one of the following attributes must be '
@@ -187,11 +174,11 @@ class ParentProcessor(AbstractCommandProcessor):
 
         return build_response(content=response)
 
-    def delete(self, event):
+    @validate_kwargs
+    def delete(self, event: ParentDelete):
         _LOG.debug(f'Delete parent event: {event}')
-        validate_params(event, (PARENT_ID_ATTR,))
 
-        parent_id = event.get(PARENT_ID_ATTR)
+        parent_id = event.parent_id
         _LOG.debug(f'Describing parent by id \'{parent_id}\'')
         parent = self.parent_service.get_parent_by_id(
             parent_id=parent_id

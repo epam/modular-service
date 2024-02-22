@@ -3,8 +3,7 @@ from http import HTTPStatus
 
 from routes.route import Route
 
-from commons import validate_params
-from commons.constants import Endpoint, HTTPMethod, REGION_ATTR, TENANT_ATTR
+from commons.constants import Endpoint, HTTPMethod
 from commons.lambda_response import ResponseFactory, build_response
 from commons.log_helper import get_logger
 from lambdas.modular_api_handler.processors.abstract_processor import (
@@ -13,6 +12,8 @@ from lambdas.modular_api_handler.processors.abstract_processor import (
 from services import SERVICE_PROVIDER
 from services.region_mutator_service import RegionMutatorService
 from services.tenant_mutator_service import TenantMutatorService
+from validators.request import TenantRegionDelete, TenantRegionGet, TenantRegionPost
+from validators.utils import validate_kwargs
 
 _LOG = get_logger(__name__)
 
@@ -43,11 +44,10 @@ class TenantRegionProcessor(AbstractCommandProcessor):
                   conditions={'method': [HTTPMethod.DELETE]}),
         ]
 
-    def get(self, event):
-        _LOG.debug('Describe tenant regions')
-        validate_params(event, (TENANT_ATTR,))
+    @validate_kwargs
+    def get(self, event: TenantRegionGet):
 
-        tenant_name = event.get(TENANT_ATTR)
+        tenant_name = event.tenant
 
         _LOG.debug(f'Describing tenant by name \'{tenant_name}\'')
         tenant = self.tenant_service.get(tenant_name=tenant_name)
@@ -67,12 +67,10 @@ class TenantRegionProcessor(AbstractCommandProcessor):
         _LOG.debug(f'Response: {response}')
         return build_response(content=response)
 
-    def post(self, event):
-        _LOG.debug(f'Activate region in tenant event: {event}')
+    @validate_kwargs
+    def post(self, event: TenantRegionPost):
 
-        validate_params(event, (TENANT_ATTR, REGION_ATTR))
-
-        tenant_name = event.get(TENANT_ATTR)
+        tenant_name = event.tenant
         tenant = self.tenant_service.get(tenant_name=tenant_name)
         if not tenant:
             _LOG.debug(f'Tenant \'{tenant_name}\' does not exist.')
@@ -80,7 +78,7 @@ class TenantRegionProcessor(AbstractCommandProcessor):
                 f'Tenant \'{tenant_name}\' does not exist.'
             ).exc()
 
-        region_name = event.get(REGION_ATTR)
+        region_name = event.region
         region = self.region_service.get_region(region_name=region_name)
         if not region:
             _LOG.debug(f'Region \'{region_name}\' is not supported.')
@@ -102,11 +100,10 @@ class TenantRegionProcessor(AbstractCommandProcessor):
         _LOG.debug(f'Response: {response}')
         return build_response(content=response)
 
-    def delete(self, event):
-        _LOG.debug('Deactivate region in tenant')
-        validate_params(event, (TENANT_ATTR, REGION_ATTR,))
+    @validate_kwargs
+    def delete(self, event: TenantRegionDelete):
 
-        tenant_name = event.get(TENANT_ATTR)
+        tenant_name = event.tenant
 
         _LOG.debug(f'Describing tenant by name \'{tenant_name}\'')
         tenant = self.tenant_service.get(tenant_name=tenant_name)
@@ -115,7 +112,7 @@ class TenantRegionProcessor(AbstractCommandProcessor):
             raise ResponseFactory(HTTPStatus.NOT_FOUND).message(
                 f'Tenant \'{tenant_name}\' does not exist.'
             ).exc()
-        region_name = event.get(REGION_ATTR)
+        region_name = event.region
         region = self.region_service.get_region(region_name=region_name)
         if not region:
             _LOG.debug(f'Region \'{region_name}\' is not supported.')

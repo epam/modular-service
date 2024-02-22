@@ -1,16 +1,10 @@
 from http import HTTPStatus
-import uuid
 
 from routes.route import Route
 
-from commons import validate_params
 from commons.constants import (
-    CLOUD_ATTR,
     Endpoint,
     HTTPMethod,
-    MAESTRO_NAME_ATTR,
-    NATIVE_NAME_ATTR,
-    REGION_ID_ATTR,
 )
 from commons.lambda_response import ResponseFactory, build_response
 from commons.log_helper import get_logger
@@ -20,6 +14,8 @@ from lambdas.modular_api_handler.processors.abstract_processor import (
 from services import SERVICE_PROVIDER
 from services.region_mutator_service import RegionMutatorService
 from services.tenant_mutator_service import TenantMutatorService
+from validators.request import RegionDelete, RegionGet, RegionPost
+from validators.utils import validate_kwargs
 
 _LOG = get_logger(__name__)
 
@@ -50,10 +46,10 @@ class RegionProcessor(AbstractCommandProcessor):
                   conditions={'method': [HTTPMethod.DELETE]}),
         ]
 
-    def get(self, event):
-        _LOG.debug(f'Describe region event: {event}')
+    @validate_kwargs
+    def get(self, event: RegionGet):
 
-        maestro_name = event.get(MAESTRO_NAME_ATTR)
+        maestro_name = event.maestro_name
 
         if maestro_name:
             _LOG.debug(f'Describing region by maestro name \'{maestro_name}\'')
@@ -75,12 +71,10 @@ class RegionProcessor(AbstractCommandProcessor):
         _LOG.debug(f'Response: {response}')
         return build_response(content=response)
 
-    def post(self, event):
-        _LOG.debug(f'Add region event: {event}')
-        validate_params(event,
-                        (MAESTRO_NAME_ATTR, NATIVE_NAME_ATTR, CLOUD_ATTR))
+    @validate_kwargs
+    def post(self, event: RegionPost):
 
-        maestro_name = event.get(MAESTRO_NAME_ATTR)
+        maestro_name = event.maestro_name
         existing_region = self.region_service.get_region(
             region_name=maestro_name)
         if existing_region:
@@ -89,17 +83,12 @@ class RegionProcessor(AbstractCommandProcessor):
                 f'Region {maestro_name} already exists.'
             ).exc()
 
-        region_id = event.get(REGION_ID_ATTR)
-        cloud = event.get(CLOUD_ATTR)
-        native_name = event.get(NATIVE_NAME_ATTR)
-        region_id = region_id if region_id else str(uuid.uuid4())
-
         _LOG.debug('Creating region')
         region = self.region_service.create(
             maestro_name=maestro_name,
-            native_name=native_name,
-            region_id=region_id,
-            cloud=cloud,
+            native_name=event.native_name,
+            region_id=event.region_id,
+            cloud=event.cloud,
             is_active=True
         )
         _LOG.debug('Saving region')
@@ -110,11 +99,9 @@ class RegionProcessor(AbstractCommandProcessor):
         _LOG.debug(f'Response: {response}')
         return build_response(content=response)
 
-    def delete(self, event):
-        _LOG.debug(f'Delete region event: {event}')
-        validate_params(event, (MAESTRO_NAME_ATTR,))
-
-        region_name = event.get(MAESTRO_NAME_ATTR)
+    @validate_kwargs
+    def delete(self, event: RegionDelete):
+        region_name = event.maestro_name
 
         region = self.region_service.get_region(
             region_name=region_name)

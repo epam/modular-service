@@ -2,15 +2,11 @@ from http import HTTPStatus
 
 from routes.route import Route
 
-from commons import validate_params
 from commons.constants import (
     Endpoint,
     HTTPMethod,
     NAME_ATTR,
-    PERMISSIONS_ADMIN_ATTR,
     PERMISSIONS_ATTR,
-    PERMISSIONS_TO_ATTACH,
-    PERMISSIONS_TO_DETACH,
 )
 from commons.lambda_response import ResponseFactory, build_response
 from commons.log_helper import get_logger
@@ -21,6 +17,8 @@ from services import SERVICE_PROVIDER
 from services.rbac.access_control_service import AccessControlService
 from services.rbac.iam_service import IamService
 from services.user_service import CognitoUserService
+from validators.request import PolicyDelete, PolicyGet, PolicyPost, PolicyPatch
+from validators.utils import validate_kwargs
 
 _LOG = get_logger(__name__)
 
@@ -56,9 +54,10 @@ class PolicyProcessor(AbstractCommandProcessor):
                   conditions={'method': [HTTPMethod.DELETE]}),
         ]
 
-    def get(self, event):
+    @validate_kwargs
+    def get(self, event: PolicyGet):
         _LOG.debug(f'Get policy event: {event}')
-        policy_name = event.get(NAME_ATTR)
+        policy_name = event.name
         if policy_name:
             _LOG.debug(f'Extracting policy with name \'{policy_name}\'')
             policies = [self.iam_service.policy_get(policy_name=policy_name)]
@@ -78,19 +77,11 @@ class PolicyProcessor(AbstractCommandProcessor):
         _LOG.debug(f'Policies to return: {policies_dto}')
         return build_response(content=policies_dto)
 
-    def post(self, event):
+    @validate_kwargs
+    def post(self, event: PolicyPost):
         _LOG.debug(f'Create policy event: {event}')
-        validate_params(event, (NAME_ATTR,))
 
-        if not event.get(PERMISSIONS_ATTR) \
-                and not event.get(PERMISSIONS_ADMIN_ATTR):
-            required = ", ".join((PERMISSIONS_ATTR, PERMISSIONS_ADMIN_ATTR))
-            _LOG.debug(f'One of the attributes \'{required}\' must be '
-                       f'specified')
-            raise ResponseFactory(HTTPStatus.BAD_REQUEST).message(
-                f'One of the attributes \'{required}\' must be specified'
-            ).exc()
-        policy_name = event.get(NAME_ATTR)
+        policy_name = event.name
 
         if self.access_control_service.policy_exists(name=policy_name):
             _LOG.debug(f'Policy with name \'{policy_name}\' already exists.')
@@ -98,7 +89,7 @@ class PolicyProcessor(AbstractCommandProcessor):
                 f'Policy with name \'{policy_name}\' already exists.'
             ).exc()
 
-        permissions = event.get(PERMISSIONS_ATTR)
+        permissions = event.permissions
         if permissions:
             non_existing = self.access_control_service. \
                 get_non_existing_permissions(permissions=permissions)
@@ -109,12 +100,12 @@ class PolicyProcessor(AbstractCommandProcessor):
                 raise ResponseFactory(HTTPStatus.BAD_REQUEST).message(
                     f'Some of the specified permissions don\'t exist: {", ".join(non_existing)}'
                 ).exc()
-        elif event.get(PERMISSIONS_ADMIN_ATTR, None):
+        elif event.permissions_admin:
             permissions = self.access_control_service.get_admin_permissions()
 
         policy_data = {
             NAME_ATTR: policy_name,
-            PERMISSIONS_ATTR: permissions
+            PERMISSIONS_ATTR: list(permissions)
         }
         _LOG.debug(f'Going to create policy with data: {policy_data}')
         policy = self.access_control_service.create_policy(
@@ -127,23 +118,15 @@ class PolicyProcessor(AbstractCommandProcessor):
         _LOG.debug(f'Response: {policy_dto}')
         return build_response(content=policy_dto)
 
-    def patch(self, event):
+    @validate_kwargs
+    def patch(self, event: PolicyPatch):
         _LOG.debug(f'Update policy event: {event}')
-        validate_params(event, (NAME_ATTR,))
 
-        policy_name = event.get(NAME_ATTR)
-        permissions = event.get(PERMISSIONS_ATTR)
-        to_attach = event.get(PERMISSIONS_TO_ATTACH)
-        to_detach = event.get(PERMISSIONS_TO_DETACH)
+        policy_name = event.name
+        permissions = event.permissions
+        to_attach = event.permissions_to_attach
+        to_detach = event.permissions_to_detach
 
-        if not any(i for i in (permissions, to_attach, to_detach)):
-            required = ', '.join((PERMISSIONS_ATTR, PERMISSIONS_TO_ATTACH,
-                                  PERMISSIONS_TO_DETACH))
-            _LOG.debug(f'One of the following arguments \'{required}\' must '
-                       f'be provided.')
-            raise ResponseFactory(HTTPStatus.BAD_REQUEST).message(
-                f'One of the following arguments \'{required}\' must be provided.'
-            ).exc()
         policy = self.access_control_service.get_policy(name=policy_name)
         if not policy:
             _LOG.debug(f'Policy with name \'{policy_name}\' does not exist.')
@@ -162,7 +145,7 @@ class PolicyProcessor(AbstractCommandProcessor):
                 raise ResponseFactory(HTTPStatus.BAD_REQUEST).message(
                     f'Some of the specified permissions don\'t exist: {", ".join(non_existing)}'
                 ).exc()
-            policy.permissions = permissions
+            policy.permissions = list(permissions)
         else:
             if to_attach:
                 _LOG.debug(f'going to attach permissions to policy: '
@@ -191,11 +174,11 @@ class PolicyProcessor(AbstractCommandProcessor):
         _LOG.debug(f'Response: {policy_dto}')
         return build_response(content=policy_dto)
 
-    def delete(self, event):
+    @validate_kwargs
+    def delete(self, event: PolicyDelete):
         _LOG.debug(f'Delete policy event: {event}')
-        validate_params(event, (NAME_ATTR,))
 
-        policy_name = event.get(NAME_ATTR)
+        policy_name = event.name
         _LOG.debug(f'Extracting policy with name \'{policy_name}\'')
         policy = self.access_control_service.get_policy(name=policy_name)
         if not policy:

@@ -96,10 +96,10 @@ class AccessControlService:
         return now >= role_expiration_datetime
 
     @staticmethod
-    def get_non_existing_permissions(permissions: list) -> set:
+    def get_non_existing_permissions(permissions: list | set) -> set:
         return set(permissions) - ALL_PERMISSIONS
 
-    def get_non_existing_policies(self, policies: list):
+    def get_non_existing_policies(self, policies: list | set) -> list:
         nonexistent = []
         for policy in policies:
             if not self.policy_exists(name=policy):

@@ -9,7 +9,6 @@ from commons.constants import (
     DESCRIPTION_ATTR,
     Endpoint,
     HTTPMethod,
-    META_ATTR,
     TYPE_ATTR,
 )
 from commons.lambda_response import ResponseFactory, build_response
@@ -21,6 +20,13 @@ from services import SERVICE_PROVIDER
 from services.application_mutator_service import ApplicationMutatorService
 from services.customer_mutator_service import CustomerMutatorService
 from services.parent_mutator_service import ParentMutatorService
+from validators.request import (
+    ApplicationDelete,
+    ApplicationGet,
+    ApplicationPatch,
+    ApplicationPost,
+)
+from validators.utils import validate_kwargs
 
 _LOG = get_logger(__name__)
 
@@ -57,10 +63,11 @@ class ApplicationProcessor(AbstractCommandProcessor):
             parent_service=SERVICE_PROVIDER.parent_service
         )
 
-    def get(self, event):
+    @validate_kwargs
+    def get(self, event: ApplicationGet):
         _LOG.debug(f'Describe application event: {event}')
 
-        application_id = event.get(APPLICATION_ID_ATTR)
+        application_id = event.application_id
 
         if application_id:
             _LOG.debug(f'Describing application with id \'{application_id}\'')
@@ -84,23 +91,17 @@ class ApplicationProcessor(AbstractCommandProcessor):
 
         return build_response(content=response)
 
-    def post(self, event):
+    @validate_kwargs
+    def post(self, event: ApplicationPost):
         _LOG.debug(f'Activate application event: {event}')
-
-        validate_params(event, (TYPE_ATTR, CUSTOMER_ID_ATTR))
-
-        app_type = event.get(TYPE_ATTR)
-        customer_id = event.get(CUSTOMER_ID_ATTR)
-        description = event.get(DESCRIPTION_ATTR)
-        meta = event.get(META_ATTR)
 
         _LOG.debug('Creating application')
         application = self.application_service.create(
-            customer_id=customer_id,
-            type=app_type,
-            description=description,
+            customer_id=event.customer_id,
+            type=event.type.value,
+            description=event.description,
             is_deleted=False,
-            meta=meta
+            meta=event.meta
         )
         _LOG.debug('Saving application')
         self.application_service.save(application)
@@ -111,10 +112,13 @@ class ApplicationProcessor(AbstractCommandProcessor):
         _LOG.debug(f'Response: {application_dto}')
         return build_response(content=application_dto)
 
-    def patch(self, event):
+    @validate_kwargs
+    def patch(self, event: ApplicationPatch):
+        # TODO rewrite
         _LOG.debug(f'Update application event: {event}')
 
         validate_params(event, (APPLICATION_ID_ATTR,))
+        # TODO rewrite
 
         optional_attrs = (TYPE_ATTR, CUSTOMER_ID_ATTR, DESCRIPTION_ATTR)
         if not any([attr in event for attr in optional_attrs]):
@@ -154,12 +158,10 @@ class ApplicationProcessor(AbstractCommandProcessor):
         _LOG.debug(f'Response: {response}')
         return build_response(content=response)
 
-    def delete(self, event):
-        _LOG.debug(f'Delete application event: {event}')
+    @validate_kwargs
+    def delete(self, event: ApplicationDelete):
 
-        validate_params(event, (APPLICATION_ID_ATTR,))
-
-        application_id = event.get(APPLICATION_ID_ATTR)
+        application_id = event.application_id
         application = self.application_service.get_application_by_id(
             application_id=application_id)
         if not application:

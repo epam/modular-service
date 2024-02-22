@@ -1,9 +1,8 @@
-
 from http import HTTPStatus
 
 from routes.route import Route
 
-from commons.constants import Endpoint, HTTPMethod, PASSWORD_ATTR, USERNAME_ATTR
+from commons.constants import Endpoint, HTTPMethod
 from commons.lambda_response import ResponseFactory
 from commons.log_helper import get_logger
 from lambdas.modular_api_handler.processors.abstract_processor import (
@@ -11,6 +10,8 @@ from lambdas.modular_api_handler.processors.abstract_processor import (
 )
 from services import SERVICE_PROVIDER
 from services.user_service import CognitoUserService
+from validators.request import SignInPost
+from validators.utils import validate_kwargs
 
 _LOG = get_logger(__name__)
 
@@ -33,19 +34,13 @@ class SignInProcessor(AbstractCommandProcessor):
                   conditions={'method': [HTTPMethod.POST]}),
         ]
 
-    def post(self, event):
-        _LOG.debug(f'Sign in event: {event}')
-        username = event.get(USERNAME_ATTR)
-        password = event.get(PASSWORD_ATTR)
-        if not username or not password:
-            raise ResponseFactory(HTTPStatus.BAD_REQUEST).message(
-                'You must specify both username and password'
-            ).exc()
-
+    @validate_kwargs
+    def post(self, event: SignInPost):
         _LOG.debug('Going to initiate the authentication flow')
         auth_result = self.user_service.initiate_auth(
-            username=username,
-            password=password)
+            username=event.username,
+            password=event.password
+        )
         if not auth_result:
             raise ResponseFactory(HTTPStatus.UNAUTHORIZED).message(
                 'Incorrect username or password'

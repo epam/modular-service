@@ -2,13 +2,9 @@ from http import HTTPStatus
 
 from routes.route import Route
 
-from commons import validate_params
 from commons.constants import (
-    ADMINS_ATTR,
     Endpoint,
     HTTPMethod,
-    NAME_ATTR,
-    OVERRIDE_ATTR,
 )
 from commons.lambda_response import ResponseFactory, build_response
 from commons.log_helper import get_logger
@@ -17,7 +13,7 @@ from lambdas.modular_api_handler.processors.abstract_processor import (
 )
 from services import SERVICE_PROVIDER
 from services.customer_mutator_service import CustomerMutatorService
-from validators.request import CustomerPost
+from validators.request import CustomerPost, CustomerGet, CustomerPatch
 from validators.utils import validate_kwargs
 
 _LOG = get_logger(__name__)
@@ -46,10 +42,11 @@ class CustomerProcessor(AbstractCommandProcessor):
                   conditions={'method': [HTTPMethod.PATCH]}),
         ]
 
-    def get(self, event):
+    @validate_kwargs
+    def get(self, event: CustomerGet):
         _LOG.debug('Describe customer event')
-        name = event.get(NAME_ATTR)
 
+        name = event.name
         if name:
             _LOG.debug(f'Describing customer by name \'{name}\'')
             customers = [self.customer_service.get(name)]
@@ -89,16 +86,12 @@ class CustomerProcessor(AbstractCommandProcessor):
         _LOG.debug(f'Response: {response}')
         return build_response(content=response)
 
-    def patch(self, event):
+    @validate_kwargs
+    def patch(self, event: CustomerPatch):
         _LOG.debug(f'Update customer admins event: {event}')
-        validate_params(event, (NAME_ATTR, ADMINS_ATTR))
 
-        name = event.get(NAME_ATTR)
-        emails = event.get(ADMINS_ATTR)
-        override = event.get(OVERRIDE_ATTR)
-        if not isinstance(override, bool):
-            override = True if override.lower() in ('true', 'y', 'yes') \
-                else False
+        name = event.name
+        emails = event.admins
 
         _LOG.debug(f'Describing customer with name \'{name}\'')
         customer = self.customer_service.get(name=name)
@@ -110,7 +103,7 @@ class CustomerProcessor(AbstractCommandProcessor):
 
         _LOG.debug(f'Updating customer \'{name}\'')
         self.customer_service.update(
-            customer=customer, admins=emails, override=override
+            customer=customer, admins=list(emails), override=event.override
         )
 
         _LOG.debug('Saving customer')
