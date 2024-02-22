@@ -1,13 +1,14 @@
-from abc import ABC, abstractmethod
 import argparse
 import base64
+import json
 import logging
 import logging.config
 import multiprocessing
 import os
-from pathlib import Path
 import secrets
 import string
+from abc import ABC, abstractmethod
+from pathlib import Path
 from typing import Callable, Literal, TYPE_CHECKING
 
 from commons.__version__ import __version__
@@ -202,7 +203,7 @@ class Run(ActionHandler):
 
         os.environ[Env.SERVICE_MODE] = 'docker'
 
-        stage = 'dev'  # get from somewhere
+        stage = 'dev'  # todo get from somewhere
         app = OnPremApiBuilder().build(stage)
         if swagger:
             self._init_swagger(app, swagger_prefix, stage)
@@ -321,6 +322,26 @@ class CreateIndexes(ActionHandler):
             self.create_indexes_for_model(model)
 
 
+class GenerateOpenApi(ActionHandler):
+    def __call__(self, filename: Path):
+        from validators import registry
+        from services.openapi_spec_generator import OpenApiGenerator
+        if filename.is_dir():
+            _LOG.error('Please, provide path to file')
+            exit(1)
+        generator = OpenApiGenerator(
+            title='Modular service API',
+            description='Modular service rest API',
+            url=f'http://{DEFAULT_HOST}:{DEFAULT_PORT}',
+            stages='dev',  # todo get from somewhere
+            version=__version__,
+            endpoints=registry.iter_all()
+        )
+        with open(filename, 'w') as file:
+            json.dump(generator.generate(), file, separators=(',', ':'))
+        _LOG.info(f'Spec was written to {filename}')
+
+
 def main(args: list[str] | None = None):
     parser = build_parser()
     arguments = parser.parse_args(args)
@@ -332,7 +353,8 @@ def main(args: list[str] | None = None):
         (RUN_ACTION,): Run(),
         (INIT_VAULT_ACTION,): InitVault(),
         (INIT_ACTION,): Init(),
-        (CREATE_INDEXES_ACTION,): CreateIndexes()
+        (CREATE_INDEXES_ACTION,): CreateIndexes(),
+        (GENERATE_OPENAPI_ACTION,): GenerateOpenApi()
     }
     func = mapping.get(key) or (lambda **kwargs: _LOG.error('Hello'))
     for dest in ALL_NESTING:
