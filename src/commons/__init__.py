@@ -1,25 +1,9 @@
 import json
 import math
 import uuid
-from datetime import datetime
 from functools import reduce
 from types import NoneType
 from typing import Any
-
-
-def get_iso_timestamp():
-    return datetime.now().isoformat()
-
-
-def validate_params(event, required_params_list):
-    """
-    Checks if all required parameters present in lambda payload.
-    :param event: the lambda payload
-    :param required_params_list: list of the lambda required parameters
-    :return: bad request response if some parameter[s] is/are missing,
-        otherwise - none
-    """
-    # TODO remove
 
 
 class RequestContext:

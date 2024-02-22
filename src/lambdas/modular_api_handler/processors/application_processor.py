@@ -2,7 +2,6 @@ from http import HTTPStatus
 
 from routes.route import Route
 
-from commons import validate_params
 from commons.constants import (
     APPLICATION_ID_ATTR,
     CUSTOMER_ID_ATTR,
@@ -181,4 +180,5 @@ class ApplicationProcessor(AbstractCommandProcessor):
 
         _LOG.info(f'Application with id \'{application_id}\' has been '
                   f'deleted.')
-        return build_response(content=f'Application with id \'{application_id}\' has been deleted.')
+        return build_response(
+            content=f'Application with id \'{application_id}\' has been deleted.')
