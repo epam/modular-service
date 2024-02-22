@@ -99,7 +99,6 @@ def secured_params() -> tuple:
     )
 
 
-# todo remove
 def secure_event(event: dict, secured_keys=secured_params()):
     result_event = {}
     if not isinstance(event, dict):

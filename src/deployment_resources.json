@@ -133,13 +133,6 @@
     ],
     "external": true
   },
-  "ModularServiceSettings": {
-    "resource_type": "dynamodb_table",
-    "hash_key_name": "name",
-    "hash_key_type": "S",
-    "read_capacity": 1,
-    "write_capacity": 1
-  },
   "Tenants": {
     "resource_type": "dynamodb_table",
     "hash_key_name": "n",
