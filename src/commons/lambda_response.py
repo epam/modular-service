@@ -30,19 +30,15 @@ class LambdaForceExit(Exception):
     __slots__ = ('_response',)
 
     def __init__(self, response: 'LambdaResponse'):
-        self._response = response
-
-    @property
-    def response(self) -> 'LambdaResponse':
-        return self._response
+        self.response = response
 
     def __str__(self):
-        return f'<{self._response.code}:{str(self._response.content)}>'
+        return f'<{self.response.code}:{str(self.response.content)}>'
 
     __repr__ = __str__
 
     def build(self) -> LambdaOutput:
-        return self._response.build()
+        return self.response.build()
 
 
 class ApplicationException(LambdaForceExit):
@@ -148,6 +144,8 @@ class JsonLambdaResponse(LambdaResponse):
         :param obj:
         :return:
         """
+        if isinstance(obj, bytes):
+            return obj.decode()
         if isinstance(obj, Iterable):
             return list(obj)
         raise TypeError
@@ -156,7 +154,7 @@ class JsonLambdaResponse(LambdaResponse):
         body = json.dumps(
             self._content,
             sort_keys=True,
-            separators=(',', ':')
+            separators=(',', ':'),
         )
         if len(body.encode()) >= PAYLOAD_SIZE_LIMIT:
             raise ResponseFactory(HTTPStatus.REQUEST_ENTITY_TOO_LARGE).message(

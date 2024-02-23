@@ -1,15 +1,18 @@
-from commons.log_helper import get_logger
-from services.clients.cognito import CognitoClient
-from services.clients.cognito import BaseAuthClient
-from commons.lambda_response import ResponseFactory
 from http import HTTPStatus
+from typing import TYPE_CHECKING
+
+from commons.lambda_response import ResponseFactory
+from commons.log_helper import get_logger
+
+if TYPE_CHECKING:
+    from services.clients.cognito import BaseAuthClient
 
 _LOG = get_logger(__name__)
 
 
 class CognitoUserService:
 
-    def __init__(self, client: BaseAuthClient):
+    def __init__(self, client: 'BaseAuthClient'):
         self.client = client
 
     def save(self, username, password, role):

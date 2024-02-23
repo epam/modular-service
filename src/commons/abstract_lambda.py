@@ -16,6 +16,8 @@ _LOG = get_logger(__name__)
 
 
 class AbstractEventProcessor(ABC):
+    __slots__ = ()
+
     @abstractmethod
     def __call__(self, event: dict) -> dict:
         """
