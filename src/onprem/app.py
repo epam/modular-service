@@ -130,7 +130,8 @@ class OnPremApiBuilder:
         app.mount(prefix.strip('/'), prefix_app)
         return app
 
-    def _callback(self, decoded_token: dict | None = None, **path_params):
+    @staticmethod
+    def _callback(decoded_token: dict | None = None, **path_params):
         method = request.method
         path = request.route.rule
         event = {

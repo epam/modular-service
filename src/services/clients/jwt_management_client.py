@@ -12,6 +12,7 @@ class JWTManagementClient:
         'RSA': ('RSA-OAEP-256', 'A256CBC-HS512'),
         'EC': ('ECDH-ES+A256KW', 'A256GCM')
     }
+    __slots__ = ('_key', )
 
     def __init__(self, key: jwk.JWK):
         """

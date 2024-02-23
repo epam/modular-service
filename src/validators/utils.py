@@ -1,6 +1,6 @@
 from functools import wraps
 from http import HTTPStatus
-from typing import Callable, Any, TypeVar
+from typing import Any, Callable, TypeVar
 
 from pydantic import BaseModel, ValidationError
 
@@ -9,16 +9,14 @@ from commons.lambda_response import ResponseFactory
 T = TypeVar('T')
 
 
-def validate_pydantic(model: type, value: dict) -> BaseModel:
+def validate_pydantic(model: type[BaseModel], value: dict) -> BaseModel:
     try:
         return model(**value)
     except ValidationError as e:
-        errors = []
-        for error in e.errors():
-            errors.append({
-                'location': error['loc'],
-                'description': error['msg']
-            })
+        errors = [{
+            'location': e['loc'],
+            'description': e['msg']
+        } for e in e.errors()]
         raise ResponseFactory(HTTPStatus.BAD_REQUEST).errors(errors).exc()
 
 
@@ -29,7 +27,7 @@ def validate_type(_type: type[T], value: Any) -> T:
         raise ResponseFactory(HTTPStatus.BAD_REQUEST).errors([{
             'location': ['path'],
             'message': f'\'{value}\' should have type {_type.__name__}'
-        }])
+        }]).exc()
 
 
 def _validate(kwargs: dict[str, Any], types: dict[str, type],

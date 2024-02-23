@@ -126,7 +126,7 @@ class EventProcessorLambdaHandler(AbstractLambdaHandler):
             _LOG.warning(f'Modular exception occurred: {e}')
             return ResponseFactory(int(e.code)).message(e.content).build()
         except ApplicationException as e:
-            _LOG.error(f'Application exception occurred: {e}')
+            _LOG.warning(f'Application exception occurred: {e}')
             return e.build()
         except Exception:
             _LOG.exception('Unexpected exception occurred')
