@@ -1,4 +1,4 @@
-from .commons import import_from_source
+from utils import import_from_source
 
 
 def pytest_sessionstart():
