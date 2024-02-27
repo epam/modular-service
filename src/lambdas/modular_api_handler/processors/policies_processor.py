@@ -19,6 +19,7 @@ from services.rbac.iam_service import IamService
 from services.user_service import CognitoUserService
 from validators.request import PolicyDelete, PolicyGet, PolicyPost, PolicyPatch
 from validators.utils import validate_kwargs
+from validators.response import PoliciesResponse, MessageModel
 
 _LOG = get_logger(__name__)
 
@@ -40,19 +41,34 @@ class PolicyProcessor(AbstractCommandProcessor):
         )
 
     @classmethod
-    def routes(cls) -> list[Route]:
-        name = cls.controller_name()
-        endpoint = Endpoint.POLICIES.value
-        return [
-            Route(None, endpoint, controller=name, action='get',
-                  conditions={'method': [HTTPMethod.GET]}),
-            Route(None, endpoint, controller=name, action='post',
-                  conditions={'method': [HTTPMethod.POST]}),
-            Route(None, endpoint, controller=name, action='patch',
-                  conditions={'method': [HTTPMethod.PATCH]}),
-            Route(None, endpoint, controller=name, action='delete',
-                  conditions={'method': [HTTPMethod.DELETE]}),
-        ]
+    def routes(cls) -> tuple[Route, ...]:
+        resp = (HTTPStatus.OK, PoliciesResponse, None)
+        return (
+            cls.route(
+                Endpoint.POLICIES,
+                HTTPMethod.GET,
+                'get',
+                response=resp
+            ),
+            cls.route(
+                Endpoint.POLICIES,
+                HTTPMethod.POST,
+                'post',
+                response=resp
+            ),
+            cls.route(
+                Endpoint.POLICIES,
+                HTTPMethod.PATCH,
+                'patch',
+                response=resp
+            ),
+            cls.route(
+                Endpoint.POLICIES,
+                HTTPMethod.DELETE,
+                'delete',
+                response=(HTTPStatus.OK, MessageModel, None)
+            ),
+        )
 
     @validate_kwargs
     def get(self, event: PolicyGet):

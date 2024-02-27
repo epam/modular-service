@@ -1,9 +1,13 @@
+import base64
+import binascii
 import json
 import math
 import uuid
 from functools import reduce
 from types import NoneType
 from typing import Any
+
+from typing_extensions import Self
 
 
 class RequestContext:
@@ -132,3 +136,47 @@ def urljoin(*args: str) -> str:
     :return:
     """
     return '/'.join(map(lambda x: str(x).strip('/'), args))
+
+
+class NextToken:
+    __slots__ = ('_lak', )
+
+    def __init__(self, lak: dict | int | None = None):
+        """
+        Wrapper over dynamodb last_evaluated_key and pymongo offset
+        :param lak:
+        """
+        self._lak = lak
+
+    def __json__(self) -> str | None:
+        """
+        Handled only inside commons.lambda_response
+        :return:
+        """
+        if not self:
+            return
+        # TODO encrypt
+        return base64.urlsafe_b64encode(
+            json.dumps(self._lak, separators=(',', ':')).encode()
+        ).decode()
+
+    @property
+    def value(self) -> dict | int | None:
+        return self._lak
+
+    @classmethod
+    def from_input(cls, s: str | None = None) -> Self:
+        if not s or not isinstance(s, str):
+            return cls()
+        decoded = None
+        try:
+            decoded = json.loads(base64.urlsafe_b64decode(s).decode())
+        except (binascii.Error, json.JSONDecodeError):
+            pass
+        except Exception:  # noqa
+            pass
+        return cls(decoded)
+
+    def __bool__(self) -> bool:
+        return not not self._lak  # 0 and empty dict are None
+

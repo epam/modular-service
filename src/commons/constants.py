@@ -25,6 +25,11 @@ class Endpoint(str, Enum):
     CUSTOMERS = '/customers'
     APPLICATIONS = '/applications'
     TENANTS_REGIONS = '/tenants/regions'
+    APPLICATIONS_AWS_ROLE = '/applications/by-type/aws-role'
+    APPLICATIONS_AWS_CREDENTIALS = '/applications/by-type/aws-credentials'
+    APPLICATIONS_AZURE_CREDENTIALS = '/applications/by-type/azure-credentials'
+    APPLICATIONS_AZURE_CERTIFICATE = '/applications/by-type/azure-certificate'
+    APPLICATIONS_AZURE_GCP_SERVICE_ACCOUNT = '/applications/by-type/gcp-service-account'
 
     @classmethod
     def match(cls, resource: str) -> Self | None:

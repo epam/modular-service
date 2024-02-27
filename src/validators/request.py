@@ -117,6 +117,8 @@ class SignUpPost(BaseModel):
 
 class TenantGet(BaseModel):
     name: str = Field(None)
+    limit: int = Field(None)
+    next_token: str = Field(None)
 
 
 class TenantPost(BaseModel):
@@ -187,15 +189,19 @@ class ParentDelete(BaseModel):
     parent_id: str
 
 
-class ApplicationGet(BaseModel):
-    application_id: str = Field(None)
+class ApplicationQuery(BaseModel):
+    customer_id: str
+    type: ApplicationType = Field(None)
+    limit: int = Field(None)
+    next_token: str = Field(None)
+    is_deleted: bool = Field(None)
 
 
-class ApplicationPost(BaseModel):
-    type: ApplicationType
+class ApplicationPostAWSRole(BaseModel):
     customer_id: str
     description: str
-    meta: dict = Field(default_factory=dict)  # todo specific validator
+    role_name: str
+    account_id: str = Field(None)
 
 
 class ApplicationPatch(BaseModel):

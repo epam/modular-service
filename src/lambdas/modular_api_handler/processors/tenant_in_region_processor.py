@@ -14,6 +14,7 @@ from services.region_mutator_service import RegionMutatorService
 from services.tenant_mutator_service import TenantMutatorService
 from validators.request import TenantRegionDelete, TenantRegionGet, TenantRegionPost
 from validators.utils import validate_kwargs
+from validators.response import TenantsResponse, RegionsResponse
 
 _LOG = get_logger(__name__)
 
@@ -32,17 +33,27 @@ class TenantRegionProcessor(AbstractCommandProcessor):
         )
 
     @classmethod
-    def routes(cls) -> list[Route]:
-        name = cls.controller_name()
-        endpoint = Endpoint.TENANTS_REGIONS.value
-        return [
-            Route(None, endpoint, controller=name, action='get',
-                  conditions={'method': [HTTPMethod.DELETE]}),
-            Route(None, endpoint, controller=name, action='post',
-                  conditions={'method': [HTTPMethod.DELETE]}),
-            Route(None, endpoint, controller=name, action='delete',
-                  conditions={'method': [HTTPMethod.DELETE]}),
-        ]
+    def routes(cls) -> tuple[Route, ...]:
+        return (
+            cls.route(
+                Endpoint.TENANTS_REGIONS,
+                HTTPMethod.GET,
+                'get',
+                response=(HTTPStatus.OK, RegionsResponse, None)
+            ),
+            cls.route(
+                Endpoint.TENANTS_REGIONS,
+                HTTPMethod.POST,
+                'post',
+                response=(HTTPStatus.OK, RegionsResponse, None)
+            ),
+            cls.route(
+                Endpoint.TENANTS_REGIONS,
+                HTTPMethod.DELETE,
+                'delete',
+                response=(HTTPStatus.OK, TenantsResponse, None)
+            )
+        )
 
     @validate_kwargs
     def get(self, event: TenantRegionGet):

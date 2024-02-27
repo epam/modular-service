@@ -144,6 +144,8 @@ class JsonLambdaResponse(LambdaResponse):
         :param obj:
         :return:
         """
+        if hasattr(obj, '__json__'):
+            return obj.__json__()
         if isinstance(obj, bytes):
             return obj.decode()
         if isinstance(obj, Iterable):
@@ -151,10 +153,16 @@ class JsonLambdaResponse(LambdaResponse):
         raise TypeError
 
     def build(self) -> LambdaOutput:
+        """
+        You can serialize arbitrary objects by implementing __json__ method
+        inside their classes
+        :return:
+        """
         body = json.dumps(
             self._content,
             sort_keys=True,
             separators=(',', ':'),
+            default=self._default
         )
         if len(body.encode()) >= PAYLOAD_SIZE_LIMIT:
             raise ResponseFactory(HTTPStatus.REQUEST_ENTITY_TOO_LARGE).message(
@@ -180,7 +188,7 @@ class ResponseFactory:
     def __init__(self, code: HTTPStatus | int = HTTPStatus.OK):
         self._code = HTTPStatus(code) if isinstance(code, int) else code
 
-    def items(self, it: Iterable, next_token: str | None = None
+    def items(self, it: Iterable, next_token: Any = None
               ) -> JsonLambdaResponse:
         content = {'items': it}
         if next_token:
@@ -204,13 +212,10 @@ class ResponseFactory:
 
 
 def build_response(content: Content = None,
-                   code: HTTPStatus | int = HTTPStatus.OK) -> Any:
+                   code: HTTPStatus | int = HTTPStatus.OK) -> LambdaOutput:
     """
     Auxiliary function. Use ResponseFactory in case you want your own response
     format
-    :rtype: Any, but it's actually LambdaOutput. We need Any in order to be
-    able to put different response models in handlers for swagger without
-    type checker failure
     """
     f = ResponseFactory(code)
     match content:

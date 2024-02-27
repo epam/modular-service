@@ -15,6 +15,7 @@ from services import SERVICE_PROVIDER
 from services.customer_mutator_service import CustomerMutatorService
 from validators.request import CustomerPost, CustomerGet, CustomerPatch
 from validators.utils import validate_kwargs
+from validators.response import CustomersResponse
 
 _LOG = get_logger(__name__)
 
@@ -30,17 +31,28 @@ class CustomerProcessor(AbstractCommandProcessor):
         )
 
     @classmethod
-    def routes(cls) -> list[Route]:
-        name = cls.controller_name()
-        endpoint = Endpoint.CUSTOMERS.value
-        return [
-            Route(None, endpoint, controller=name, action='get',
-                  conditions={'method': [HTTPMethod.GET]}),
-            Route(None, endpoint, controller=name, action='post',
-                  conditions={'method': [HTTPMethod.POST]}),
-            Route(None, endpoint, controller=name, action='patch',
-                  conditions={'method': [HTTPMethod.PATCH]}),
-        ]
+    def routes(cls) -> tuple[Route, ...]:
+        resp = (HTTPStatus.OK, CustomersResponse, None)
+        return (
+            cls.route(
+                Endpoint.CUSTOMERS,
+                HTTPMethod.GET,
+                'get',
+                response=resp
+            ),
+            cls.route(
+                Endpoint.CUSTOMERS,
+                HTTPMethod.POST,
+                'post',
+                response=resp
+            ),
+            cls.route(
+                Endpoint.CUSTOMERS,
+                HTTPMethod.PATCH,
+                'patch',
+                response=resp
+            )
+        )
 
     @validate_kwargs
     def get(self, event: CustomerGet):

@@ -22,7 +22,7 @@ def validate_pydantic(model: type[BaseModel], value: dict) -> BaseModel:
 
 def validate_type(_type: type[T], value: Any) -> T:
     try:
-        return _type(value) if not isinstance(value, _type) else value
+        return _type(value)
     except (ValueError, TypeError):
         raise ResponseFactory(HTTPStatus.BAD_REQUEST).errors([{
             'location': ['path'],

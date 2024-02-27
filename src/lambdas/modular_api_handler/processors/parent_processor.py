@@ -23,6 +23,7 @@ from services.parent_mutator_service import ParentMutatorService
 from services.tenant_mutator_service import TenantMutatorService
 from validators.request import ParentDelete, ParentGet, ParentPatch, ParentPost
 from validators.utils import validate_kwargs
+from validators.response import ParentsResponse
 
 _LOG = get_logger(__name__)
 
@@ -47,19 +48,36 @@ class ParentProcessor(AbstractCommandProcessor):
         )
 
     @classmethod
-    def routes(cls) -> list[Route]:
+    def routes(cls) -> tuple[Route, ...]:
         name = cls.controller_name()
         endpoint = Endpoint.PARENTS.value
-        return [
-            Route(None, endpoint, controller=name, action='get',
-                  conditions={'method': [HTTPMethod.GET]}),
-            Route(None, endpoint, controller=name, action='post',
-                  conditions={'method': [HTTPMethod.POST]}),
-            Route(None, endpoint, controller=name, action='patch',
-                  conditions={'method': [HTTPMethod.PATCH]}),
-            Route(None, endpoint, controller=name, action='delete',
-                  conditions={'method': [HTTPMethod.DELETE]}),
-        ]
+        resp = (HTTPStatus.OK, ParentsResponse, None)
+        return (
+            cls.route(
+                Endpoint.PARENTS,
+                HTTPMethod.GET,
+                'get',
+                response=resp
+            ),
+            cls.route(
+                Endpoint.PARENTS,
+                HTTPMethod.POST,
+                'post',
+                response=resp
+            ),
+            cls.route(
+                Endpoint.PARENTS,
+                HTTPMethod.PATCH,
+                'patch',
+                response=resp
+            ),
+            cls.route(
+                Endpoint.PARENTS,
+                HTTPMethod.DELETE,
+                'delete',
+                response=resp
+            ),
+        )
 
     @validate_kwargs
     def get(self, event: ParentGet):

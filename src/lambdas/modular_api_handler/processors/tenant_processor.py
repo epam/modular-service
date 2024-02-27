@@ -1,4 +1,3 @@
-
 from http import HTTPStatus
 
 from routes.route import Route
@@ -7,6 +6,7 @@ from commons.constants import (
     Endpoint,
     HTTPMethod,
 )
+from commons import NextToken
 from commons.lambda_response import ResponseFactory, build_response
 from commons.log_helper import get_logger
 from lambdas.modular_api_handler.processors.abstract_processor import (
@@ -17,6 +17,7 @@ from services.customer_mutator_service import CustomerMutatorService
 from services.tenant_mutator_service import TenantMutatorService
 from validators.request import TenantDelete, TenantGet, TenantPost
 from validators.utils import validate_kwargs
+from validators.response import TenantsResponse
 
 _LOG = get_logger(__name__)
 
@@ -35,17 +36,28 @@ class TenantProcessor(AbstractCommandProcessor):
         )
 
     @classmethod
-    def routes(cls) -> list[Route]:
-        name = cls.controller_name()
-        endpoint = Endpoint.TENANTS.value
-        return [
-            Route(None, endpoint, controller=name, action='get',
-                  conditions={'method': [HTTPMethod.GET]}),
-            Route(None, endpoint, controller=name, action='post',
-                  conditions={'method': [HTTPMethod.POST]}),
-            Route(None, endpoint, controller=name, action='delete',
-                  conditions={'method': [HTTPMethod.DELETE]}),
-        ]
+    def routes(cls) -> tuple[Route, ...]:
+        resp = (HTTPStatus.OK, TenantsResponse, None)
+        return (
+            cls.route(
+                Endpoint.TENANTS,
+                HTTPMethod.GET,
+                'get',
+                response=resp,
+            ),
+            cls.route(
+                Endpoint.TENANTS,
+                HTTPMethod.POST,
+                'post',
+                response=resp,
+            ),
+            cls.route(
+                Endpoint.TENANTS,
+                HTTPMethod.DELETE,
+                'delete',
+                response=resp,
+            ),
+        )
 
     @validate_kwargs
     def get(self, event: TenantGet):
@@ -54,24 +66,21 @@ class TenantProcessor(AbstractCommandProcessor):
         if name:
             _LOG.debug(f'Describing tenant by name \'{name}\'')
             tenants = [self.tenant_service.get(tenant_name=name)]
+            nt = NextToken()
         else:
             _LOG.debug('Describing all tenants')
-            tenants = self.tenant_service.scan_tenants()
-
-        tenants = [tenant for tenant in tenants if tenant]
-
-        if not tenants:
-            _LOG.warning('No tenants found matching given query')
-            raise ResponseFactory(HTTPStatus.NOT_FOUND).message(
-                'No tenants found matching given query'
-            ).exc()
+            cursor = self.tenant_service.i_scan_tenants(
+                limit=event.limit,
+                last_evaluated_key=NextToken.from_input(event.next_token).value
+            )
+            tenants = list(cursor)
+            nt = NextToken(cursor.last_evaluated_key)
 
         _LOG.debug('Describing tenants dto')
-        response = [self.tenant_service.get_dto(tenant)
-                    for tenant in tenants]
-        _LOG.debug(f'Response: {response}')
-
-        return build_response(content=response)
+        return ResponseFactory().items(
+            it=map(self.tenant_service.get_dto, tenants),
+            next_token=nt
+        ).build()
 
     @validate_kwargs
     def post(self, event: TenantPost):

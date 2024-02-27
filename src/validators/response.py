@@ -1,4 +1,5 @@
 from datetime import datetime
+from http import HTTPStatus
 
 from modular_sdk.commons.constants import ApplicationType, ParentType, \
     ParentScope, Cloud
@@ -132,3 +133,15 @@ class ErrorsModel(BaseModel):
     400 Validation error
     """
     errors: list[ErrorData]
+
+
+common_responses = (
+    (HTTPStatus.BAD_REQUEST, ErrorsModel, 'Validation error'),
+    (HTTPStatus.UNAUTHORIZED, MessageModel, 'Invalid credentials'),
+    (HTTPStatus.FORBIDDEN, MessageModel, 'Cannot access the resource'),
+    (HTTPStatus.INTERNAL_SERVER_ERROR, MessageModel, 'Server error'),
+    (HTTPStatus.SERVICE_UNAVAILABLE, MessageModel,
+     'Service is temporarily unavailable'),
+    (HTTPStatus.GATEWAY_TIMEOUT, MessageModel,
+     'Gateway 30s timeout is reached')
+)

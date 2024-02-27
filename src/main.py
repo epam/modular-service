@@ -168,7 +168,9 @@ class Run(ActionHandler):
         """
         from swagger_ui import api_doc
         from services.openapi_spec_generator import OpenApiGenerator
-        from validators import registry
+        from lambdas.modular_api_handler.handler import HANDLER
+
+        # from validators import registry
         url = f'http://{self._host}:{self._port}'
         generator = OpenApiGenerator(
             title='Modular service API',
@@ -176,7 +178,7 @@ class Run(ActionHandler):
             url=url,
             stages=stage,
             version=__version__,
-            endpoints=registry.iter_all()
+            endpoints=HANDLER.iter_endpoint()
         )
         if not prefix.startswith('/'):
             prefix = f'/{prefix}'
@@ -324,8 +326,8 @@ class CreateIndexes(ActionHandler):
 
 class GenerateOpenApi(ActionHandler):
     def __call__(self, filename: Path):
-        from validators import registry
         from services.openapi_spec_generator import OpenApiGenerator
+        from lambdas.modular_api_handler.handler import HANDLER
         if filename.is_dir():
             _LOG.error('Please, provide path to file')
             exit(1)
@@ -335,7 +337,7 @@ class GenerateOpenApi(ActionHandler):
             url=f'http://{DEFAULT_HOST}:{DEFAULT_PORT}',
             stages='dev',  # todo get from somewhere
             version=__version__,
-            endpoints=registry.iter_all()
+            endpoints=HANDLER.iter_endpoint()
         )
         with open(filename, 'w') as file:
             json.dump(generator.generate(), file, separators=(',', ':'))

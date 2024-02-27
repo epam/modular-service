@@ -12,6 +12,7 @@ from services import SERVICE_PROVIDER
 from services.user_service import CognitoUserService
 from validators.request import SignInPost
 from validators.utils import validate_kwargs
+from validators.response import SignInResponse
 
 _LOG = get_logger(__name__)
 
@@ -27,12 +28,16 @@ class SignInProcessor(AbstractCommandProcessor):
         )
 
     @classmethod
-    def routes(cls) -> list[Route]:
-        name = cls.controller_name()
-        return [
-            Route(None, Endpoint.SIGNIN.value, controller=name, action='post',
-                  conditions={'method': [HTTPMethod.POST]}),
-        ]
+    def routes(cls) -> tuple[Route, ...]:
+        return (
+            cls.route(
+                Endpoint.SIGNIN,
+                HTTPMethod.POST,
+                'post',
+                response=(HTTPStatus.OK, SignInResponse, 'Successful login'),
+                require_auth=False
+            ),
+        )
 
     @validate_kwargs
     def post(self, event: SignInPost):

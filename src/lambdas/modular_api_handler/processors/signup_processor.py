@@ -16,6 +16,7 @@ from services.rbac.access_control_service import AccessControlService
 from services.user_service import CognitoUserService
 from validators.request import SignUpPost
 from validators.utils import validate_kwargs
+from validators.response import MessageModel
 
 _LOG = get_logger(__name__)
 
@@ -34,12 +35,16 @@ class SignUpProcessor(AbstractCommandProcessor):
         )
 
     @classmethod
-    def routes(cls) -> list[Route]:
-        name = cls.controller_name()
-        return [
-            Route(None, Endpoint.SIGNUP.value, controller=name, action='post',
-                  conditions={'method': [HTTPMethod.POST]}),
-        ]
+    def routes(cls) -> tuple[Route, ...]:
+        return (
+            cls.route(
+                Endpoint.SIGNUP,
+                HTTPMethod.POST,
+                'post',
+                response=(HTTPStatus.OK, MessageModel, None),
+                require_auth=False
+            ),
+        )
 
     @validate_kwargs
     def post(self, event: SignUpPost):

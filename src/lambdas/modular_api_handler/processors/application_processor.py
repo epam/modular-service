@@ -2,6 +2,7 @@ from http import HTTPStatus
 
 from routes.route import Route
 
+from commons import NextToken
 from commons.constants import (
     APPLICATION_ID_ATTR,
     CUSTOMER_ID_ATTR,
@@ -15,16 +16,20 @@ from commons.log_helper import get_logger
 from lambdas.modular_api_handler.processors.abstract_processor import (
     AbstractCommandProcessor,
 )
+from commons.abstract_lambda import ProcessedEvent
+from modular_sdk.commons.constants import ApplicationType
+from modular_sdk.services.impl.maestro_credentials_service import AWSRoleApplicationMeta
 from services import SERVICE_PROVIDER
 from services.application_mutator_service import ApplicationMutatorService
 from services.customer_mutator_service import CustomerMutatorService
 from services.parent_mutator_service import ParentMutatorService
 from validators.request import (
     ApplicationDelete,
-    ApplicationGet,
+    ApplicationQuery,
     ApplicationPatch,
-    ApplicationPost,
+    ApplicationPostAWSRole
 )
+from validators.response import ApplicationsResponse, MessageModel
 from validators.utils import validate_kwargs
 
 _LOG = get_logger(__name__)
@@ -39,20 +44,42 @@ class ApplicationProcessor(AbstractCommandProcessor):
         self.parent_service = parent_service
 
     @classmethod
-    def routes(cls) -> list[Route]:
-        name = cls.controller_name()
-        endpoint = Endpoint.APPLICATIONS.value
-        return [
-            Route(None, endpoint, controller=name, action='get',
-                  conditions={'method': [HTTPMethod.GET]}),
-            Route(None, endpoint, controller=name, action='post',
-                  conditions={'method': [HTTPMethod.POST]}),
-            Route(None, endpoint, controller=name, action='patch',
-                  conditions={'method': [HTTPMethod.PATCH]}),
-            Route(None, endpoint, controller=name, action='delete',
-                  conditions={'method': [HTTPMethod.DELETE]},
-                  description='Marks an applications as removed application'),
-        ]
+    def routes(cls) -> tuple[Route, ...]:
+        return (
+            cls.route(
+                Endpoint.APPLICATIONS_AWS_ROLE,
+                HTTPMethod.POST,
+                'post_aws_role',
+                summary='Create application with type AWS_ROLE',
+                response=(HTTPStatus.CREATED, None, None)
+            ),
+            cls.route(
+                Endpoint.APPLICATIONS_AWS_CREDENTIALS,
+                HTTPMethod.POST,
+                'post_aws_credentials',
+                summary='Create application with type AWS_CREDENTIALS',
+                response=(HTTPStatus.CREATED, None, None)
+            ),
+            cls.route(
+                Endpoint.APPLICATIONS,
+                HTTPMethod.GET,
+                'query',
+                response=(HTTPStatus.OK, ApplicationsResponse, None)
+            ),
+            cls.route(
+                Endpoint.APPLICATIONS,
+                HTTPMethod.PATCH,
+                'patch',
+                response=(HTTPStatus.OK, ApplicationsResponse, None)
+            ),
+            cls.route(
+                Endpoint.APPLICATIONS,
+                HTTPMethod.DELETE,
+                'delete',
+                summary='Marks an application as removed',
+                response=(HTTPStatus.OK, MessageModel, None),
+            )
+        )
 
     @classmethod
     def build(cls) -> 'ApplicationProcessor':
@@ -63,53 +90,44 @@ class ApplicationProcessor(AbstractCommandProcessor):
         )
 
     @validate_kwargs
-    def get(self, event: ApplicationGet):
-        _LOG.debug(f'Describe application event: {event}')
+    def post_aws_role(self, event: ApplicationPostAWSRole,
+                      _processed_event: ProcessedEvent):
+        meta = AWSRoleApplicationMeta(
+            roleName=event.role_name,
+            accountNumber=event.account_id
+        )
 
-        application_id = event.application_id
-
-        if application_id:
-            _LOG.debug(f'Describing application with id \'{application_id}\'')
-            applications = [self.application_service.get_application_by_id(
-                application_id=application_id)]
-        else:
-            _LOG.debug('Describing all applications available')
-            applications = self.application_service.list()
-
-        applications = [item for item in applications if item]
-        if not applications:
-            _LOG.warning('No application found matching given query')
-            raise ResponseFactory(HTTPStatus.NOT_FOUND).message(
-                'No application found matching given query'
-            ).exc()
-
-        _LOG.debug('Extracting application dto')
-        response = [self.application_service.get_dto(app) for app
-                    in applications]
-        _LOG.debug(f'Response: {response}')
-
-        return build_response(content=response)
-
-    @validate_kwargs
-    def post(self, event: ApplicationPost):
-        _LOG.debug(f'Activate application event: {event}')
-
-        _LOG.debug('Creating application')
-        application = self.application_service.create(
+        app = self.application_service.build(
             customer_id=event.customer_id,
-            type=event.type.value,
+            type=ApplicationType.AWS_ROLE.value,
             description=event.description,
             is_deleted=False,
-            meta=event.meta
+            meta=meta.dict(),
+            created_by=_processed_event['cognito_user_id']
         )
         _LOG.debug('Saving application')
-        self.application_service.save(application)
+        self.application_service.save(app)
 
-        _LOG.debug('Extracting application dto')
-        application_dto = self.application_service.get_dto(application)
+        return build_response(content=self.application_service.get_dto(app))
 
-        _LOG.debug(f'Response: {application_dto}')
-        return build_response(content=application_dto)
+    def post_aws_credentials(self):
+        pass
+
+    @validate_kwargs
+    def query(self, event: ApplicationQuery):
+        cursor = self.application_service.list(
+            customer=event.customer_id,
+            _type=event.type.value if event.type else None,
+            deleted=event.is_deleted,
+            limit=event.limit,
+            last_evaluated_key=NextToken.from_input(event.next_token).value,
+        )
+        items = list(cursor)
+
+        return ResponseFactory().items(
+            it=map(self.application_service.get_dto, items),
+            next_token=NextToken(cursor.last_evaluated_key)
+        ).build()
 
     @validate_kwargs
     def patch(self, event: ApplicationPatch):
