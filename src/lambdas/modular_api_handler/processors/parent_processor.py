@@ -1,4 +1,3 @@
-
 from http import HTTPStatus
 
 from routes.route import Route
@@ -49,8 +48,6 @@ class ParentProcessor(AbstractCommandProcessor):
 
     @classmethod
     def routes(cls) -> tuple[Route, ...]:
-        name = cls.controller_name()
-        endpoint = Endpoint.PARENTS.value
         resp = (HTTPStatus.OK, ParentsResponse, None)
         return (
             cls.route(

@@ -29,7 +29,7 @@ class Endpoint(str, Enum):
     APPLICATIONS_AWS_CREDENTIALS = '/applications/by-type/aws-credentials'
     APPLICATIONS_AZURE_CREDENTIALS = '/applications/by-type/azure-credentials'
     APPLICATIONS_AZURE_CERTIFICATE = '/applications/by-type/azure-certificate'
-    APPLICATIONS_AZURE_GCP_SERVICE_ACCOUNT = '/applications/by-type/gcp-service-account'
+    APPLICATIONS_GCP_SERVICE_ACCOUNT = '/applications/by-type/gcp-service-account'
 
     @classmethod
     def match(cls, resource: str) -> Self | None:
@@ -101,7 +101,6 @@ POLICIES_ATTR = 'policies'
 
 TYPE_ATTR = 'type'
 DESCRIPTION_ATTR = 'description'
-CUSTOMER_ID_ATTR = 'customer_id'
 APPLICATION_ID_ATTR = 'application_id'
 PARENT_ID_ATTR = 'parent_id'
 

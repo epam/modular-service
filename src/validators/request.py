@@ -1,11 +1,25 @@
-import uuid
+import base64
+import binascii
 from datetime import datetime, timezone
+from typing_extensions import Self, TypedDict
+import uuid
 
-from modular_sdk.commons.constants import Cloud, ParentType, ParentScope, \
-    ApplicationType
-from pydantic import BaseModel as BaseModelPydantic, ConfigDict, Field, \
-    model_validator, field_validator
-from typing_extensions import Self
+import boto3
+from botocore.exceptions import ClientError
+from modular_sdk.commons.constants import (
+    ApplicationType,
+    Cloud,
+    ParentScope,
+    ParentType,
+)
+from pydantic import (
+    BaseModel as BaseModelPydantic,
+    ConfigDict,
+    Field,
+    field_validator,
+    model_validator,
+)
+from pydantic.json_schema import SkipJsonSchema
 
 
 class BaseModel(BaseModelPydantic):
@@ -202,6 +216,77 @@ class ApplicationPostAWSRole(BaseModel):
     description: str
     role_name: str
     account_id: str = Field(None)
+
+
+class ApplicationPostAWSCredentials(BaseModel):
+    customer_id: str
+    description: str
+    access_key_id: str
+    secret_access_key: str
+    session_token: str = Field(None)
+    default_region: str = 'us-east-1'
+    account_id: SkipJsonSchema[str] = Field(None)  # derived from creds
+
+    @model_validator(mode='after')
+    def _(self) -> Self:
+        cl = boto3.client(
+            'sts',
+            aws_access_key_id=self.access_key_id,
+            aws_secret_access_key=self.secret_access_key,
+            aws_session_token=self.session_token
+        )
+        try:
+            resp = cl.get_caller_identity()
+        except ClientError:
+            raise ValueError(
+                'could not get caller identity with provided creds'
+            )
+        self.account_id = resp['Account']
+        return self
+
+
+class ApplicationPostAZURECredentials(BaseModel):
+    customer_id: str
+    description: str
+    client_id: str
+    tenant_id: str
+    api_key: str
+
+
+class ApplicationPostAZURECertificate(BaseModel):
+    customer_id: str
+    description: str
+    client_id: str
+    tenant_id: str
+    certificate: str = Field(description='Base64 encoded certificate')
+    password: str = Field(None, description='Password from the certificate')
+
+    @model_validator(mode='after')
+    def _(self) -> Self:
+        try:
+            base64.b64decode(self.certificate)
+        except binascii.Error:
+            raise ValueError('could not b64 decode the provided certificate')
+        return self
+
+
+class GOOGLECredentialsRaw1(TypedDict):
+    type: str
+    project_id: str
+    private_key_id: str
+    private_key: str
+    client_email: str
+    client_id: str
+    auth_uri: str
+    token_uri: str
+    auth_provider_x509_cert_url: str
+    client_x509_cert_url: str
+
+
+class ApplicationPostGCPServiceAccount(BaseModel):
+    customer_id: str
+    description: str
+    credentials: GOOGLECredentialsRaw1
 
 
 class ApplicationPatch(BaseModel):

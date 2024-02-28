@@ -107,11 +107,11 @@ class ModularApiHandler(EventProcessorLambdaHandler):
             case _:
                 body = event['body']
         params = dict(event=body, **match_result)
-        # if you need to access raw event data inside event
         sign = inspect.signature(handler)
-        if '_processed_event' in sign.parameters:
+        if '_pe' in sign.parameters:
+            # if you need to access raw event data inside event
             _LOG.debug('Expanding handler payload with raw event')
-            params['_processed_event'] = event
+            params['_pe'] = event
         return handler(**params)
 
     def iter_endpoint(self) -> Generator[EndpointInfo, None, None]:
