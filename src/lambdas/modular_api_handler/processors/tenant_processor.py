@@ -2,11 +2,11 @@ from http import HTTPStatus
 
 from routes.route import Route
 
+from commons import NextToken
 from commons.constants import (
     Endpoint,
     HTTPMethod,
 )
-from commons import NextToken
 from commons.lambda_response import ResponseFactory, build_response
 from commons.log_helper import get_logger
 from lambdas.modular_api_handler.processors.abstract_processor import (
@@ -15,9 +15,9 @@ from lambdas.modular_api_handler.processors.abstract_processor import (
 from services import SERVICE_PROVIDER
 from services.customer_mutator_service import CustomerMutatorService
 from services.tenant_mutator_service import TenantMutatorService
-from validators.request import TenantDelete, TenantGet, TenantPost
+from validators.request import TenantPost, TenantQuery
+from validators.response import TenantsResponse, MessageModel
 from validators.utils import validate_kwargs
-from validators.response import TenantsResponse
 
 _LOG = get_logger(__name__)
 
@@ -42,92 +42,146 @@ class TenantProcessor(AbstractCommandProcessor):
             cls.route(
                 Endpoint.TENANTS,
                 HTTPMethod.GET,
+                'query',
+                response=resp,
+            ),
+            cls.route(
+                Endpoint.TENANTS_NAME,
+                HTTPMethod.GET,
                 'get',
                 response=resp,
             ),
             cls.route(
                 Endpoint.TENANTS,
                 HTTPMethod.POST,
-                'post',
-                response=resp,
+                'create',
+                response=[(HTTPStatus.CREATED, TenantsResponse, None),
+                          (HTTPStatus.CONFLICT, MessageModel, 'Tenant already exists')],
+                description='Creates a new tenant'
             ),
             cls.route(
-                Endpoint.TENANTS,
-                HTTPMethod.DELETE,
-                'delete',
+                Endpoint.TENANTS_NAME_ACTIVATE,
+                HTTPMethod.POST,
+                'activate',
                 response=resp,
+                description='Activates an existing tenant'
             ),
+            cls.route(
+                Endpoint.TENANTS_NAME_DEACTIVATE,
+                HTTPMethod.POST,
+                'deactivate',
+                response=resp,
+                description='Deactivates an existing tenant'
+            ),
+            # cls.route(
+            #     Endpoint.TENANTS,
+            #     HTTPMethod.DELETE,
+            #     'delete',
+            #     response=resp,
+            # ),
         )
 
     @validate_kwargs
-    def get(self, event: TenantGet):
-        name = event.name
+    def query(self, event: TenantQuery):
+        cursor = self.tenant_service.i_get_tenant_by_customer(
+            customer_id=event.customer_id,
+            active=event.is_active,
+            cloud=event.cloud.value if event.cloud else None,
+            limit=event.limit,
+            last_evaluated_key=NextToken.from_input(event.next_token).value,
+        )
+        items = list(cursor)
 
-        if name:
-            _LOG.debug(f'Describing tenant by name \'{name}\'')
-            tenants = [self.tenant_service.get(tenant_name=name)]
-            nt = NextToken()
-        else:
-            _LOG.debug('Describing all tenants')
-            cursor = self.tenant_service.i_scan_tenants(
-                limit=event.limit,
-                last_evaluated_key=NextToken.from_input(event.next_token).value
-            )
-            tenants = list(cursor)
-            nt = NextToken(cursor.last_evaluated_key)
-
-        _LOG.debug('Describing tenants dto')
         return ResponseFactory().items(
-            it=map(self.tenant_service.get_dto, tenants),
-            next_token=nt
+            it=map(self.tenant_service.get_dto, items),
+            next_token=NextToken(cursor.last_evaluated_key)
         ).build()
 
     @validate_kwargs
-    def post(self, event: TenantPost):
+    def get(self, event: dict, name: str):
+        tenant = self.tenant_service.get(name)
+        if not tenant:
+            tenant = next(self.tenant_service.i_get_by_acc(
+                acc=name, limit=1
+            ), None)
+        if not tenant:
+            raise ResponseFactory(HTTPStatus.NOT_FOUND).default().exc()
+        return build_response(content=self.tenant_service.get_dto(tenant))
 
+    @validate_kwargs
+    def create(self, event: TenantPost):
         name = event.name
-        tenant_exist = self.tenant_service.get(tenant_name=name)
-        if tenant_exist:
+        acc = event.account_id
+        if self.tenant_service.get(tenant_name=name):
             _LOG.warning(f'Tenant with name \'{name}\' already exist.')
-            raise ResponseFactory(HTTPStatus.BAD_REQUEST).message(
+            raise ResponseFactory(HTTPStatus.CONFLICT).message(
                 f'Tenant with name \'{name}\' already exist.'
+            ).exc()
+
+        by_acc = next(self.tenant_service.i_get_by_acc(
+            acc=acc, limit=1
+        ), None)
+        if by_acc:
+            _LOG.warning(f'Tenant with account id \'{acc}\' already exist.')
+            raise ResponseFactory(HTTPStatus.CONFLICT).message(
+                f'Tenant with account id \'{acc}\' already exist.'
             ).exc()
 
         _LOG.debug('Creating tenant')
         tenant = self.tenant_service.create(
             tenant_name=name,
             display_name=event.display_name,
-            customer_name=event.tenant_customer,
-            cloud=event.cloud.value,
-            acc=event.acc,
+            customer_name=event.customer_id,
+            cloud=event.cloud,
+            acc=acc,
             is_active=True,
-            read_only=event.read_only
+            read_only=event.read_only,
+            contacts={
+                'primary_contacts': list(event.primary_contacts),
+                'secondary_contacts': list(event.secondary_contacts),
+                'tenant_manager_contacts': list(event.tenant_manager_contacts),
+                'default_owner': event.default_owner
+            }
         )
         _LOG.debug('Saving tenant')
         self.tenant_service.save(tenant=tenant)
-
-        _LOG.debug('Describing tenant dto')
-        response = self.tenant_service.get_dto(tenant=tenant)
-        _LOG.debug(f'Response: {response}')
-
-        return build_response(content=response)
+        return build_response(
+            content=self.tenant_service.get_dto(tenant),
+            code=HTTPStatus.CREATED
+        )
 
     @validate_kwargs
-    def delete(self, event: TenantDelete):
-
-        name = event.name
-        _LOG.debug(f'Describing tenant by name \'{name}\'')
-        tenant = self.tenant_service.get(tenant_name=name)
-
+    def activate(self, event: dict, name: str):
+        tenant = self.tenant_service.get(name)
         if not tenant:
-            _LOG.warning(f'Tenant with name \'{name}\' does not exist.')
-            raise ResponseFactory(HTTPStatus.NOT_FOUND).message(
-                f'Tenant with name \'{name}\' does not exist.'
-            ).exc()
+            raise ResponseFactory(HTTPStatus.NOT_FOUND).default().exc()
+        self.tenant_service.activate(tenant)
+        return build_response(content=self.tenant_service.get_dto(tenant))
 
-        _LOG.debug(f'Deactivating tenant \'{name}\'')
-        self.tenant_service.mark_deactivated(tenant=tenant)
+    @validate_kwargs
+    def deactivate(self, event: dict, name: str):
+        tenant = self.tenant_service.get(name)
+        if not tenant:
+            raise ResponseFactory(HTTPStatus.NOT_FOUND).default().exc()
+        self.tenant_service.deactivate(tenant)
+        return build_response(content=self.tenant_service.get_dto(tenant))
 
-        _LOG.debug('Describing tenant dto')
-        response = self.tenant_service.get_dto(tenant)
-        return build_response(content=response)
+    # @validate_kwargs
+    # def delete(self, event: TenantDelete):
+    #
+    #     name = event.name
+    #     _LOG.debug(f'Describing tenant by name \'{name}\'')
+    #     tenant = self.tenant_service.get(tenant_name=name)
+    #
+    #     if not tenant:
+    #         _LOG.warning(f'Tenant with name \'{name}\' does not exist.')
+    #         raise ResponseFactory(HTTPStatus.NOT_FOUND).message(
+    #             f'Tenant with name \'{name}\' does not exist.'
+    #         ).exc()
+    #
+    #     _LOG.debug(f'Deactivating tenant \'{name}\'')
+    #     self.tenant_service.mark_deactivated(tenant=tenant)
+    #
+    #     _LOG.debug('Describing tenant dto')
+    #     response = self.tenant_service.get_dto(tenant)
+    #     return build_response(content=response)

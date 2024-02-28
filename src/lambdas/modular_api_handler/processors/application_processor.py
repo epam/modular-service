@@ -141,7 +141,10 @@ class ApplicationProcessor(AbstractCommandProcessor):
         _LOG.debug('Saving application')
         self.application_service.save(app)
 
-        return build_response(content=self.application_service.get_dto(app))
+        return build_response(
+            content=self.application_service.get_dto(app),
+            code=HTTPStatus.CREATED
+        )
 
     @validate_kwargs
     def post_aws_credentials(self, event: ApplicationPostAWSCredentials,
@@ -172,7 +175,10 @@ class ApplicationProcessor(AbstractCommandProcessor):
         app.secret = secret_name
         _LOG.debug('Saving application')
         self.application_service.save(app)
-        return build_response(content=self.application_service.get_dto(app))
+        return build_response(
+            content=self.application_service.get_dto(app),
+            code=HTTPStatus.CREATED
+        )
 
     @validate_kwargs
     def post_azure_credentials(self, event: ApplicationPostAZURECredentials,
@@ -205,7 +211,10 @@ class ApplicationProcessor(AbstractCommandProcessor):
         app.secret = secret_name
         _LOG.debug('Saving application')
         self.application_service.save(app)
-        return build_response(content=self.application_service.get_dto(app))
+        return build_response(
+            content=self.application_service.get_dto(app),
+            code=HTTPStatus.CREATED
+        )
 
     @validate_kwargs
     def post_azure_certificate(self, event: ApplicationPostAZURECertificate,
@@ -237,7 +246,10 @@ class ApplicationProcessor(AbstractCommandProcessor):
         app.secret = secret_name
         _LOG.debug('Saving application')
         self.application_service.save(app)
-        return build_response(content=self.application_service.get_dto(app))
+        return build_response(
+            content=self.application_service.get_dto(app),
+            code=HTTPStatus.CREATED
+        )
 
     @validate_kwargs
     def post_gcp_service_account(self, event: ApplicationPostGCPServiceAccount,
@@ -264,7 +276,10 @@ class ApplicationProcessor(AbstractCommandProcessor):
         app.secret = secret_name
         _LOG.debug('Saving application')
         self.application_service.save(app)
-        return build_response(content=self.application_service.get_dto(app))
+        return build_response(
+            content=self.application_service.get_dto(app),
+            code=HTTPStatus.CREATED
+        )
 
     @validate_kwargs
     def query(self, event: ApplicationQuery):

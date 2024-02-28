@@ -129,8 +129,10 @@ class SignUpPost(BaseModel):
     role: str
 
 
-class TenantGet(BaseModel):
-    name: str = Field(None)
+class TenantQuery(BaseModel):
+    customer_id: str
+    cloud: Cloud = Field(None)
+    is_active: bool = Field(None)
     limit: int = Field(None)
     next_token: str = Field(None)
 
@@ -138,10 +140,14 @@ class TenantGet(BaseModel):
 class TenantPost(BaseModel):
     name: str
     display_name: str
-    tenant_customer: str
+    customer_id: str
     cloud: Cloud
-    acc: str
+    account_id: str
     read_only: bool
+    primary_contacts: set[str] = Field(default_factory=set)
+    secondary_contacts: set[str] = Field(default_factory=set)
+    tenant_manager_contacts: set[str] = Field(default_factory=set)
+    default_owner: str = Field(None)
 
 
 class TenantDelete(BaseModel):

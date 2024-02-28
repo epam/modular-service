@@ -97,6 +97,4 @@ class ServiceProvider(metaclass=SingletonMeta):
     @cached_property
     def tenant_service(self) -> 'TenantMutatorService':
         from services.tenant_mutator_service import TenantMutatorService
-        return TenantMutatorService(
-            customer_service=self.customer_service
-        )
+        return TenantMutatorService()
