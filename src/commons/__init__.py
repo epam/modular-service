@@ -4,7 +4,6 @@ import json
 import math
 import uuid
 from functools import reduce
-from types import NoneType
 from typing import Any
 
 from typing_extensions import Self
@@ -65,23 +64,23 @@ def dereference_json(obj: dict) -> None:
     """
 
     def _inner(o):
-        if isinstance(o, (str, int, float, bool, NoneType)):
-            return
-        # dict or list
-        if isinstance(o, dict):
-            for k, v in o.items():
-                if isinstance(v, dict) and isinstance(v.get('$ref'), str):
-                    _path = v['$ref'].strip('#/').split('/')
-                    o[k] = deep_get(obj, _path)
-                else:
-                    _inner(v)
-        else:  # isinstance(o, list)
-            for i, v in enumerate(o):
-                if isinstance(v, dict) and isinstance(v.get('$ref'), str):
-                    _path = v['$ref'].strip('#/').split('/')
-                    o[i] = deep_get(obj, _path)
-                else:
-                    _inner(v)
+        match o:
+            case str() | int() | float() | bool() | None:
+                return
+            case dict():
+                for k, v in o.items():
+                    if isinstance(v, dict) and isinstance(v.get('$ref'), str):
+                        _path = v['$ref'].strip('#/').split('/')
+                        o[k] = deep_get(obj, _path)
+                    else:
+                        _inner(v)
+            case _:  # list()
+                for i, v in enumerate(o):
+                    if isinstance(v, dict) and isinstance(v.get('$ref'), str):
+                        _path = v['$ref'].strip('#/').split('/')
+                        o[i] = deep_get(obj, _path)
+                    else:
+                        _inner(v)
 
     _inner(obj)
 
