@@ -181,7 +181,7 @@ class ResponseFactory:
     """
     Builds some common JSON responses
     >>> response = ResponseFactory(HTTPStatus.OK).items()
-    >>> ResponseFactory(HTTPStatus.BAD_REQUEST).message('Validation error').raise_()
+    >>> raise ResponseFactory(HTTPStatus.BAD_REQUEST).message('error').exc()
     """
     __slots__ = ('_code',)
 
@@ -222,7 +222,7 @@ def build_response(content: Content = None,
         case str():
             resp = f.message(content)
         case dict():
-            resp = f.items([content])
+            resp = f.data(content)
         case list():
             resp = f.items(content)
         case None:
@@ -231,5 +231,4 @@ def build_response(content: Content = None,
             resp = f.items(list(content))
     if not resp.ok:
         raise resp.exc()
-        # return
     return resp.build()

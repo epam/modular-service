@@ -75,6 +75,7 @@ class TenantContacts(TypedDict):
     primary_contacts: list[str]
     secondary_contacts: list[str]
     tenant_manager_contacts: list[str]
+    default_owner: str | None
 
 
 class Tenant(TypedDict):
@@ -98,6 +99,11 @@ class CustomersResponse(BaseModel):
 
 class TenantsResponse(BaseModel):
     items: list[Tenant]
+    next_token: str | None
+
+
+class TenantResponse(BaseModel):
+    data: Tenant
 
 
 class RolesResponse(BaseModel):
@@ -114,6 +120,11 @@ class ParentsResponse(BaseModel):
 
 class ApplicationsResponse(BaseModel):
     items: list[Application]
+    next_token: str | None
+
+
+class ApplicationResponse(BaseModel):
+    data: Application
 
 
 class RegionsResponse(BaseModel):

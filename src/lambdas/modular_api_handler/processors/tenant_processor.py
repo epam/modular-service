@@ -16,7 +16,7 @@ from services import SERVICE_PROVIDER
 from services.customer_mutator_service import CustomerMutatorService
 from services.tenant_mutator_service import TenantMutatorService
 from validators.request import TenantPost, TenantQuery
-from validators.response import TenantsResponse, MessageModel
+from validators.response import TenantsResponse, MessageModel, TenantResponse
 from validators.utils import validate_kwargs
 
 _LOG = get_logger(__name__)
@@ -37,25 +37,26 @@ class TenantProcessor(AbstractCommandProcessor):
 
     @classmethod
     def routes(cls) -> tuple[Route, ...]:
-        resp = (HTTPStatus.OK, TenantsResponse, None)
         return (
             cls.route(
                 Endpoint.TENANTS,
                 HTTPMethod.GET,
                 'query',
-                response=resp,
+                response=(HTTPStatus.OK, TenantsResponse, None),
             ),
             cls.route(
                 Endpoint.TENANTS_NAME,
                 HTTPMethod.GET,
                 'get',
-                response=resp,
+                summary='Queries a specific tenant',
+                description='Either tenant name or tenant account id can be used to retrieve a tenant',
+                response=(HTTPStatus.OK, TenantResponse, None),
             ),
             cls.route(
                 Endpoint.TENANTS,
                 HTTPMethod.POST,
                 'create',
-                response=[(HTTPStatus.CREATED, TenantsResponse, None),
+                response=[(HTTPStatus.CREATED, TenantResponse, None),
                           (HTTPStatus.CONFLICT, MessageModel, 'Tenant already exists')],
                 description='Creates a new tenant'
             ),
@@ -63,22 +64,23 @@ class TenantProcessor(AbstractCommandProcessor):
                 Endpoint.TENANTS_NAME_ACTIVATE,
                 HTTPMethod.POST,
                 'activate',
-                response=resp,
+                response=(HTTPStatus.OK, TenantResponse, None),
                 description='Activates an existing tenant'
             ),
             cls.route(
                 Endpoint.TENANTS_NAME_DEACTIVATE,
                 HTTPMethod.POST,
                 'deactivate',
-                response=resp,
+                response=(HTTPStatus.OK, TenantResponse, None),
                 description='Deactivates an existing tenant'
             ),
-            # cls.route(
-            #     Endpoint.TENANTS,
-            #     HTTPMethod.DELETE,
-            #     'delete',
-            #     response=resp,
-            # ),
+            cls.route(
+                Endpoint.TENANTS_NAME,
+                HTTPMethod.DELETE,
+                'delete',
+                summary='Guarantees that tenant is completely removed from the DB',
+                response=(HTTPStatus.NO_CONTENT, None, None),
+            ),
         )
 
     @validate_kwargs
@@ -166,22 +168,14 @@ class TenantProcessor(AbstractCommandProcessor):
         self.tenant_service.deactivate(tenant)
         return build_response(content=self.tenant_service.get_dto(tenant))
 
-    # @validate_kwargs
-    # def delete(self, event: TenantDelete):
-    #
-    #     name = event.name
-    #     _LOG.debug(f'Describing tenant by name \'{name}\'')
-    #     tenant = self.tenant_service.get(tenant_name=name)
-    #
-    #     if not tenant:
-    #         _LOG.warning(f'Tenant with name \'{name}\' does not exist.')
-    #         raise ResponseFactory(HTTPStatus.NOT_FOUND).message(
-    #             f'Tenant with name \'{name}\' does not exist.'
-    #         ).exc()
-    #
-    #     _LOG.debug(f'Deactivating tenant \'{name}\'')
-    #     self.tenant_service.mark_deactivated(tenant=tenant)
-    #
-    #     _LOG.debug('Describing tenant dto')
-    #     response = self.tenant_service.get_dto(tenant)
-    #     return build_response(content=response)
+    @validate_kwargs
+    def delete(self, event: dict, name: str):
+        tenant = self.tenant_service.get(tenant_name=name)
+
+        if not tenant:
+            _LOG.warning(f'Tenant {name} did not exist before')
+            return build_response(code=HTTPStatus.NO_CONTENT)
+
+        _LOG.debug(f'Deactivating tenant \'{name}\'')
+        self.tenant_service.remove(tenant)
+        return build_response(code=HTTPStatus.NO_CONTENT)

@@ -5,7 +5,8 @@ from typing import TypedDict
 
 from modular_sdk.commons.exception import ModularException
 
-from services.rbac.endpoint_to_permission_mapping import ENDPOINT_PERMISSION_MAPPING
+from services.rbac.endpoint_to_permission_mapping import (
+    ENDPOINT_PERMISSION_MAPPING)
 from commons import deep_get, RequestContext
 from commons.constants import Endpoint, HTTPMethod
 from commons.lambda_response import ApplicationException, ResponseFactory

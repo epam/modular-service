@@ -38,7 +38,7 @@ from validators.request import (
     ApplicationPostAZURECertificate,
     ApplicationPostGCPServiceAccount
 )
-from validators.response import ApplicationsResponse, MessageModel
+from validators.response import ApplicationResponse, ApplicationsResponse, MessageModel
 from validators.utils import validate_kwargs
 
 _LOG = get_logger(__name__)
@@ -56,41 +56,42 @@ class ApplicationProcessor(AbstractCommandProcessor):
 
     @classmethod
     def routes(cls) -> tuple[Route, ...]:
+        resp = (HTTPStatus.CREATED, ApplicationResponse, None)
         return (
             cls.route(
                 Endpoint.APPLICATIONS_AWS_ROLE,
                 HTTPMethod.POST,
                 'post_aws_role',
                 summary='Create application with type AWS_ROLE',
-                response=(HTTPStatus.CREATED, None, None)
+                response=resp
             ),
             cls.route(
                 Endpoint.APPLICATIONS_AWS_CREDENTIALS,
                 HTTPMethod.POST,
                 'post_aws_credentials',
                 summary='Create application with type AWS_CREDENTIALS',
-                response=(HTTPStatus.CREATED, None, None)
+                response=resp
             ),
             cls.route(
                 Endpoint.APPLICATIONS_AZURE_CREDENTIALS,
                 HTTPMethod.POST,
                 'post_azure_credentials',
                 summary='Create application with type AZURE_CREDENTIALS',
-                response=(HTTPStatus.CREATED, None, None)
+                response=resp
             ),
             cls.route(
                 Endpoint.APPLICATIONS_AZURE_CERTIFICATE,
                 HTTPMethod.POST,
                 'post_azure_certificate',
                 summary='Create application with type AZURE_CERTIFICATE',
-                response=(HTTPStatus.CREATED, None, None)
+                response=resp
             ),
             cls.route(
                 Endpoint.APPLICATIONS_GCP_SERVICE_ACCOUNT,
                 HTTPMethod.POST,
                 'post_gcp_service_account',
                 summary='Create application with type GCP_SERVICE_ACCOUNT',
-                response=(HTTPStatus.CREATED, None, None)
+                response=resp
             ),
             cls.route(
                 Endpoint.APPLICATIONS,
