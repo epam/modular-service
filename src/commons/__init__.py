@@ -96,39 +96,6 @@ class SingletonMeta(type):
         return cls._instances[cls]
 
 
-def secured_params() -> tuple:
-    return (
-        'refresh_token', 'id_token', 'password', 'authorization', 'secret',
-        'private_key', 'private_key_id', 'Authorization', 'Authentication'
-    )
-
-
-def secure_event(event: dict, secured_keys=secured_params()):
-    result_event = {}
-    if not isinstance(event, dict):
-        return event
-    for key, value in event.items():
-        if key in secured_keys:
-            result_event[key] = '*****'
-        elif isinstance(value, dict):
-            result_event[key] = secure_event(value, secured_keys)
-        elif isinstance(value, list):
-            result_event[key] = []
-            for item in value:
-                result_event[key].append(secure_event(item, secured_keys))
-        elif isinstance(value, str):
-            try:
-                result_event[key] = json.dumps(
-                    secure_event(json.loads(value), secured_keys)
-                )
-            except ValueError:
-                result_event[key] = value
-        else:
-            result_event[key] = value
-
-    return result_event
-
-
 def urljoin(*args: str) -> str:
     """
     Joins all the parts with one "/"
@@ -139,7 +106,7 @@ def urljoin(*args: str) -> str:
 
 
 class NextToken:
-    __slots__ = ('_lak', )
+    __slots__ = ('_lak',)
 
     def __init__(self, lak: dict | int | None = None):
         """
@@ -179,4 +146,3 @@ class NextToken:
 
     def __bool__(self) -> bool:
         return not not self._lak  # 0 and empty dict are None
-

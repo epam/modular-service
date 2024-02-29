@@ -74,7 +74,6 @@ class RoleProcessor(AbstractCommandProcessor):
 
     @validate_kwargs
     def get(self, event: RoleGet):
-        _LOG.debug(f'Get role event: {event}')
         role_name = event.name
         if role_name:
             _LOG.debug(f'Extracting role with name \'{role_name}\'')
@@ -96,7 +95,6 @@ class RoleProcessor(AbstractCommandProcessor):
 
     @validate_kwargs
     def post(self, event: RolePost):
-        _LOG.debug(f'Create role event: {event}')
 
         role_name = event.name
         policies = event.policies

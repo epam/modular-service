@@ -5,13 +5,13 @@ from typing import TypedDict
 
 from modular_sdk.commons.exception import ModularException
 
-from services.rbac.endpoint_to_permission_mapping import (
-    ENDPOINT_PERMISSION_MAPPING)
 from commons import deep_get, RequestContext
 from commons.constants import Endpoint, HTTPMethod
 from commons.lambda_response import ApplicationException, ResponseFactory
-from commons.log_helper import get_logger
+from commons.log_helper import get_logger, hide_secret_values
 from services import SERVICE_PROVIDER
+from services.rbac.endpoint_to_permission_mapping import (
+    ENDPOINT_PERMISSION_MAPPING)
 
 _LOG = get_logger(__name__)
 
@@ -30,6 +30,7 @@ class NullEventProcessor(AbstractEventProcessor):
     """
     Makes nothing with an incoming event
     """
+
     def __call__(self, event: dict) -> dict:
         return event
 
@@ -58,7 +59,8 @@ class ApiGatewayEventProcessor(AbstractEventProcessor):
         rc = event.get('requestContext') or {}
         return {
             'method': HTTPMethod(event['httpMethod']),
-            'resource': Endpoint.match(event['requestContext']['resourcePath']),
+            'resource': Endpoint.match(
+                event['requestContext']['resourcePath']),
             'path': event['path'],
             'fullpath': event['requestContext']['path'],
             'cognito_username': deep_get(rc, ('authorizer', 'claims',
@@ -112,24 +114,29 @@ class EventProcessorLambdaHandler(AbstractLambdaHandler):
     processors: tuple[AbstractEventProcessor, ...] = ()
 
     @abstractmethod
-    def handle_request(self, event: dict, context: RequestContext) -> dict:
+    def handle_request(self, event: ProcessedEvent,
+                       context: RequestContext) -> dict:
         ...
 
     def lambda_handler(self, event: dict, context: RequestContext) -> dict:
         _LOG.info(f'Starting request: {context.aws_request_id}')
-        _LOG.debug(json.dumps(event))
+        # This is the only place where we print the event. Do not print it
+        # somewhere else
+        _LOG.debug('Incoming event')
+        _LOG.debug(json.dumps(hide_secret_values(event)))
 
         try:
             for processor in self.processors:
                 event = processor(event)
             return self.handle_request(event=event, context=context)
         except ModularException as e:
-            _LOG.warning(f'Modular exception occurred: {e}')
+            _LOG.warning('Modular exception occurred', exc_info=1)
             return ResponseFactory(int(e.code)).message(e.content).build()
         except ApplicationException as e:
-            _LOG.warning(f'Application exception occurred: {e}')
+            _LOG.warning('Application exception occurred', exc_info=1)
             return e.build()
-        except Exception:
+        except Exception:  # noqa
             _LOG.exception('Unexpected exception occurred')
             return ResponseFactory(
-                HTTPStatus.INTERNAL_SERVER_ERROR).default().build()
+                HTTPStatus.INTERNAL_SERVER_ERROR
+            ).default().build()

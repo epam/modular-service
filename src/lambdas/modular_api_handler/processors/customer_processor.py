@@ -76,7 +76,6 @@ class CustomerProcessor(AbstractCommandProcessor):
         _LOG.debug('Extracting customer dto')
         response = [self.customer_service.get_dto(customer=customer)
                     for customer in customers]
-        _LOG.debug(f'Response: {response}')
         return build_response(content=response)
 
     @validate_kwargs

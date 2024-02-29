@@ -30,7 +30,7 @@ class ApplicationMutatorService(ApplicationService):
         if customer_id:
             _LOG.debug(f'Updating application customer to \'{customer_id}\'')
             if not self.customer_service.get(name=customer_id):
-                _LOG.error(
+                _LOG.warning(
                     f'Customer with name \'{customer_id}\' does not exist.')
                 raise ModularException(
                     code=RESPONSE_RESOURCE_NOT_FOUND_CODE,
