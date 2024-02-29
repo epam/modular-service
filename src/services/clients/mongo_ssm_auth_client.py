@@ -1,7 +1,7 @@
 import json
 from datetime import timedelta
 from http import HTTPStatus
-from typing import Any
+from typing import Any, TYPE_CHECKING
 
 import bcrypt
 from jwcrypto import jwt
@@ -12,7 +12,10 @@ from commons.log_helper import get_logger
 from models.user import User
 from services.clients.cognito import BaseAuthClient
 from services.clients.jwt_management_client import JWTManagementClient
-from services.clients.ssm import AbstractSSMClient
+
+if TYPE_CHECKING:
+    from modular_sdk.services.ssm_service import AbstractSSMClient
+
 
 _LOG = get_logger(__name__)
 
@@ -22,7 +25,7 @@ TOKEN_EXPIRED_MESSAGE = 'The incoming token has expired'
 
 
 class MongoAndSSMAuthClient(BaseAuthClient):
-    def __init__(self, ssm_client: AbstractSSMClient):
+    def __init__(self, ssm_client: 'AbstractSSMClient'):
         self._ssm = ssm_client
 
     def _get_jwt_secret(self) -> JWTManagementClient:

@@ -40,3 +40,12 @@ class EnvironmentService:
 
     def mongo_database(self) -> str:
         return self._ensure_env(Env.MONGO_DATABASE)
+
+    def is_external_ssm(self) -> bool:
+        """
+        modular tables can be placed in another aws account. So, should we use
+        SSM parameter store from their account or from ours? By default - ours
+        :return:
+        """
+        env = str(self._env.get(Env.EXTERNAL_SSM)).lower()
+        return env in ('y', 'yes', 'true')

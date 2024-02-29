@@ -131,7 +131,7 @@ class ApplicationProcessor(AbstractCommandProcessor):
             application_service=SERVICE_PROVIDER.modular.application_service(),
             customer_service=SERVICE_PROVIDER.customer_service,
             parent_service=SERVICE_PROVIDER.parent_service,
-            ssm_client=SERVICE_PROVIDER.modular.assume_role_ssm_service()  # TODO get from env
+            ssm_client=SERVICE_PROVIDER.ssm
         )
 
     @validate_kwargs
@@ -180,11 +180,10 @@ class ApplicationProcessor(AbstractCommandProcessor):
             name=f'modular-service.app.{app.application_id}',
             date=False
         )
-        self.ssm.put_parameter(
+        app.secret = self.ssm.put_parameter(
             name=secret_name,
             value=secret.dict()
         )
-        app.secret = secret_name
         _LOG.debug('Saving application')
         self.application_service.save(app)
         return build_response(
@@ -216,11 +215,10 @@ class ApplicationProcessor(AbstractCommandProcessor):
             name=f'modular-service.app.{app.application_id}',
             date=False
         )
-        self.ssm.put_parameter(
+        app.secret = self.ssm.put_parameter(
             name=secret_name,
             value=secret.dict()
         )
-        app.secret = secret_name
         _LOG.debug('Saving application')
         self.application_service.save(app)
         return build_response(
@@ -251,11 +249,10 @@ class ApplicationProcessor(AbstractCommandProcessor):
             name=f'modular-service.app.{app.application_id}',
             date=False
         )
-        self.ssm.put_parameter(
+        app.secret = self.ssm.put_parameter(
             name=secret_name,
             value=secret.dict()
         )
-        app.secret = secret_name
         _LOG.debug('Saving application')
         self.application_service.save(app)
         return build_response(
@@ -281,11 +278,10 @@ class ApplicationProcessor(AbstractCommandProcessor):
             name=f'modular-service.app.{app.application_id}',
             date=False
         )
-        self.ssm.put_parameter(
+        app.secret = self.ssm.put_parameter(
             name=secret_name,
             value=event.credentials
         )
-        app.secret = secret_name
         _LOG.debug('Saving application')
         self.application_service.save(app)
         return build_response(

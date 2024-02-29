@@ -129,12 +129,12 @@ class EventProcessorLambdaHandler(AbstractLambdaHandler):
             for processor in self.processors:
                 event = processor(event)
             return self.handle_request(event=event, context=context)
+        except ApplicationException as e:
+            _LOG.warning(f'Application exception occurred: {e}')
+            return e.build()
         except ModularException as e:
             _LOG.warning('Modular exception occurred', exc_info=1)
             return ResponseFactory(int(e.code)).message(e.content).build()
-        except ApplicationException as e:
-            _LOG.warning('Application exception occurred', exc_info=1)
-            return e.build()
         except Exception:  # noqa
             _LOG.exception('Unexpected exception occurred')
             return ResponseFactory(

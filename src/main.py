@@ -122,6 +122,10 @@ class ActionHandler(ABC):
 class InitVault(ABC):
     def __call__(self):
         from services import SP
+        if not SP.environment_service.is_docker():
+            _LOG.warning('Not onprem (set env MODULAR_SERVICE_MODE=docker). '
+                         'Exiting')
+            exit(1)
         ssm = SP.ssm
         if ssm.enable_secrets_engine():
             _LOG.info('Vault engine was enabled')

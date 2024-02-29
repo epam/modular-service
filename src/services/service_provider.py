@@ -7,7 +7,7 @@ from modular_sdk.modular import Modular
 from commons import SingletonMeta
 
 if TYPE_CHECKING:
-    from services.clients.ssm import AbstractSSMClient
+    from modular_sdk.services.ssm_service import AbstractSSMClient
     from services.clients.cognito import BaseAuthClient
     from services.user_service import CognitoUserService
     from services.environment_service import EnvironmentService
@@ -28,10 +28,14 @@ class ServiceProvider(metaclass=SingletonMeta):
     @cached_property
     def ssm(self) -> 'AbstractSSMClient':
         if self.environment_service.is_docker():
-            from services.clients.ssm import VaultSSMClient
-            return VaultSSMClient(environment_service=self.environment_service)
-        from services.clients.ssm import SSMClient
-        return SSMClient()
+            from services.clients.ssm import ModularVaultSSMClient
+            return ModularVaultSSMClient(
+                environment_service=self.environment_service
+            )
+        if self.environment_service.is_external_ssm():
+            return self.modular.assume_role_ssm_service()
+        else:
+            return self.modular.ssm_service()
 
     @cached_property
     def cognito(self) -> 'BaseAuthClient':

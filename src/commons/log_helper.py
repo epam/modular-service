@@ -3,6 +3,7 @@ import logging
 import os
 from sys import stdout
 from typing import TypeVar
+from commons.constants import Env
 
 LOG_FORMAT = '%(asctime)s - %(levelname)s - %(name)s - %(message)s'
 
@@ -12,7 +13,7 @@ console_handler = logging.StreamHandler(stream=stdout)
 console_handler.setFormatter(logging.Formatter(LOG_FORMAT))
 logger.addHandler(console_handler)
 
-log_level = os.getenv('LOG_LEVEL') or 'DEBUG'
+log_level = os.getenv(Env.LOG_LEVEL) or 'DEBUG'
 try:
     logger.setLevel(log_level)
 except ValueError:  # not valid log level name
@@ -35,7 +36,7 @@ SECRET_KEYS = {
     'Authorization', 'Authentication', 'certificate'
 }
 
-JT = TypeVar('JT')
+JT = TypeVar('JT')  # json type
 
 
 def hide_secret_values(obj: JT, secret_keys: set[str] | None = None,
