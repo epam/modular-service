@@ -63,7 +63,9 @@ class MongoAndSSMAuthClient(BaseAuthClient):
             claims={
                 'cognito:username': username,
                 'sub': str(user_item.mongo_id),
+                'custom:customer': user_item.customer,
                 'custom:role': user_item.role,
+                'custom:is_system': user_item.is_system
             },
             exp=timedelta(minutes=EXPIRATION_IN_MINUTES)
         )

@@ -25,7 +25,14 @@ from pydantic.json_schema import SkipJsonSchema
 class BaseModel(BaseModelPydantic):
     model_config = ConfigDict(
         coerce_numbers_to_str=True,
-        populate_by_name=True
+        populate_by_name=True,
+    )
+    customer_id: SkipJsonSchema[str] = Field(
+        None,
+        description='Special parameter. Allows to perform actions on behalf '
+                    'on the specified customer. This can be allowed only '
+                    'for system users. Parameter will be ignored for '
+                    'standard users',
     )
 
 
@@ -133,7 +140,6 @@ class SignUpPost(BaseModel):
 
 
 class TenantQuery(BasePaginationModel):
-    customer_id: str
     cloud: Cloud = Field(None)
     is_active: bool = Field(None)
 
@@ -141,7 +147,6 @@ class TenantQuery(BasePaginationModel):
 class TenantPost(BaseModel):
     name: str
     display_name: str
-    customer_id: str
     cloud: Cloud
     account_id: str
     read_only: bool
@@ -192,7 +197,6 @@ class ParentGet(BaseModel):
 class ParentPost(BaseModel):
     application_id: str
     type: ParentType
-    customer_id: str
     description: str
     meta: dict = Field(default_factory=dict)  # todo specific validator
     cloud: Cloud
@@ -211,7 +215,6 @@ class ParentDelete(BaseModel):
 
 
 class ApplicationQuery(BasePaginationModel):
-    customer_id: str
     type: ApplicationType = Field(None)
     is_deleted: bool = Field(None)
 
@@ -221,14 +224,12 @@ class ApplicationPatch(BaseModel):
 
 
 class ApplicationPostAWSRole(BaseModel):
-    customer_id: str
     description: str
     role_name: str
     account_id: str = Field(None)
 
 
 class ApplicationPostAWSCredentials(BaseModel):
-    customer_id: str
     description: str
     access_key_id: str
     secret_access_key: str
@@ -255,7 +256,6 @@ class ApplicationPostAWSCredentials(BaseModel):
 
 
 class ApplicationPostAZURECredentials(BaseModel):
-    customer_id: str
     description: str
     client_id: str
     tenant_id: str
@@ -263,7 +263,6 @@ class ApplicationPostAZURECredentials(BaseModel):
 
 
 class ApplicationPostAZURECertificate(BaseModel):
-    customer_id: str
     description: str
     client_id: str
     tenant_id: str
@@ -293,7 +292,6 @@ class GOOGLECredentialsRaw1(TypedDict):
 
 
 class ApplicationPostGCPServiceAccount(BaseModel):
-    customer_id: str
     description: str
     credentials: GOOGLECredentialsRaw1
 

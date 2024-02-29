@@ -41,8 +41,10 @@ class ProcessedEvent(TypedDict):
     path: str  # real path without stage: /jobs/123
     fullpath: str  # full real path with stage /dev/jobs/123
     cognito_username: str | None
+    cognito_customer: str | None
     cognito_user_id: str | None
     cognito_user_role: str | None
+    is_system: bool
     body: dict  # maybe better str in order not to bind to json
     query: dict
     path_params: dict
@@ -65,9 +67,13 @@ class ApiGatewayEventProcessor(AbstractEventProcessor):
             'fullpath': event['requestContext']['path'],
             'cognito_username': deep_get(rc, ('authorizer', 'claims',
                                               'cognito:username')),
+            'cognito_customer': deep_get(rc, ('authorizer', 'claims',
+                                              'custom:customer')),
             'cognito_user_id': deep_get(rc, ('authorizer', 'claims', 'sub')),
             'cognito_user_role': deep_get(rc, ('authorizer', 'claims',
                                                'custom:role')),
+            'is_system': deep_get(rc, ('authorizer', 'claims', 
+                                       'custom:is_system')) or False,
             'body': body,
             'query': dict(event.get('queryStringParameters') or {}),
             'path_params': dict(event.get('pathParameters') or {})
@@ -92,6 +98,28 @@ class CheckPermissionEventProcessor(AbstractEventProcessor):
             raise ResponseFactory(HTTPStatus.FORBIDDEN).message(
                 f'You don\'t have the necessary permission: {permission}'
             ).exc()
+        return event
+
+
+class RestrictCustomerEventProcessor(AbstractEventProcessor):
+    """
+    Each user has its own customer but a system user should be able to 
+    perform actions on behalf of any customer. Every request model has 
+    customer_id attribute that is used by handlers to manage entities of 
+    that customer. This processor inserts user's customer to each event body.
+    Allows to provide customer_id only for system users
+    """
+    def __call__(self, event: ProcessedEvent) -> ProcessedEvent:
+        if not event['cognito_user_id']:
+            # endpoint without auth
+            return event
+        if event['is_system']:
+            return event
+        match event['method']:
+            case HTTPMethod.GET:
+                event['query']['customer_id'] = event['cognito_customer']
+            case _:
+                event['body']['customer_id'] = event['cognito_customer']
         return event
 
 

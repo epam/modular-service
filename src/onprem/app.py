@@ -150,6 +150,8 @@ class OnPremApiBuilder:
                 'claims': {
                     'cognito:username': decoded_token.get('cognito:username'),
                     'sub': decoded_token.get('sub'),
+                    'custom:customer': decoded_token.get('custom:customer'),
+                    'custom:is_system': decoded_token.get('custom:is_system'),
                     'custom:role': decoded_token.get('custom:role'),
                 }
             }

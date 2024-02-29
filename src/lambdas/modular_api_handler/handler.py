@@ -12,6 +12,7 @@ from commons.abstract_lambda import (
     CheckPermissionEventProcessor,
     EventProcessorLambdaHandler,
     ProcessedEvent,
+    RestrictCustomerEventProcessor,
 )
 from commons.constants import HTTPMethod, REQUEST_METHOD_WSGI_ENV
 from commons.lambda_response import ResponseFactory
@@ -48,7 +49,8 @@ _LOG = get_logger('modular_api_handler')
 class ModularApiHandler(EventProcessorLambdaHandler):
     processors = (
         ApiGatewayEventProcessor(),
-        CheckPermissionEventProcessor()
+        CheckPermissionEventProcessor(),
+        RestrictCustomerEventProcessor()
     )
     controller_classes = (
         SignUpProcessor,
