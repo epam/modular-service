@@ -29,6 +29,7 @@ class Endpoint(str, Enum):
     TENANTS_REGIONS = '/tenants/regions'
     APPLICATIONS_ID = '/applications/{id}'
     APPLICATIONS_AWS_ROLE = '/applications/aws-role'
+    TENANTS_NAME_SETTINGS = '/tenants/{name}/settings'
     TENANTS_NAME_ACTIVATE = '/tenants/{name}/activate'
     TENANTS_NAME_DEACTIVATE = '/tenants/{name}/deactivate'
     CUSTOMERS_NAME_ACTIVATE = '/customers/{name}/activate'

@@ -29,16 +29,19 @@ class BaseModel(BaseModelPydantic):
     )
 
 
+class BasePaginationModel(BaseModel):
+    limit: int = Field(50, le=50)
+    next_token: str = Field(None)
+
+
 class CustomerPost(BaseModel):
     name: str
     display_name: str
     admins: set[str] = Field(default_factory=set)
 
 
-class CustomerQuery(BaseModel):
+class CustomerQuery(BasePaginationModel):
     is_active: bool = Field(None)
-    limit: int = Field(None)
-    next_token: str = Field(None)
 
 
 class CustomerPatch(BaseModel):
@@ -129,12 +132,10 @@ class SignUpPost(BaseModel):
     role: str
 
 
-class TenantQuery(BaseModel):
+class TenantQuery(BasePaginationModel):
     customer_id: str
     cloud: Cloud = Field(None)
     is_active: bool = Field(None)
-    limit: int = Field(None)
-    next_token: str = Field(None)
 
 
 class TenantPost(BaseModel):
@@ -209,11 +210,9 @@ class ParentDelete(BaseModel):
     parent_id: str
 
 
-class ApplicationQuery(BaseModel):
+class ApplicationQuery(BasePaginationModel):
     customer_id: str
     type: ApplicationType = Field(None)
-    limit: int = Field(None)
-    next_token: str = Field(None)
     is_deleted: bool = Field(None)
 
 
@@ -301,3 +300,17 @@ class ApplicationPostGCPServiceAccount(BaseModel):
 
 class ApplicationDelete(BaseModel):
     application_id: str
+
+
+class TenantSettingQuery(BasePaginationModel):
+    key: str = Field(
+        None,
+        description='Note that a tenant can have only one setting for a '
+                    'specific key. So in case you provide this value either '
+                    'an empty list of a list with one element is returned'
+    )
+
+
+class TenantSettingPut(BaseModel):
+    key: str
+    value: dict | list | str | int | float | None

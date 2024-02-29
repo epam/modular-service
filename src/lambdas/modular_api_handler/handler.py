@@ -23,6 +23,9 @@ from lambdas.modular_api_handler.processors.application_processor import (
     ApplicationProcessor,
 )
 from lambdas.modular_api_handler.processors.customer_processor import CustomerProcessor
+from lambdas.modular_api_handler.processors.customer_settings_processor import (
+    CustomerSettingsProcessor,
+)
 from lambdas.modular_api_handler.processors.parent_processor import ParentProcessor
 from lambdas.modular_api_handler.processors.policies_processor import PolicyProcessor
 from lambdas.modular_api_handler.processors.region_processor import RegionProcessor
@@ -33,6 +36,9 @@ from lambdas.modular_api_handler.processors.tenant_in_region_processor import (
     TenantRegionProcessor,
 )
 from lambdas.modular_api_handler.processors.tenant_processor import TenantProcessor
+from lambdas.modular_api_handler.processors.tenant_settings_processor import (
+    TenantSettingsProcessor,
+)
 from services.openapi_spec_generator import EndpointInfo
 from validators.response import MessageModel, common_responses
 
@@ -54,7 +60,9 @@ class ModularApiHandler(EventProcessorLambdaHandler):
         TenantRegionProcessor,
         ApplicationProcessor,
         ParentProcessor,
-        RegionProcessor
+        RegionProcessor,
+        CustomerSettingsProcessor,
+        TenantSettingsProcessor
     )
     __slots__ = ('_mapper', '_controllers')
 

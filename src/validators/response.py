@@ -93,6 +93,12 @@ class Tenant(TypedDict):
     regions: list[str]
 
 
+class TenantSetting(TypedDict):
+    tenant_name: str
+    key: str
+    value: dict | list | str | int | float | None
+
+
 # responses
 class CustomersResponse(BaseModel):
     items: list[Customer]
@@ -138,6 +144,15 @@ class RegionsResponse(BaseModel):
 
 class SignInResponse(BaseModel):
     access_token: str
+
+
+class TenantSettingsResponse(BaseModel):
+    items: list[TenantSetting]
+    next_token: str | None
+
+
+class TenantSettingResponse(BaseModel):
+    data: TenantSetting
 
 
 class MessageModel(BaseModel):
