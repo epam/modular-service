@@ -1,6 +1,8 @@
 from http import HTTPStatus
 
 from modular_sdk.commons.constants import ApplicationType
+from modular_sdk.models.application import Application
+from modular_sdk.services.application_service import ApplicationService
 from modular_sdk.services.impl.maestro_credentials_service import (
     AWSCredentialsApplicationMeta,
     AWSCredentialsApplicationSecret,
@@ -26,7 +28,6 @@ from lambdas.modular_api_handler.processors.abstract_processor import (
     AbstractCommandProcessor,
 )
 from services import SERVICE_PROVIDER
-from services.application_mutator_service import ApplicationMutatorService
 from services.customer_mutator_service import CustomerMutatorService
 from services.parent_mutator_service import ParentMutatorService
 from validators.request import (
@@ -36,16 +37,18 @@ from validators.request import (
     ApplicationPostAZURECredentials,
     ApplicationQuery,
     ApplicationPostAZURECertificate,
-    ApplicationPostGCPServiceAccount
+    ApplicationPostGCPServiceAccount,
+    ApplicationPatch
 )
-from validators.response import ApplicationResponse, ApplicationsResponse, MessageModel
+from validators.response import ApplicationResponse, ApplicationsResponse, \
+    MessageModel
 from validators.utils import validate_kwargs
 
 _LOG = get_logger(__name__)
 
 
 class ApplicationProcessor(AbstractCommandProcessor):
-    def __init__(self, application_service: ApplicationMutatorService,
+    def __init__(self, application_service: ApplicationService,
                  customer_service: CustomerMutatorService,
                  parent_service: ParentMutatorService,
                  ssm_client: AbstractSSMClient):
@@ -99,12 +102,20 @@ class ApplicationProcessor(AbstractCommandProcessor):
                 'query',
                 response=(HTTPStatus.OK, ApplicationsResponse, None)
             ),
-            # cls.route(
-            #     Endpoint.APPLICATIONS,
-            #     HTTPMethod.PATCH,
-            #     'patch',
-            #     response=(HTTPStatus.OK, ApplicationsResponse, None)
-            # ),
+            cls.route(
+                Endpoint.APPLICATIONS_ID,
+                HTTPMethod.GET,
+                'get',
+                response=(HTTPStatus.OK, ApplicationResponse, None),
+                summary='Queries a single application by id'
+            ),
+            cls.route(
+                Endpoint.APPLICATIONS_ID,
+                HTTPMethod.PATCH,
+                'patch',
+                response=(HTTPStatus.OK, ApplicationResponse, None),
+                summary='Allows to update certain fields in application'
+            ),
             cls.route(
                 Endpoint.APPLICATIONS,
                 HTTPMethod.DELETE,
@@ -117,7 +128,7 @@ class ApplicationProcessor(AbstractCommandProcessor):
     @classmethod
     def build(cls) -> 'ApplicationProcessor':
         return cls(
-            application_service=SERVICE_PROVIDER.application_service,
+            application_service=SERVICE_PROVIDER.modular.application_service(),
             customer_service=SERVICE_PROVIDER.customer_service,
             parent_service=SERVICE_PROVIDER.parent_service,
             ssm_client=SERVICE_PROVIDER.modular.assume_role_ssm_service()  # TODO get from env
@@ -298,51 +309,25 @@ class ApplicationProcessor(AbstractCommandProcessor):
             next_token=NextToken(cursor.last_evaluated_key)
         ).build()
 
-    # @validate_kwargs
-    # def patch(self, event: ApplicationPatch):
-    #     # TODO rewrite
-    #     _LOG.debug(f'Update application event: {event}')
-    #
-    #     validate_params(event, (APPLICATION_ID_ATTR,))
-    #     # TODO rewrite
-    #
-    #     optional_attrs = (TYPE_ATTR, CUSTOMER_ID_ATTR, DESCRIPTION_ATTR)
-    #     if not any([attr in event for attr in optional_attrs]):
-    #         _LOG.error(f'At least one of the following attributes must be '
-    #                    f'specified: \'{optional_attrs}\'')
-    #         raise ResponseFactory(HTTPStatus.BAD_REQUEST).message(
-    #             f'At least one of the following attributes must be specified: \'{optional_attrs}\''
-    #         ).exc()
-    #
-    #     application_id = event.get(APPLICATION_ID_ATTR)
-    #     application = self.application_service.get_application_by_id(
-    #         application_id=application_id)
-    #     if not application:
-    #         _LOG.error(f'Application with id \'{application_id}\' does not '
-    #                    f'exist.')
-    #         raise ResponseFactory(HTTPStatus.NOT_FOUND).message(
-    #             f'Application with id \'{application_id}\' does not exist.'
-    #         ).exc()
-    #
-    #     app_type = event.get(TYPE_ATTR)
-    #     customer_id = event.get(CUSTOMER_ID_ATTR)
-    #     description = event.get(DESCRIPTION_ATTR)
-    #
-    #     _LOG.debug('Updating application')
-    #     self.application_service.update(
-    #         application=application,
-    #         application_type=app_type,
-    #         customer_id=customer_id,
-    #         description=description
-    #     )
-    #
-    #     _LOG.debug('Saving application')
-    #     self.application_service.save(application=application)
-    #
-    #     _LOG.debug('Extracting application dto')
-    #     response = self.application_service.get_dto(application=application)
-    #     _LOG.debug(f'Response: {response}')
-    #     return build_response(content=response)
+    @validate_kwargs
+    def get(self, event: dict, id: str):
+        item = self.application_service.get_application_by_id(id)
+        if not item:
+            raise ResponseFactory(HTTPStatus.NOT_FOUND).default().exc()
+        return build_response(content=self.application_service.get_dto(item))
+
+    @validate_kwargs
+    def patch(self, event: ApplicationPatch, _pe: ProcessedEvent, id: str):
+        item = self.application_service.get_application_by_id(id)
+        if not item:
+            raise ResponseFactory(HTTPStatus.NOT_FOUND).default().exc()
+        item.description = event.description
+        self.application_service.update(
+            application=item,
+            attributes=[Application.description],
+            updated_by=_pe['cognito_user_id']
+        )
+        return build_response(content=self.application_service.get_dto(item))
 
     @validate_kwargs
     def delete(self, event: ApplicationDelete):

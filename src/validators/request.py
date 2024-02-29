@@ -32,17 +32,17 @@ class BaseModel(BaseModelPydantic):
 class CustomerPost(BaseModel):
     name: str
     display_name: str
-    admins: list[str] = Field(default_factory=list)
+    admins: set[str] = Field(default_factory=set)
 
 
-class CustomerGet(BaseModel):
-    name: str = Field(None)
+class CustomerQuery(BaseModel):
+    is_active: bool = Field(None)
+    limit: int = Field(None)
+    next_token: str = Field(None)
 
 
 class CustomerPatch(BaseModel):
-    name: str
     admins: set[str]
-    override: bool
 
 
 class PolicyGet(BaseModel):
@@ -217,6 +217,10 @@ class ApplicationQuery(BaseModel):
     is_deleted: bool = Field(None)
 
 
+class ApplicationPatch(BaseModel):
+    description: str
+
+
 class ApplicationPostAWSRole(BaseModel):
     customer_id: str
     description: str
@@ -293,10 +297,6 @@ class ApplicationPostGCPServiceAccount(BaseModel):
     customer_id: str
     description: str
     credentials: GOOGLECredentialsRaw1
-
-
-class ApplicationPatch(BaseModel):
-    application_id: str
 
 
 class ApplicationDelete(BaseModel):

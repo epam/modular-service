@@ -16,6 +16,7 @@ class Customer(TypedDict):
     name: str
     display_name: str
     admins: list[str]
+    is_active: bool
 
 
 class Application(TypedDict):
@@ -24,7 +25,7 @@ class Application(TypedDict):
     customer_id: str
     description: str
     is_deleted: bool
-    meta: dict  # todo make specific?
+    meta: dict  # todo make more specific?
     secret: str
     type: ApplicationType
 
@@ -36,7 +37,7 @@ class Parent(TypedDict):
     customer_id: str
     description: str
     is_deleted: bool
-    meta: dict  # todo make specific
+    meta: dict  # todo make more specific?
     parent_id: str
     scope: ParentScope
     type: ParentType
@@ -95,6 +96,10 @@ class Tenant(TypedDict):
 # responses
 class CustomersResponse(BaseModel):
     items: list[Customer]
+
+
+class CustomerResponse(BaseModel):
+    data: Customer
 
 
 class TenantsResponse(BaseModel):

@@ -16,8 +16,8 @@ from lambdas.modular_api_handler.processors.abstract_processor import (
     AbstractCommandProcessor,
 )
 from services import SERVICE_PROVIDER
-from services.application_mutator_service import ApplicationMutatorService
 from services.customer_mutator_service import CustomerMutatorService
+from modular_sdk.services.application_service import ApplicationService
 from services.parent_mutator_service import ParentMutatorService
 from services.tenant_mutator_service import TenantMutatorService
 from validators.request import ParentDelete, ParentGet, ParentPatch, ParentPost
@@ -30,7 +30,7 @@ _LOG = get_logger(__name__)
 class ParentProcessor(AbstractCommandProcessor):
     def __init__(self, customer_service: CustomerMutatorService,
                  parent_service: ParentMutatorService,
-                 application_service: ApplicationMutatorService,
+                 application_service: ApplicationService,
                  tenant_service: TenantMutatorService):
         self.customer_service = customer_service
         self.parent_service = parent_service
@@ -42,7 +42,7 @@ class ParentProcessor(AbstractCommandProcessor):
         return cls(
             customer_service=SERVICE_PROVIDER.customer_service,
             parent_service=SERVICE_PROVIDER.parent_service,
-            application_service=SERVICE_PROVIDER.application_service,
+            application_service=SERVICE_PROVIDER.modular.application_service(),
             tenant_service=SERVICE_PROVIDER.tenant_service
         )
 

@@ -12,7 +12,6 @@ if TYPE_CHECKING:
     from services.user_service import CognitoUserService
     from services.environment_service import EnvironmentService
     from services.parent_mutator_service import ParentMutatorService
-    from services.application_mutator_service import ApplicationMutatorService
     from services.customer_mutator_service import CustomerMutatorService
     from services.rbac.access_control_service import AccessControlService
     from services.rbac.iam_service import IamService
@@ -68,12 +67,6 @@ class ServiceProvider(metaclass=SingletonMeta):
         return IamService()
 
     @cached_property
-    def application_service(self) -> 'ApplicationMutatorService':
-        from services.application_mutator_service import \
-            ApplicationMutatorService
-        return ApplicationMutatorService(self.customer_service)
-
-    @cached_property
     def customer_service(self) -> 'CustomerMutatorService':
         from services.customer_mutator_service import CustomerMutatorService
         return CustomerMutatorService()
@@ -82,7 +75,7 @@ class ServiceProvider(metaclass=SingletonMeta):
     def parent_service(self) -> 'ParentMutatorService':
         from services.parent_mutator_service import ParentMutatorService
         return ParentMutatorService(
-            application_service=self.application_service,
+            application_service=self.modular.application_service(),
             tenant_service=self.tenant_service,
             customer_service=self.customer_service
         )
