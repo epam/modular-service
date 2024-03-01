@@ -12,6 +12,7 @@ from services.environment_service import EnvironmentService
 _LOG = get_logger(__name__)
 CUSTOM_ROLE_ATTR = 'custom:modular_role'
 CUSTOM_CUSTOMER = 'custom:customer'
+CUSTOM_IS_SYSTEM = 'custom:is_system'
 
 
 class BaseAuthClient(ABC):
@@ -20,8 +21,8 @@ class BaseAuthClient(ABC):
         ...
 
     @abstractmethod
-    def sign_up(self, username: str, password: str, role: str,
-                customer: str | None = None):
+    def sign_up(self, username: str, password: str, role: str | None = None,
+                customer: str | None = None, is_system: bool = False):
         ...
 
     @abstractmethod
@@ -114,18 +115,26 @@ class CognitoClient(BaseAuthClient):
         except self.client.exceptions.NotAuthorizedException:
             return
 
-    def sign_up(self, username: str, password: str, role: str, customer: str | None = None):
+    def sign_up(self, username: str, password: str, role: str | None = None,
+                customer: str | None = None, is_system: bool = False):
         custom_attr = [{
             'Name': 'name',
             'Value': username
-        }, {
-            'Name': CUSTOM_ROLE_ATTR,
-            'Value': role
         }]
+        if role:
+            custom_attr.append({
+                'Name': CUSTOM_ROLE_ATTR,
+                'Value': role
+            })
         if customer:
             custom_attr.append({
                 'Name': CUSTOM_CUSTOMER,
                 'Value': customer
+            })
+        if isinstance(is_system, bool):
+            custom_attr.append({
+                'Name': CUSTOM_IS_SYSTEM,
+                'Value': is_system
             })
         validation_data = [
             {

@@ -158,12 +158,6 @@ class Permission(str, Enum):
 LAMBDA_URL_HEADER_CONTENT_TYPE_UPPER = 'Content-Type'
 JSON_CONTENT_TYPE = 'application/json'
 
-NAME_ATTR = 'name'
-
-EXPIRATION_ATTR = 'expiration'
-PERMISSIONS_ATTR = 'permissions'
-POLICIES_ATTR = 'policies'
-
 TYPE_ATTR = 'type'
 DESCRIPTION_ATTR = 'description'
 APPLICATION_ID_ATTR = 'application_id'

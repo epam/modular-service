@@ -39,7 +39,7 @@ GENERATE_OPENAPI_ACTION = 'generate-openapi'
 INIT_VAULT_ACTION = 'init-vault'
 CREATE_INDEXES_ACTION = 'create-indexes'
 DUMP_PERMISSIONS_ACTION = 'dump-permissions'
-INIT_ACTION = 'init'
+CREATE_SYSTEM_USER_ACTION = 'create-system-user'
 UPDATE_DEPLOYMENT_RESOURCES_ACTION = 'update-deployment-resources'
 
 
@@ -106,7 +106,9 @@ def build_parser() -> argparse.ArgumentParser:
 
     # init
     parser_init = sub_parsers.add_parser(
-        INIT_ACTION, help='Creates admin policy, role and user'
+        CREATE_SYSTEM_USER_ACTION,
+        help='Creates a system user that can perform actions on behalf of '
+             'other users'
     )
     parser_init.add_argument('--username', required=True, type=str,
                              help='Admin username')
@@ -238,7 +240,7 @@ class Run(ActionHandler):
             app.run(host=host, port=port)
 
 
-class Init(ActionHandler):
+class CreateSystemUser(ActionHandler):
     @staticmethod
     def gen_password(digits: int = 20) -> str:
         allowed_punctuation = ''.join(
@@ -254,25 +256,13 @@ class Init(ActionHandler):
         return password
 
     def __call__(self, username: str):
-        from models.policy import Policy
-        from models.role import Role
+        from models.user import User
         from services import SP
-
-        Policy(
-            name='admin_policy',
-            permissions=sorted(Permission.all())
-        ).save()
-        Role(
-            name='admin_role',
-            policies=['admin_policy']
-        ).save()
-
-        user_service = SP.user_service
         password = self.gen_password()
-        user_service.save(
+        SP.user_service.save(
             username=username,
             password=password,
-            role='admin_role'
+            is_system=True
         )
         print(password)
 
@@ -443,7 +433,7 @@ def main(args: list[str] | None = None):
     mapping: dict[tuple[str, ...], Callable] = {
         (RUN_ACTION,): Run(),
         (INIT_VAULT_ACTION,): InitVault(),
-        (INIT_ACTION,): Init(),
+        (CREATE_SYSTEM_USER_ACTION,): CreateSystemUser(),
         (CREATE_INDEXES_ACTION,): CreateIndexes(),
         (GENERATE_OPENAPI_ACTION,): GenerateOpenApi(),
         (DUMP_PERMISSIONS_ACTION,): DumpPermissions(),

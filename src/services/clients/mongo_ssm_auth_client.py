@@ -81,13 +81,13 @@ class MongoAndSSMAuthClient(BaseAuthClient):
     def _set_password(user: User, password: str):
         user.password = bcrypt.hashpw(password.encode(), bcrypt.gensalt())
 
-    def sign_up(self, username: str, password: str, role: str,
-                customer: str | None = None):
+    def sign_up(self, username: str, password: str, role: str | None = None,
+                customer: str | None = None, is_system: bool = False):
         user = User(
             user_id=username,
             customer=customer,
             role=role,
-            is_system=False
+            is_system=is_system
         )
         self._set_password(user, password)
         user.save()
