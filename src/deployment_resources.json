@@ -238,6 +238,10 @@
       {
         "name": "latest_login",
         "type": "String"
+      },
+      {
+        "name": "is_system",
+        "type": "Boolean"
       }
     ],
     "client": {
