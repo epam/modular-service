@@ -81,25 +81,23 @@ class MongoAndSSMAuthClient(BaseAuthClient):
     def _set_password(user: User, password: str):
         user.password = bcrypt.hashpw(password.encode(), bcrypt.gensalt())
 
-    def sign_up(self, username: str, password: str, role: str):
-        user = User()
-        user.user_id = username
+    def sign_up(self, username: str, password: str, role: str,
+                customer: str | None = None):
+        user = User(
+            user_id=username,
+            customer=customer,
+            role=role,
+            is_system=False
+        )
         self._set_password(user, password)
-        user.role = role
-        User.save(user)
+        user.save()
 
     @staticmethod
     def _get_user(username: str) -> User | None:
         return User.get_nullable(hash_key=username)
 
-    def _get_user_attr(self, username: str, attr: str) -> Any:
-        return getattr(self._get_user(username), attr, None)
-
     def is_user_exists(self, username: str) -> bool:
         return bool(self._get_user(username))
-
-    def get_user_role(self, username: str):
-        return self._get_user_attr(username, 'role')
 
     def set_password(self, username: str, password: str,
                      permanent: bool = True):

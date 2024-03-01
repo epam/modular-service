@@ -121,8 +121,15 @@ class RolesResponse(BaseModel):
     items: list[Role]
 
 
+class RoleResponse(BaseModel):
+    data: Role
+
 class PoliciesResponse(BaseModel):
     items: list[Policy]
+
+
+class PolicyResponse(BaseModel):
+    data: Policy
 
 
 class ParentsResponse(BaseModel):

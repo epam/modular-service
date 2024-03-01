@@ -3,6 +3,7 @@ import binascii
 from datetime import datetime, timezone
 from typing_extensions import Self, TypedDict
 import uuid
+from commons.constants import Permission
 
 import boto3
 from botocore.exceptions import ClientError
@@ -55,43 +56,37 @@ class CustomerPatch(BaseModel):
     admins: set[str]
 
 
-class PolicyGet(BaseModel):
-    name: str = Field(None)
-
-
 class PolicyPost(BaseModel):
     name: str
-    permissions: set[str] = Field(default_factory=set)
+    permissions: set[Permission] = Field(default_factory=set)
     permissions_admin: bool = False
 
     @model_validator(mode='after')
     def _(self) -> Self:
         if not self.permissions_admin and not self.permissions:
             raise ValueError('Provide either permissions or permissions_admin')
+        if self.permissions_admin:
+            self.permissions = set(Permission)
         return self
 
 
 class PolicyPatch(BaseModel):
-    name: str
-    permissions: set[str] = Field(default_factory=set)
-    permissions_to_attach: set[str] = Field(default_factory=set)
-    permissions_to_detach: set[str] = Field(default_factory=set)
+    permissions: set[Permission] = Field(default_factory=set)
+    permissions_to_attach: set[Permission] = Field(default_factory=set)
+    permissions_to_detach: set[Permission] = Field(default_factory=set)
 
     @model_validator(mode='after')
     def _(self) -> Self:
+        if self.permissions and (self.permissions_to_attach or self.permissions_to_detach):
+            raise ValueError('provide either permissions to permissions_to_attach and/or permissions_to_detach')
         if not any((self.permissions, self.permissions_to_detach,
                     self.permissions_to_detach)):
             raise ValueError(
                 'Provide at permissions or permissions_to_attach or permissions_to_detach')
+        if self.permissions:  # means to replace
+            self.permissions_to_attach = self.permissions
+            self.permissions_to_detach = set(Permission)
         return self
-
-
-class PolicyDelete(BaseModel):
-    name: str
-
-
-class RoleGet(BaseModel):
-    name: str
 
 
 class RolePost(BaseModel):
@@ -109,23 +104,26 @@ class RolePost(BaseModel):
 
 
 class RolePatch(BaseModel):
-    name: str
-    expiration: datetime
+    expiration: datetime = Field(None)
 
     policies_to_attach: set[str] = Field(default_factory=set)
     policies_to_detach: set[str] = Field(default_factory=set)
 
     @field_validator('expiration')
     @classmethod
-    def _(cls, expiration: datetime) -> datetime:
+    def _(cls, expiration: datetime | None) -> datetime | None:
+        if not expiration:
+            return expiration
         expiration.astimezone(timezone.utc)
         if expiration < datetime.now(tz=timezone.utc):
             raise ValueError('Expiration date has already passed')
         return expiration
 
-
-class RoleDelete(BaseModel):
-    name: str
+    @model_validator(mode='after')
+    def check_at_least_one(self) -> Self:
+        if not self.expiration and not self.policies_to_detach and not self.policies_to_detach:
+            raise ValueError('provide at least one attribute to update')
+        return self
 
 
 class SignInPost(BaseModel):
@@ -136,8 +134,22 @@ class SignInPost(BaseModel):
 class SignUpPost(BaseModel):
     username: str
     password: str
-    customer_id: str
-    role: str
+    customer_name: str
+    customer_display_name: str
+    customer_admins: set[str] = Field(default_factory=set)
+
+    @field_validator('password')
+    @classmethod
+    def _(cls, v: str) -> str:
+        if len(v) < 8:
+            raise ValueError('password must be at least 8 characters long')
+        if not any([char.isupper() for char in v]):
+            raise ValueError('password must contain uppercase characters')
+        if not any([char.isdigit() for char in v]):
+            raise ValueError('password must contain numeric characters')
+        if not any([not char.isalnum() for char in v]):
+            raise ValueError('password must contain symbol characters')
+        return v
 
 
 class TenantQuery(BasePaginationModel):

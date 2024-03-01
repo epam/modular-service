@@ -13,8 +13,7 @@ if TYPE_CHECKING:
     from services.environment_service import EnvironmentService
     from services.parent_mutator_service import ParentMutatorService
     from services.customer_mutator_service import CustomerMutatorService
-    from services.rbac.access_control_service import AccessControlService
-    from services.rbac.iam_service import IamService
+    from services.rbac_service import RBACService
     from services.region_mutator_service import RegionMutatorService
     from services.tenant_mutator_service import TenantMutatorService
 
@@ -58,19 +57,6 @@ class ServiceProvider(metaclass=SingletonMeta):
         return EnvironmentService(os.environ)
 
     @cached_property
-    def access_control_service(self) -> 'AccessControlService':
-        from services.rbac.access_control_service import AccessControlService
-        return AccessControlService(
-            iam_service=self.iam_service,
-            user_service=self.user_service,
-        )
-
-    @cached_property
-    def iam_service(self) -> 'IamService':
-        from services.rbac.iam_service import IamService
-        return IamService()
-
-    @cached_property
     def customer_service(self) -> 'CustomerMutatorService':
         from services.customer_mutator_service import CustomerMutatorService
         return CustomerMutatorService()
@@ -95,3 +81,8 @@ class ServiceProvider(metaclass=SingletonMeta):
     def tenant_service(self) -> 'TenantMutatorService':
         from services.tenant_mutator_service import TenantMutatorService
         return TenantMutatorService()
+
+    @cached_property
+    def rbac_service(self) -> 'RBACService':
+        from services.rbac_service import RBACService
+        return RBACService()

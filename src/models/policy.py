@@ -8,5 +8,6 @@ class Policy(BaseSafeUpdateModel):
     class Meta(BaseMeta):
         table_name = 'ModularServicePolicies'
 
-    name = UnicodeAttribute(hash_key=True)
+    customer = UnicodeAttribute(hash_key=True)
+    name = UnicodeAttribute(range_key=True)
     permissions = ListAttribute(default=list)

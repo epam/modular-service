@@ -42,7 +42,7 @@ from lambdas.modular_api_handler.processors.tenant_settings_processor import (
 )
 from services import SP
 from services.openapi_spec_generator import EndpointInfo
-from services.rbac.access_control_service import AccessControlService
+from services.rbac_service import RBACService
 from validators.response import MessageModel, common_responses
 
 _LOG = get_logger('modular_api_handler')
@@ -52,14 +52,16 @@ class CheckPermissionEventProcessor(AbstractEventProcessor):
     """
     Processor that restricts rbac permission
     """
-    __slots__ = ('_acs', '_mapping')
+    __slots__ = ('_rs', '_mapping')
 
-    def __init__(self, access_control_service: AccessControlService,
+    def __init__(self, rbac_service: RBACService,
                  mapping: dict[tuple[Endpoint, HTTPMethod], Permission | None]):
-        self._acs = access_control_service
+        self._rs = rbac_service
         self._mapping = mapping
 
     def __call__(self, event: ProcessedEvent) -> ProcessedEvent:
+        if event['is_system']:
+            return event
         username = event['cognito_username']
         if not username:
             return event
@@ -70,7 +72,9 @@ class CheckPermissionEventProcessor(AbstractEventProcessor):
         if not permission:
             _LOG.info('No permission exist for endpoint, allowing')
             return event
-        if not self._acs.is_allowed_to_access(username, permission.value):
+        # if cognito_username exists, cognito_customer & cognito_user_role 
+        # exist as well
+        if not self._rs.is_allowed(event['cognito_customer'], event['cognito_user_role'], permission):
             _LOG.info('Not allowed to access')
             raise ResponseFactory(HTTPStatus.FORBIDDEN).message(
                 f'You don\'t have the necessary permission: {permission}'
@@ -104,7 +108,7 @@ class ModularApiHandler(EventProcessorLambdaHandler):
             ApiGatewayEventProcessor(),
             RestrictCustomerEventProcessor(),
             CheckPermissionEventProcessor(
-                access_control_service=SP.access_control_service,
+                rbac_service=SP.rbac_service,
                 mapping=self._build_permissions_mapping()
             )
         )

@@ -11,6 +11,7 @@ from services.environment_service import EnvironmentService
 
 _LOG = get_logger(__name__)
 CUSTOM_ROLE_ATTR = 'custom:modular_role'
+CUSTOM_CUSTOMER = 'custom:customer'
 
 
 class BaseAuthClient(ABC):
@@ -19,7 +20,8 @@ class BaseAuthClient(ABC):
         ...
 
     @abstractmethod
-    def sign_up(self, username: str, password: str, role: str):
+    def sign_up(self, username: str, password: str, role: str,
+                customer: str | None = None):
         ...
 
     @abstractmethod
@@ -29,10 +31,6 @@ class BaseAuthClient(ABC):
 
     @abstractmethod
     def is_user_exists(self, username: str) -> bool:
-        ...
-
-    @abstractmethod
-    def get_user_role(self, username: str) -> str | None:
         ...
 
 
@@ -116,7 +114,7 @@ class CognitoClient(BaseAuthClient):
         except self.client.exceptions.NotAuthorizedException:
             return
 
-    def sign_up(self, username: str, password: str, role: str):
+    def sign_up(self, username: str, password: str, role: str, customer: str | None = None):
         custom_attr = [{
             'Name': 'name',
             'Value': username
@@ -124,6 +122,11 @@ class CognitoClient(BaseAuthClient):
             'Name': CUSTOM_ROLE_ATTR,
             'Value': role
         }]
+        if customer:
+            custom_attr.append({
+                'Name': CUSTOM_CUSTOMER,
+                'Value': customer
+            })
         validation_data = [
             {
                 'Name': 'name',
@@ -159,14 +162,3 @@ class CognitoClient(BaseAuthClient):
 
     def is_user_exists(self, username: str) -> bool:
         return not not self._get_user(username)
-
-    def _get_user_attr(self, username: str, attr_name: str) -> str | None:
-        user = self._get_user(username=username)
-        if not user:
-            return
-        for attr in user['Attributes']:
-            if attr['Name'] == attr_name:
-                return attr['Value']
-
-    def get_user_role(self, username: str) -> str | None:
-        return self._get_user_attr(username, CUSTOM_ROLE_ATTR)

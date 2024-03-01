@@ -109,7 +109,7 @@ class OnPremApiBuilder:
 
         for endpoint in HANDLER.iter_endpoint():
             params = dict(
-                path=endpoint.path,  # should be value of Endpoint enum
+                path=self.to_bottle_route(endpoint.path),  # should be value of Endpoint enum
                 method=endpoint.method.value,
                 callback=self._callback,
             )
@@ -119,6 +119,24 @@ class OnPremApiBuilder:
 
         app.mount(prefix.strip('/'), prefix_app)
         return app
+
+    @classmethod
+    def to_bottle_route(cls, resource: str) -> str:
+        """
+        Returns a proxied resource path, compatible with Bottle.
+        >>> OnPremApiBuilder.to_bottle_route('/path/{id}')
+        '/path/<id>'
+        >>> OnPremApiBuilder.to_bottle_route('/some/data/{test}')
+        /some/data/<test>
+        :return: str
+        """
+        for match in re.finditer(cls.dynamic_resource_regex, resource):
+            suffix = resource[match.end() + 1:]
+            resource = resource[:match.start() - 1]
+            path_input = match.group()
+            path_input = path_input.strip('{+')
+            resource += f'<{path_input}>' + suffix
+        return resource
 
     @staticmethod
     def _callback(decoded_token: dict | None = None, **path_params):

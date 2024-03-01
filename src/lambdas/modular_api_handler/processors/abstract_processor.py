@@ -1,20 +1,18 @@
 from abc import abstractmethod
 from http import HTTPStatus
-from typing import Callable, TYPE_CHECKING
+from typing import Callable
 
 from routes.route import Route
 
 from commons.constants import Endpoint, HTTPMethod, Permission
 from commons.log_helper import get_logger
-
-if TYPE_CHECKING:
-    from validators.request import BaseModel  # noqa
+from pydantic import BaseModel
 
 _LOG = get_logger(__name__)
 
 
 class AbstractCommandProcessor:
-    Resp = tuple[HTTPStatus, type['BaseModel'] | None, str | None]
+    Resp = tuple[HTTPStatus, type[BaseModel] | None, str | None]
 
     @classmethod
     def controller_name(cls) -> str:
