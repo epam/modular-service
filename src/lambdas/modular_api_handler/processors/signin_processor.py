@@ -52,16 +52,6 @@ class SignInProcessor(AbstractCommandProcessor):
                 'Incorrect username or password'
             ).exc()
 
-        # _state = "contains" if auth_result.get(
-        #     "ChallengeName") else "does not contain"
-        # _LOG.debug(f'Authentication initiation response '
-        #            f'{_state} the challenge')
-        #
-        # if auth_result.get('ChallengeName'):
-        #     _LOG.debug(f'Responding to an authentication challenge '
-        #                f'{auth_result.get("ChallengeName")} ')
-        #     auth_result = self.user_service.respond_to_auth_challenge(
-        #         challenge_name=auth_result['ChallengeName'])
         refresh_token = auth_result['AuthenticationResult']['RefreshToken']
         id_token = auth_result['AuthenticationResult']['IdToken']
 

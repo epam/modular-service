@@ -12,7 +12,7 @@
   "dependencies": [],
   "event_sources": [],
   "env_variables": {
-    "LOG_LEVEL": "${log_level}",
+    "MODULAR_SERVICE_LOG_LEVEL": "${log_level}",
     "MODULAR_SERVICE_COGNITO_USER_POOL_NAME": "${cognito_user_pool_name}"
   },
   "publish_version": true,
