@@ -1,19 +1,21 @@
+from abc import ABC, abstractmethod
 import argparse
 import base64
+from functools import cached_property
 import json
 import logging
 import logging.config
-import sys
 import multiprocessing
 import os
+from pathlib import Path
 import secrets
 import string
-from abc import ABC, abstractmethod
-from pathlib import Path
-from typing import Callable, Literal, TYPE_CHECKING
+import sys
+from typing import Any, Callable, Literal, TYPE_CHECKING
 
 from commons.__version__ import __version__
-from commons.constants import Env, PRIVATE_KEY_SECRET_NAME, Permission
+from commons import dereference_json
+from commons.constants import Env, HTTPMethod, PRIVATE_KEY_SECRET_NAME, Permission
 
 # NOTE, all imports are inside corresponding methods in order to make
 # CLI more or less fast
@@ -38,6 +40,7 @@ INIT_VAULT_ACTION = 'init-vault'
 CREATE_INDEXES_ACTION = 'create-indexes'
 DUMP_PERMISSIONS_ACTION = 'dump-permissions'
 INIT_ACTION = 'init'
+UPDATE_DEPLOYMENT_RESOURCES_ACTION = 'update-deployment-resources'
 
 
 def get_logger():
@@ -114,6 +117,10 @@ def build_parser() -> argparse.ArgumentParser:
     )
     _ = sub_parsers.add_parser(
         DUMP_PERMISSIONS_ACTION, help='Dumps all the available permission'
+    )
+    _ = sub_parsers.add_parser(
+        UPDATE_DEPLOYMENT_RESOURCES_ACTION,
+        help='Updates api definition insider deployment_resources.json'
     )
     return parser
 
@@ -249,13 +256,11 @@ class Init(ActionHandler):
     def __call__(self, username: str):
         from models.policy import Policy
         from models.role import Role
-        from services.rbac.endpoint_to_permission_mapping import \
-            ALL_PERMISSIONS
         from services import SP
 
         Policy(
             name='admin_policy',
-            permissions=list(ALL_PERMISSIONS)
+            permissions=sorted(Permission.all())
         ).save()
         Role(
             name='admin_role',
@@ -358,6 +363,76 @@ class DumpPermissions(ActionHandler):
         json.dump(sorted(Permission.all()), sys.stdout, indent=2)
 
 
+class UpdateDeploymentResources(ActionHandler):
+    api_name = 'modular-api'
+    lambda_name = 'modular-api-handler'  # only one now
+
+    @cached_property
+    def deployment_resources(self) -> Path:
+        return Path(__file__).parent / 'deployment_resources.json'
+
+    def __call__(self):
+        from lambdas.modular_api_handler.handler import HANDLER
+        filename = self.deployment_resources
+        if filename.is_file() and filename.exists():
+            with open(filename, 'r') as file:
+                data = json.load(file)
+        else:
+            data = {}
+        api = data.setdefault(self.api_name, {
+            'resource_type': 'api_gateway',
+            'deploy_stage': 'dev',
+            'resources': {},
+            'dependencies': [],
+            'models': {}
+        })
+        resources = api.setdefault('resources', {})
+        for endpoint in HANDLER.iter_endpoint():
+            method_data = resources.setdefault(endpoint.path, {
+                'policy_statement_singleton': True,
+                'enable_cors': True,
+            }).setdefault(endpoint.method.value, {
+                'enable_proxy': True,
+                'integration_type': 'lambda',
+                'lambda_alias': '${lambdas_alias_name}',
+                'authorization_type': 'authorizer' if endpoint.auth else 'NONE',
+                'lambda_name': self.lambda_name
+            })
+            method_data.pop('method_request_models', None)
+            method_data.pop('responses', None)
+            method_data.pop('method_request_parameters', None)
+            if model := endpoint.request_model:
+                match endpoint.method:
+                    case HTTPMethod.GET:
+                        params = {}
+                        for name, info in model.model_fields.items():
+                            params[f'method.request.querystring.{name}'] = info.is_required()
+                        method_data['method_request_parameters'] = params
+                    case _:
+                        name =  model.__name__
+                        method_data['method_request_models'] = {
+                            'application/json': name
+                        }
+                        schema = model.model_json_schema()
+                        dereference_json(schema)
+                        schema.pop('$defs', None)
+                        api.setdefault('models', {}).setdefault(name, {
+                            'content_type': 'application/json',
+                            'schema': schema
+                        })
+            responses = []
+            for st, m, _ in endpoint.responses:
+                resp: dict[str, Any] = {'status_code': str(st.value)}
+                if m:
+                    resp['response_models'] = {'application/json': m.__name__}
+                responses.append(resp)
+            method_data['responses'] = responses
+
+        with open(filename, 'w') as file:
+            json.dump(data, file, indent=2)
+        _LOG.info(f'{filename} has been updated')
+
+
 def main(args: list[str] | None = None):
     parser = build_parser()
     arguments = parser.parse_args(args)
@@ -371,7 +446,8 @@ def main(args: list[str] | None = None):
         (INIT_ACTION,): Init(),
         (CREATE_INDEXES_ACTION,): CreateIndexes(),
         (GENERATE_OPENAPI_ACTION,): GenerateOpenApi(),
-        (DUMP_PERMISSIONS_ACTION,): DumpPermissions()
+        (DUMP_PERMISSIONS_ACTION,): DumpPermissions(),
+        (UPDATE_DEPLOYMENT_RESOURCES_ACTION, ): UpdateDeploymentResources()
     }
     func = mapping.get(key) or (lambda **kwargs: _LOG.error('Hello'))
     for dest in ALL_NESTING:
