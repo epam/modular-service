@@ -11,7 +11,7 @@ from commons.lambda_response import ApplicationException, LambdaResponse, \
     ResponseFactory
 from commons.constants import HTTPMethod, Endpoint
 from commons.log_helper import get_logger
-from lambdas.modular_api_handler.handler import lambda_handler
+from lambdas.modular_api_handler.handler import HANDLER
 from services import SERVICE_PROVIDER
 
 _LOG = get_logger(__name__)
@@ -73,10 +73,6 @@ class AuthPlugin:
 
 class OnPremApiBuilder:
     dynamic_resource_regex = re.compile(r'([^{/]+)(?=})')
-    without_auth = {
-        (HTTPMethod.POST, Endpoint.SIGNIN),
-        (HTTPMethod.POST, Endpoint.SIGNUP)
-    }
 
     @staticmethod
     def _register_errors(app: Bottle) -> None:
@@ -109,24 +105,18 @@ class OnPremApiBuilder:
         self._register_errors(app)
 
         prefix_app = Bottle()
+        plugin = AuthPlugin()
 
-        # exception currently hardcoded in order not to bring
-        # deployment resources here
-        for method, path in self.without_auth:
-            prefix_app.route(
-                path=path.value,
-                method=method.value,
-                callback=self._callback
+        for endpoint in HANDLER.iter_endpoint():
+            params = dict(
+                path=endpoint.path,  # should be value of Endpoint enum
+                method=endpoint.method.value,
+                callback=self._callback,
             )
-        # all other requests proxy to lambda but with auth
-        prefix_app.route(
-            path='<path:path>',
-            method=[HTTPMethod.GET, HTTPMethod.POST, HTTPMethod.PATCH,
-                    HTTPMethod.DELETE, HTTPMethod.PUT],
-            callback=self._callback,
-            apply=[AuthPlugin()]
+            if endpoint.auth:
+                params.update(apply=(plugin, ))
+            prefix_app.route(**params)
 
-        )
         app.mount(prefix.strip('/'), prefix_app)
         return app
 
@@ -161,8 +151,7 @@ class OnPremApiBuilder:
         else:
             event['body'] = request.body.read().decode()
             event['isBase64Encoded'] = False
-
-        response = lambda_handler(event, RequestContext())
+        response = HANDLER.lambda_handler(event, RequestContext())
 
         return HTTPResponse(
             body=response['body'],

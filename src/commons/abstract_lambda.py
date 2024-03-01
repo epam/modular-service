@@ -1,17 +1,14 @@
-import json
-from abc import abstractmethod, ABC
+from abc import ABC, abstractmethod
 from http import HTTPStatus
+import json
 from typing import TypedDict
 
 from modular_sdk.commons.exception import ModularException
 
-from commons import deep_get, RequestContext
-from commons.constants import Endpoint, HTTPMethod
-from commons.lambda_response import ApplicationException, ResponseFactory
+from commons import RequestContext, deep_get
+from commons.constants import Endpoint, HTTPMethod, Permission
+from commons.lambda_response import ApplicationException, LambdaOutput, ResponseFactory
 from commons.log_helper import get_logger, hide_secret_values
-from services import SERVICE_PROVIDER
-from services.rbac.endpoint_to_permission_mapping import (
-    ENDPOINT_PERMISSION_MAPPING)
 
 _LOG = get_logger(__name__)
 
@@ -44,6 +41,7 @@ class ProcessedEvent(TypedDict):
     cognito_customer: str | None
     cognito_user_id: str | None
     cognito_user_role: str | None
+    permission: Permission | None
     is_system: bool
     body: dict  # maybe better str in order not to bind to json
     query: dict
@@ -61,10 +59,9 @@ class ApiGatewayEventProcessor(AbstractEventProcessor):
         rc = event.get('requestContext') or {}
         return {
             'method': HTTPMethod(event['httpMethod']),
-            'resource': Endpoint.match(
-                event['requestContext']['resourcePath']),
+            'resource': Endpoint.match(rc['resourcePath']),
             'path': event['path'],
-            'fullpath': event['requestContext']['path'],
+            'fullpath': rc['path'],
             'cognito_username': deep_get(rc, ('authorizer', 'claims',
                                               'cognito:username')),
             'cognito_customer': deep_get(rc, ('authorizer', 'claims',
@@ -72,33 +69,13 @@ class ApiGatewayEventProcessor(AbstractEventProcessor):
             'cognito_user_id': deep_get(rc, ('authorizer', 'claims', 'sub')),
             'cognito_user_role': deep_get(rc, ('authorizer', 'claims',
                                                'custom:role')),
+            'permission': None,  # will be set later
             'is_system': deep_get(rc, ('authorizer', 'claims', 
                                        'custom:is_system')) or False,
             'body': body,
             'query': dict(event.get('queryStringParameters') or {}),
             'path_params': dict(event.get('pathParameters') or {})
         }
-
-
-class CheckPermissionEventProcessor(AbstractEventProcessor):
-    def __call__(self, event: ProcessedEvent) -> ProcessedEvent:
-        username = event['cognito_username']
-        if not username:
-            return event
-        _service = SERVICE_PROVIDER.access_control_service
-        try:
-            permission = ENDPOINT_PERMISSION_MAPPING[event['resource']][event['method']]
-        except KeyError:
-            permission = None
-
-        if not permission:
-            _LOG.info('No permission exist for endpoint, allowing')
-        elif not _service.is_allowed_to_access(username, permission):
-            _LOG.info('Not allowed to access')
-            raise ResponseFactory(HTTPStatus.FORBIDDEN).message(
-                f'You don\'t have the necessary permission: {permission}'
-            ).exc()
-        return event
 
 
 class RestrictCustomerEventProcessor(AbstractEventProcessor):
@@ -125,14 +102,16 @@ class RestrictCustomerEventProcessor(AbstractEventProcessor):
 
 class AbstractLambdaHandler(ABC):
     @abstractmethod
-    def handle_request(self, event: dict, context: RequestContext) -> dict:
+    def handle_request(self, event: ProcessedEvent, context: RequestContext
+                       ) -> LambdaOutput:
         """
         Should be implemented. May raise TelegramBotException or any
         other kind of exception
         """
 
     @abstractmethod
-    def lambda_handler(self, event: dict, context: RequestContext) -> dict:
+    def lambda_handler(self, event: dict, context: RequestContext
+                       ) -> LambdaOutput:
         """
         Main lambda's method that is executed
         """
@@ -143,10 +122,11 @@ class EventProcessorLambdaHandler(AbstractLambdaHandler):
 
     @abstractmethod
     def handle_request(self, event: ProcessedEvent,
-                       context: RequestContext) -> dict:
+                       context: RequestContext) -> LambdaOutput:
         ...
 
-    def lambda_handler(self, event: dict, context: RequestContext) -> dict:
+    def lambda_handler(self, event: dict, context: RequestContext
+                       ) -> LambdaOutput:
         _LOG.info(f'Starting request: {context.aws_request_id}')
         # This is the only place where we print the event. Do not print it
         # somewhere else
@@ -161,7 +141,7 @@ class EventProcessorLambdaHandler(AbstractLambdaHandler):
             _LOG.warning(f'Application exception occurred: {e}')
             return e.build()
         except ModularException as e:
-            _LOG.warning('Modular exception occurred', exc_info=1)
+            _LOG.warning('Modular exception occurred', exc_info=True)
             return ResponseFactory(int(e.code)).message(e.content).build()
         except Exception:  # noqa
             _LOG.exception('Unexpected exception occurred')

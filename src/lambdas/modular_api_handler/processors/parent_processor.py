@@ -9,6 +9,7 @@ from commons.constants import (
     HTTPMethod,
     PARENT_ID_ATTR,
     TYPE_ATTR,
+    Permission
 )
 from commons.lambda_response import ResponseFactory, build_response
 from commons.log_helper import get_logger
@@ -54,25 +55,29 @@ class ParentProcessor(AbstractCommandProcessor):
                 Endpoint.PARENTS,
                 HTTPMethod.GET,
                 'get',
-                response=resp
+                response=resp,
+                permission=Permission.PARENT_DESCRIBE
             ),
             cls.route(
                 Endpoint.PARENTS,
                 HTTPMethod.POST,
                 'post',
-                response=resp
+                response=resp,
+                permission=Permission.PARENT_CREATE
             ),
             cls.route(
                 Endpoint.PARENTS,
                 HTTPMethod.PATCH,
                 'patch',
-                response=resp
+                response=resp,
+                permission=Permission.PARENT_UPDATE
             ),
             cls.route(
                 Endpoint.PARENTS,
                 HTTPMethod.DELETE,
                 'delete',
-                response=resp
+                response=resp,
+                permission=Permission.PARENT_DELETE
             ),
         )
 

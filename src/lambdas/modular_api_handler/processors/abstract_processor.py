@@ -1,11 +1,14 @@
 from abc import abstractmethod
 from http import HTTPStatus
-from typing import Callable
+from typing import Callable, TYPE_CHECKING
 
 from routes.route import Route
 
-from commons.constants import Endpoint, HTTPMethod
+from commons.constants import Endpoint, HTTPMethod, Permission
 from commons.log_helper import get_logger
+
+if TYPE_CHECKING:
+    from validators.request import BaseModel  # noqa
 
 _LOG = get_logger(__name__)
 
@@ -39,7 +42,8 @@ class AbstractCommandProcessor:
 
     @classmethod
     def route(cls, path: Endpoint, method: tuple[HTTPMethod, ...] | HTTPMethod,
-              action: str, summary: str | None = None,
+              action: str, permission: Permission | None,
+              summary: str | None = None,
               description: str | None = None,
               response: list[Resp] | Resp = (HTTPStatus.OK, None, None),
               require_auth: bool = True
@@ -49,6 +53,9 @@ class AbstractCommandProcessor:
         :param path:
         :param method:
         :param action: name of method to be executed for this route
+        :param permission: target permission for this route, should be 
+        explicitly set to None in case we want this endpoint to be 
+        require no permissions
         :param summary:
         :param description:
         :param response: list of tuples with three elements: code, optional
@@ -70,5 +77,6 @@ class AbstractCommandProcessor:
             _summary=summary,
             _description=description,
             _responses=response,
-            _require_auth=require_auth
+            _require_auth=require_auth,
+            _permission=permission
         )

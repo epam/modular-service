@@ -21,6 +21,7 @@ from commons.abstract_lambda import ProcessedEvent
 from commons.constants import (
     Endpoint,
     HTTPMethod,
+    Permission
 )
 from commons.lambda_response import ResponseFactory, build_response
 from commons.log_helper import get_logger
@@ -66,55 +67,63 @@ class ApplicationProcessor(AbstractCommandProcessor):
                 HTTPMethod.POST,
                 'post_aws_role',
                 summary='Create application with type AWS_ROLE',
-                response=resp
+                response=resp,
+                permission=Permission.APPLICATION_CREATE
             ),
             cls.route(
                 Endpoint.APPLICATIONS_AWS_CREDENTIALS,
                 HTTPMethod.POST,
                 'post_aws_credentials',
                 summary='Create application with type AWS_CREDENTIALS',
-                response=resp
+                response=resp,
+                permission=Permission.APPLICATION_CREATE
             ),
             cls.route(
                 Endpoint.APPLICATIONS_AZURE_CREDENTIALS,
                 HTTPMethod.POST,
                 'post_azure_credentials',
                 summary='Create application with type AZURE_CREDENTIALS',
-                response=resp
-            ),
+                response=resp,
+                permission=Permission.APPLICATION_CREATE
+        ),
             cls.route(
                 Endpoint.APPLICATIONS_AZURE_CERTIFICATE,
                 HTTPMethod.POST,
                 'post_azure_certificate',
                 summary='Create application with type AZURE_CERTIFICATE',
-                response=resp
+                response=resp,
+                permission=Permission.APPLICATION_CREATE
             ),
             cls.route(
                 Endpoint.APPLICATIONS_GCP_SERVICE_ACCOUNT,
                 HTTPMethod.POST,
                 'post_gcp_service_account',
                 summary='Create application with type GCP_SERVICE_ACCOUNT',
-                response=resp
+                response=resp,
+                permission=Permission.APPLICATION_CREATE
             ),
             cls.route(
                 Endpoint.APPLICATIONS,
                 HTTPMethod.GET,
                 'query',
-                response=(HTTPStatus.OK, ApplicationsResponse, None)
+                response=(HTTPStatus.OK, ApplicationsResponse, None),
+                permission=Permission.APPLICATION_DESCRIBE
             ),
             cls.route(
                 Endpoint.APPLICATIONS_ID,
                 HTTPMethod.GET,
                 'get',
                 response=(HTTPStatus.OK, ApplicationResponse, None),
-                summary='Queries a single application by id'
+                summary='Queries a single application by id',
+                permission=Permission.APPLICATION_DESCRIBE
             ),
             cls.route(
                 Endpoint.APPLICATIONS_ID,
                 HTTPMethod.PATCH,
                 'patch',
                 response=(HTTPStatus.OK, ApplicationResponse, None),
-                summary='Allows to update certain fields in application'
+                summary='Allows to update certain fields in application',
+                permission=Permission.APPLICATION_UPDATE
             ),
             cls.route(
                 Endpoint.APPLICATIONS,
@@ -122,6 +131,7 @@ class ApplicationProcessor(AbstractCommandProcessor):
                 'delete',
                 summary='Marks an application as removed',
                 response=(HTTPStatus.OK, MessageModel, None),
+                permission=Permission.APPLICATION_DELETE
             )
         )
 

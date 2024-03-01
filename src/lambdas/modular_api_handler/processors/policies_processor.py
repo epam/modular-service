@@ -7,6 +7,7 @@ from commons.constants import (
     HTTPMethod,
     NAME_ATTR,
     PERMISSIONS_ATTR,
+    Permission
 )
 from commons.lambda_response import ResponseFactory, build_response
 from commons.log_helper import get_logger
@@ -48,25 +49,29 @@ class PolicyProcessor(AbstractCommandProcessor):
                 Endpoint.POLICIES,
                 HTTPMethod.GET,
                 'get',
-                response=resp
+                response=resp,
+                permission=Permission.POLICY_DESCRIBE
             ),
             cls.route(
                 Endpoint.POLICIES,
                 HTTPMethod.POST,
                 'post',
-                response=resp
+                response=resp,
+                permission=Permission.POLICY_CREATE
             ),
             cls.route(
                 Endpoint.POLICIES,
                 HTTPMethod.PATCH,
                 'patch',
-                response=resp
+                response=resp,
+                permission=Permission.POLICY_UPDATE
             ),
             cls.route(
                 Endpoint.POLICIES,
                 HTTPMethod.DELETE,
                 'delete',
-                response=(HTTPStatus.OK, MessageModel, None)
+                response=(HTTPStatus.OK, MessageModel, None),
+                permission=Permission.POLICY_DELETE
             ),
         )
 

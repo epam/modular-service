@@ -5,6 +5,7 @@ from routes.route import Route
 from commons.constants import (
     Endpoint,
     HTTPMethod,
+    Permission
 )
 from commons.lambda_response import ResponseFactory, build_response
 from commons.log_helper import get_logger
@@ -42,19 +43,22 @@ class RegionProcessor(AbstractCommandProcessor):
                 Endpoint.REGIONS,
                 HTTPMethod.GET,
                 'get',
-                response=resp
+                response=resp,
+                permission=Permission.REGION_DESCRIBE
             ),
             cls.route(
                 Endpoint.REGIONS,
                 HTTPMethod.POST,
                 'post',
-                response=resp
+                response=resp,
+                permission=Permission.REGION_CREATE
             ),
             cls.route(
                 Endpoint.REGIONS,
                 HTTPMethod.DELETE,
                 'delete',
-                response=(HTTPStatus.OK, MessageModel, None)
+                response=(HTTPStatus.OK, MessageModel, None),
+                permission=Permission.REGION_DELETE
             ),
         )
 

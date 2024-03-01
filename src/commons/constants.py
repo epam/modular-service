@@ -1,4 +1,6 @@
+import operator
 from enum import Enum
+from typing import Iterator
 
 from typing_extensions import Self
 
@@ -99,6 +101,56 @@ class Env(str, Enum):
 
     def __repr__(self):
         return self.value
+
+
+class Permission(str, Enum):
+    """
+    Collection of all available rbac permissions
+    """
+    APPLICATION_DESCRIBE = 'application:describe'
+    APPLICATION_CREATE = 'application:create'
+    APPLICATION_UPDATE = 'application:update'
+    APPLICATION_DELETE = 'application:delete'
+
+    CUSTOMER_DESCRIBE = 'customer:describe'
+    CUSTOMER_CREATE = 'customer:create'
+    CUSTOMER_UPDATE = 'customer:update'
+    CUSTOMER_DELETE = 'customer:delete'
+    CUSTOMER_ACTIVATE = 'customer:activate'
+    CUSTOMER_DEACTIVATE = 'customer:deactivate'
+
+    PARENT_DESCRIBE = 'parent:describe'
+    PARENT_CREATE = 'parent:create'
+    PARENT_UPDATE = 'parent:update'
+    PARENT_DELETE = 'parent:delete'
+
+    TENANT_DESCRIBE = 'tenant:describe'
+    TENANT_CREATE = 'tenant:create'
+    TENANT_UPDATE = 'tenant:update'
+    TENANT_DELETE = 'tenant:delete'
+    TENANT_ACTIVATE = 'tenant:activate'
+    TENANT_DEACTIVATE = 'tenant:deactivate'
+
+    REGION_DESCRIBE = 'region:describe'
+    REGION_CREATE = 'region:create'
+    REGION_DELETE = 'region:delete'
+
+    ROLE_DESCRIBE = 'role:describe'
+    ROLE_CREATE = 'role:create'
+    ROLE_UPDATE = 'role:update'
+    ROLE_DELETE = 'role:delete'
+
+    POLICY_DESCRIBE = 'policy:describe'
+    POLICY_CREATE = 'policy:create'
+    POLICY_UPDATE = 'policy:update'
+    POLICY_DELETE = 'policy:delete'
+
+    TENANT_SETTING_SET = 'tenant_setting:set'
+    TENANT_SETTING_DESCRIBE = 'tenant_setting:describe'
+
+    @classmethod
+    def all(cls) -> Iterator[str]:
+        return map(operator.attrgetter('value'), cls)
 
 
 LAMBDA_URL_HEADER_CONTENT_TYPE_UPPER = 'Content-Type'

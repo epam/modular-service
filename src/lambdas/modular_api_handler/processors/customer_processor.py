@@ -4,7 +4,7 @@ from modular_sdk.models.customer import Customer
 from routes.route import Route
 
 from commons import NextToken
-from commons.constants import Endpoint, HTTPMethod
+from commons.constants import Endpoint, HTTPMethod, Permission
 from commons.lambda_response import ResponseFactory, build_response
 from commons.log_helper import get_logger
 from lambdas.modular_api_handler.processors.abstract_processor import (
@@ -36,39 +36,45 @@ class CustomerProcessor(AbstractCommandProcessor):
                 Endpoint.CUSTOMERS,
                 HTTPMethod.GET,
                 'query',
-                response=(HTTPStatus.OK, CustomersResponse, None)
+                response=(HTTPStatus.OK, CustomersResponse, None),
+                permission=Permission.CUSTOMER_DESCRIBE
             ),
             cls.route(
                 Endpoint.CUSTOMERS_NAME,
                 HTTPMethod.GET,
                 'get',
-                response=(HTTPStatus.OK, CustomerResponse, None)
+                response=(HTTPStatus.OK, CustomerResponse, None),
+                permission=Permission.CUSTOMER_DESCRIBE
             ),
             cls.route(
                 Endpoint.CUSTOMERS,
                 HTTPMethod.POST,
                 'post',
-                response=(HTTPStatus.OK, CustomerResponse, None)
+                response=(HTTPStatus.OK, CustomerResponse, None),
+                permission=Permission.CUSTOMER_CREATE
             ),
             cls.route(
                 Endpoint.CUSTOMERS_NAME,
                 HTTPMethod.PATCH,
                 'patch',
-                response=(HTTPStatus.OK, CustomerResponse, None)
+                response=(HTTPStatus.OK, CustomerResponse, None),
+                permission=Permission.CUSTOMER_UPDATE
             ),
             cls.route(
                 Endpoint.CUSTOMERS_NAME_ACTIVATE,
                 HTTPMethod.POST,
                 'activate',
                 summary='Activates the customer',
-                response=(HTTPStatus.OK, CustomerResponse, None)
+                response=(HTTPStatus.OK, CustomerResponse, None),
+                permission=Permission.CUSTOMER_ACTIVATE
             ),
             cls.route(
                 Endpoint.CUSTOMERS_NAME_DEACTIVATE,
                 HTTPMethod.POST,
                 'deactivate',
                 summary='Deactivates the customer',
-                response=(HTTPStatus.OK, CustomerResponse, None)
+                response=(HTTPStatus.OK, CustomerResponse, None),
+                permission=Permission.CUSTOMER_DEACTIVATE
             )
         )
 

@@ -8,13 +8,13 @@ from routes.route import Route
 
 from commons import RequestContext
 from commons.abstract_lambda import (
+    AbstractEventProcessor,
     ApiGatewayEventProcessor,
-    CheckPermissionEventProcessor,
     EventProcessorLambdaHandler,
     ProcessedEvent,
     RestrictCustomerEventProcessor,
 )
-from commons.constants import HTTPMethod, REQUEST_METHOD_WSGI_ENV
+from commons.constants import Endpoint, HTTPMethod, Permission, REQUEST_METHOD_WSGI_ENV
 from commons.lambda_response import ResponseFactory
 from commons.log_helper import get_logger
 from lambdas.modular_api_handler.processors.abstract_processor import (
@@ -40,18 +40,46 @@ from lambdas.modular_api_handler.processors.tenant_processor import TenantProces
 from lambdas.modular_api_handler.processors.tenant_settings_processor import (
     TenantSettingsProcessor,
 )
+from services import SP
 from services.openapi_spec_generator import EndpointInfo
+from services.rbac.access_control_service import AccessControlService
 from validators.response import MessageModel, common_responses
 
 _LOG = get_logger('modular_api_handler')
 
 
+class CheckPermissionEventProcessor(AbstractEventProcessor):
+    """
+    Processor that restricts rbac permission
+    """
+    __slots__ = ('_acs', '_mapping')
+
+    def __init__(self, access_control_service: AccessControlService,
+                 mapping: dict[tuple[Endpoint, HTTPMethod], Permission | None]):
+        self._acs = access_control_service
+        self._mapping = mapping
+
+    def __call__(self, event: ProcessedEvent) -> ProcessedEvent:
+        username = event['cognito_username']
+        if not username:
+            return event
+        if not event['resource']:
+            _LOG.warning('A request for not known resource')
+            return event
+        permission = self._mapping.get((event['resource'], event['method']))
+        if not permission:
+            _LOG.info('No permission exist for endpoint, allowing')
+            return event
+        if not self._acs.is_allowed_to_access(username, permission.value):
+            _LOG.info('Not allowed to access')
+            raise ResponseFactory(HTTPStatus.FORBIDDEN).message(
+                f'You don\'t have the necessary permission: {permission}'
+            ).exc()  # todo maybe return missing permission in a separate key
+        event['permission'] = permission
+        return event
+
+
 class ModularApiHandler(EventProcessorLambdaHandler):
-    processors = (
-        ApiGatewayEventProcessor(),
-        CheckPermissionEventProcessor(),
-        RestrictCustomerEventProcessor()
-    )
     controller_classes = (
         SignUpProcessor,
         SignInProcessor,
@@ -66,11 +94,32 @@ class ModularApiHandler(EventProcessorLambdaHandler):
         CustomerSettingsProcessor,
         TenantSettingsProcessor
     )
-    __slots__ = ('_mapper', '_controllers')
+    __slots__ = ('_mapper', '_controllers', 'processors')
 
     def __init__(self):
         self._mapper: Mapper | None = None
         self._controllers: dict[str, AbstractCommandProcessor] = {}
+
+        self.processors = (
+            ApiGatewayEventProcessor(),
+            RestrictCustomerEventProcessor(),
+            CheckPermissionEventProcessor(
+                access_control_service=SP.access_control_service,
+                mapping=self._build_permissions_mapping()
+            )
+        )
+
+    def _build_permissions_mapping(self) -> dict[tuple[Endpoint, HTTPMethod], Permission | None]:
+        res = {}
+        for route in self.mapper.matchlist:
+            route: Route
+            kargs = route._kargs
+            for method in route.conditions['method']:
+                if isinstance(method, str):
+                    method = HTTPMethod(method.upper())
+                path = Endpoint(route.routepath)  # should always match
+                res[(path, method)] = kargs.get('_permission')
+        return res
 
     def get_controller(self, controller_class: type[AbstractCommandProcessor]
                        ) -> AbstractCommandProcessor:
@@ -105,7 +154,8 @@ class ModularApiHandler(EventProcessorLambdaHandler):
             ).exc()
         controller = match_result.pop('controller')
         action = match_result.pop('action')
-        to_pop = ('_summary', '_description', '_responses', '_require_auth')
+        to_pop = ('_summary', '_description', '_responses', '_require_auth', 
+                  '_permission')
         for k in to_pop:
             match_result.pop(k, None)
         # it's expected that the mapper is configured properly because
@@ -162,7 +212,7 @@ class ModularApiHandler(EventProcessorLambdaHandler):
                     description=kargs.get('_description'),
                     request_model=req,
                     responses=responses,
-                    auth=kargs.get('_require_auth') or True
+                    auth=kargs['_require_auth']
                 )
 
 

@@ -136,6 +136,7 @@ class SignInPost(BaseModel):
 class SignUpPost(BaseModel):
     username: str
     password: str
+    customer_id: str
     role: str
 
 

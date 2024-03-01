@@ -3,6 +3,7 @@ import base64
 import json
 import logging
 import logging.config
+import sys
 import multiprocessing
 import os
 import secrets
@@ -12,7 +13,7 @@ from pathlib import Path
 from typing import Callable, Literal, TYPE_CHECKING
 
 from commons.__version__ import __version__
-from commons.constants import Env, PRIVATE_KEY_SECRET_NAME
+from commons.constants import Env, PRIVATE_KEY_SECRET_NAME, Permission
 
 # NOTE, all imports are inside corresponding methods in order to make
 # CLI more or less fast
@@ -35,6 +36,7 @@ RUN_ACTION = 'run'
 GENERATE_OPENAPI_ACTION = 'generate-openapi'
 INIT_VAULT_ACTION = 'init-vault'
 CREATE_INDEXES_ACTION = 'create-indexes'
+DUMP_PERMISSIONS_ACTION = 'dump-permissions'
 INIT_ACTION = 'init'
 
 
@@ -109,6 +111,9 @@ def build_parser() -> argparse.ArgumentParser:
     # create-indexes
     _ = sub_parsers.add_parser(
         CREATE_INDEXES_ACTION, help='Creates indexes for mongo'
+    )
+    _ = sub_parsers.add_parser(
+        DUMP_PERMISSIONS_ACTION, help='Dumps all the available permission'
     )
     return parser
 
@@ -348,6 +353,11 @@ class GenerateOpenApi(ActionHandler):
         _LOG.info(f'Spec was written to {filename}')
 
 
+class DumpPermissions(ActionHandler):
+    def __call__(self):
+        json.dump(sorted(Permission.all()), sys.stdout, indent=2)
+
+
 def main(args: list[str] | None = None):
     parser = build_parser()
     arguments = parser.parse_args(args)
@@ -360,7 +370,8 @@ def main(args: list[str] | None = None):
         (INIT_VAULT_ACTION,): InitVault(),
         (INIT_ACTION,): Init(),
         (CREATE_INDEXES_ACTION,): CreateIndexes(),
-        (GENERATE_OPENAPI_ACTION,): GenerateOpenApi()
+        (GENERATE_OPENAPI_ACTION,): GenerateOpenApi(),
+        (DUMP_PERMISSIONS_ACTION,): DumpPermissions()
     }
     func = mapping.get(key) or (lambda **kwargs: _LOG.error('Hello'))
     for dest in ALL_NESTING:

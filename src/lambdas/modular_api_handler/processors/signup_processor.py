@@ -42,7 +42,8 @@ class SignUpProcessor(AbstractCommandProcessor):
                 HTTPMethod.POST,
                 'post',
                 response=(HTTPStatus.OK, MessageModel, None),
-                require_auth=False
+                require_auth=False,
+                permission=None
             ),
         )
 

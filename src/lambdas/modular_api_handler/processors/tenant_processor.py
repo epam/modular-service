@@ -6,6 +6,7 @@ from commons import NextToken
 from commons.constants import (
     Endpoint,
     HTTPMethod,
+    Permission
 )
 from commons.lambda_response import ResponseFactory, build_response
 from commons.log_helper import get_logger
@@ -43,6 +44,7 @@ class TenantProcessor(AbstractCommandProcessor):
                 HTTPMethod.GET,
                 'query',
                 response=(HTTPStatus.OK, TenantsResponse, None),
+                permission=Permission.TENANT_DESCRIBE
             ),
             cls.route(
                 Endpoint.TENANTS_NAME,
@@ -51,6 +53,7 @@ class TenantProcessor(AbstractCommandProcessor):
                 summary='Queries a specific tenant',
                 description='Either tenant name or tenant account id can be used to retrieve a tenant',
                 response=(HTTPStatus.OK, TenantResponse, None),
+                permission=Permission.TENANT_DESCRIBE
             ),
             cls.route(
                 Endpoint.TENANTS,
@@ -58,21 +61,24 @@ class TenantProcessor(AbstractCommandProcessor):
                 'create',
                 response=[(HTTPStatus.CREATED, TenantResponse, None),
                           (HTTPStatus.CONFLICT, MessageModel, 'Tenant already exists')],
-                description='Creates a new tenant'
+                description='Creates a new tenant',
+                permission=Permission.TENANT_CREATE
             ),
             cls.route(
                 Endpoint.TENANTS_NAME_ACTIVATE,
                 HTTPMethod.POST,
                 'activate',
                 response=(HTTPStatus.OK, TenantResponse, None),
-                description='Activates an existing tenant'
+                description='Activates an existing tenant',
+                permission=Permission.TENANT_ACTIVATE
             ),
             cls.route(
                 Endpoint.TENANTS_NAME_DEACTIVATE,
                 HTTPMethod.POST,
                 'deactivate',
                 response=(HTTPStatus.OK, TenantResponse, None),
-                description='Deactivates an existing tenant'
+                description='Deactivates an existing tenant',
+                permission=Permission.TENANT_DEACTIVATE
             ),
             cls.route(
                 Endpoint.TENANTS_NAME,
@@ -80,6 +86,7 @@ class TenantProcessor(AbstractCommandProcessor):
                 'delete',
                 summary='Guarantees that tenant is completely removed from the DB',
                 response=(HTTPStatus.NO_CONTENT, None, None),
+                permission=Permission.TENANT_DELETE
             ),
         )
 

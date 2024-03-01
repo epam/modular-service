@@ -4,7 +4,7 @@ from modular_sdk.services.tenant_settings_service import TenantSettingsService
 from routes.route import Route
 
 from commons import NextToken
-from commons.constants import Endpoint, HTTPMethod
+from commons.constants import Endpoint, HTTPMethod, Permission
 from commons.lambda_response import ResponseFactory, build_response
 from commons.log_helper import get_logger
 from lambdas.modular_api_handler.processors.abstract_processor import (
@@ -40,14 +40,16 @@ class TenantSettingsProcessor(AbstractCommandProcessor):
                 HTTPMethod.GET,
                 'query',
                 summary='List settings all settings for this tenant',
-                response=(HTTPStatus.OK, TenantSettingsResponse, None)
+                response=(HTTPStatus.OK, TenantSettingsResponse, None),
+                permission=Permission.TENANT_SETTING_DESCRIBE
             ),
             cls.route(
                 Endpoint.TENANTS_NAME_SETTINGS,
                 HTTPMethod.PUT,
                 'put',
                 summary='Put some setting value',
-                response=(HTTPStatus.OK, TenantSettingsResponse, None)
+                response=(HTTPStatus.OK, TenantSettingsResponse, None),
+                permission=Permission.TENANT_SETTING_SET
             ),
         )
 

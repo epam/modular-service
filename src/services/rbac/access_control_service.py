@@ -1,9 +1,10 @@
 from datetime import datetime, timedelta
 
+from commons.constants import Permission
 from commons.log_helper import get_logger
+from commons.time_helper import utc_datetime
 from models.policy import Policy
 from models.role import Role
-from services.rbac.endpoint_to_permission_mapping import ALL_PERMISSIONS
 from services.rbac.iam_service import IamService
 from services.user_service import CognitoUserService
 
@@ -87,17 +88,15 @@ class AccessControlService:
         access_conf_object.save()
 
     @staticmethod
-    def is_role_expired(role: Role):
-        role_expiration_datetime = role.expiration
-        if isinstance(role_expiration_datetime, str):
-            role_expiration_datetime = datetime.fromisoformat(
-                role_expiration_datetime)
-        now = datetime.now()
-        return now >= role_expiration_datetime
+    def is_role_expired(role: Role) -> bool:
+        expiration: str = role.expiration
+        if not expiration:
+            return False
+        return utc_datetime() >= utc_datetime(expiration)
 
     @staticmethod
     def get_non_existing_permissions(permissions: list | set) -> set:
-        return set(permissions) - ALL_PERMISSIONS
+        return set(permissions) - set(Permission.all())
 
     def get_non_existing_policies(self, policies: list | set) -> list:
         nonexistent = []
@@ -108,7 +107,7 @@ class AccessControlService:
 
     @staticmethod
     def get_admin_permissions() -> list:
-        return list(ALL_PERMISSIONS)
+        return list(Permission.all())
 
     @staticmethod
     def get_role_default_expiration():

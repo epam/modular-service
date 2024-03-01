@@ -8,6 +8,7 @@ from commons.constants import (
     HTTPMethod,
     NAME_ATTR,
     POLICIES_ATTR,
+    Permission
 )
 from commons.lambda_response import ResponseFactory, build_response
 from commons.log_helper import get_logger
@@ -50,25 +51,29 @@ class RoleProcessor(AbstractCommandProcessor):
                 Endpoint.ROLES,
                 HTTPMethod.GET,
                 'get',
-                response=resp
+                response=resp,
+                permission=Permission.ROLE_DESCRIBE
             ),
             cls.route(
                 Endpoint.ROLES,
                 HTTPMethod.POST,
                 'post',
-                response=resp
+                response=resp,
+                permission=Permission.ROLE_CREATE
             ),
             cls.route(
                 Endpoint.ROLES,
                 HTTPMethod.PATCH,
                 'patch',
-                response=resp
+                response=resp,
+                permission=Permission.ROLE_UPDATE
             ),
             cls.route(
                 Endpoint.ROLES,
                 HTTPMethod.DELETE,
                 'delete',
-                response=(HTTPStatus.OK, MessageModel, None)
+                response=(HTTPStatus.OK, MessageModel, None),
+                permission=Permission.ROLE_DELETE
             ),
         )
 

@@ -35,7 +35,8 @@ class SignInProcessor(AbstractCommandProcessor):
                 HTTPMethod.POST,
                 'post',
                 response=(HTTPStatus.OK, SignInResponse, 'Successful login'),
-                require_auth=False
+                require_auth=False,
+                permission=None
             ),
         )
 

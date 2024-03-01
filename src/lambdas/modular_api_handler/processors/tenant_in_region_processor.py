@@ -1,9 +1,8 @@
-
 from http import HTTPStatus
 
 from routes.route import Route
 
-from commons.constants import Endpoint, HTTPMethod
+from commons.constants import Endpoint, HTTPMethod, Permission
 from commons.lambda_response import ResponseFactory, build_response
 from commons.log_helper import get_logger
 from lambdas.modular_api_handler.processors.abstract_processor import (
@@ -39,19 +38,22 @@ class TenantRegionProcessor(AbstractCommandProcessor):
                 Endpoint.TENANTS_REGIONS,
                 HTTPMethod.GET,
                 'get',
-                response=(HTTPStatus.OK, RegionsResponse, None)
+                response=(HTTPStatus.OK, RegionsResponse, None),
+                permission=Permission.REGION_DESCRIBE
             ),
             cls.route(
                 Endpoint.TENANTS_REGIONS,
                 HTTPMethod.POST,
                 'post',
-                response=(HTTPStatus.OK, RegionsResponse, None)
+                response=(HTTPStatus.OK, RegionsResponse, None),
+                permission=Permission.REGION_CREATE
             ),
             cls.route(
                 Endpoint.TENANTS_REGIONS,
                 HTTPMethod.DELETE,
                 'delete',
-                response=(HTTPStatus.OK, TenantsResponse, None)
+                response=(HTTPStatus.OK, TenantsResponse, None),
+                permission=Permission.REGION_DELETE
             )
         )
 
