@@ -96,9 +96,9 @@ class PolicyPatch(BaseModel):
         if self.permissions and (self.permissions_to_attach or self.permissions_to_detach):
             raise ValueError('provide either permissions to permissions_'
                              'to_attach and/or permissions_to_detach')
-        if not any((self.permissions, self.permissions_to_detach,
+        if not any((self.permissions, self.permissions_to_attach,
                     self.permissions_to_detach)):
-            raise ValueError('Provide at permissions or permissions_to_'
+            raise ValueError('Provide or permissions or permissions_to_'
                              'attach or permissions_to_detach')
         if self.permissions:  # means to replace
             self.permissions_to_attach = self.permissions
@@ -138,7 +138,7 @@ class RolePatch(BaseModel):
 
     @model_validator(mode='after')
     def check_at_least_one(self) -> Self:
-        if not self.expiration and not self.policies_to_detach and not self.policies_to_detach:
+        if not self.expiration and not self.policies_to_attach and not self.policies_to_detach:
             raise ValueError('provide at least one attribute to update')
         return self
 
@@ -205,17 +205,11 @@ class RegionDelete(BaseModel):
     maestro_name: str
 
 
-class TenantRegionGet(BaseModel):
-    tenant: str
-
-
 class TenantRegionPost(BaseModel):
-    tenant: str
-    region: str
+    region: str = Field(description='Maestro region name')
 
 
 class TenantRegionDelete(BaseModel):
-    tenant: str
     region: str
 
 

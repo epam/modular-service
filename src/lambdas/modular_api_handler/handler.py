@@ -61,7 +61,11 @@ class RestrictCustomerEventProcessor(AbstractEventProcessor):
         (Endpoint.CUSTOMERS_NAME, HTTPMethod.GET),
         (Endpoint.CUSTOMERS_NAME, HTTPMethod.PATCH),
         (Endpoint.CUSTOMERS_NAME_ACTIVATE, HTTPMethod.POST),
-        (Endpoint.CUSTOMERS_NAME_DEACTIVATE, HTTPMethod.POST)
+        (Endpoint.CUSTOMERS_NAME_DEACTIVATE, HTTPMethod.POST),
+
+        (Endpoint.REGIONS, HTTPMethod.GET),
+        (Endpoint.REGIONS, HTTPMethod.POST),
+        (Endpoint.REGIONS, HTTPMethod.DELETE),
     }
 
     def __init__(self, customer_service: CustomerMutatorService):

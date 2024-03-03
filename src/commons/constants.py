@@ -30,8 +30,8 @@ class Endpoint(str, Enum):
     TENANTS_NAME = '/tenants/{name}'
     POLICIES_NAME = '/policies/{name}'
     CUSTOMERS_NAME = '/customers/{name}'
-    TENANTS_REGIONS = '/tenants/regions'
     APPLICATIONS_ID = '/applications/{id}'
+    TENANTS_NAME_REGIONS = '/tenants/{name}/regions'
     APPLICATIONS_AWS_ROLE = '/applications/aws-role'
     TENANTS_NAME_SETTINGS = '/tenants/{name}/settings'
     TENANTS_NAME_ACTIVATE = '/tenants/{name}/activate'
@@ -132,6 +132,9 @@ class Permission(str, Enum):
     TENANT_DELETE = 'tenant:delete'
     TENANT_ACTIVATE = 'tenant:activate'
     TENANT_DEACTIVATE = 'tenant:deactivate'
+    TENANT_CREATE_REGION = 'tenant:create_region'
+    TENANT_DESCRIBE_REGION = 'tenant:describe_region'
+    TENANT_DELETE_REGION = 'tenant:delete_region'
 
     REGION_DESCRIBE = 'region:describe'
     REGION_CREATE = 'region:create'
@@ -153,9 +156,6 @@ class Permission(str, Enum):
     def __str__(self):
         return self.value
 
-    def __repr__(self):
-        return self.value
-
     @classmethod
     def hidden(cls) -> set[Self]:
         """
@@ -168,7 +168,6 @@ class Permission(str, Enum):
         return {
             cls.REGION_DELETE,
             cls.REGION_CREATE,
-            cls.REGION_DESCRIBE
         }
 
     @classmethod

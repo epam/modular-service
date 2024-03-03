@@ -1,5 +1,6 @@
 from http import HTTPStatus
 
+from modular_sdk.models.tenant import Tenant
 from routes.route import Route
 
 from commons.constants import Endpoint, HTTPMethod, Permission
@@ -11,9 +12,9 @@ from lambdas.modular_api_handler.processors.abstract_processor import (
 from services import SERVICE_PROVIDER
 from services.region_mutator_service import RegionMutatorService
 from services.tenant_mutator_service import TenantMutatorService
-from validators.request import TenantRegionDelete, TenantRegionGet, TenantRegionPost
+from validators.request import TenantRegionDelete, BaseModel, TenantRegionPost
+from validators.response import RegionsResponse
 from validators.utils import validate_kwargs
-from validators.response import TenantsResponse, RegionsResponse
 
 _LOG = get_logger(__name__)
 
@@ -35,60 +36,61 @@ class TenantRegionProcessor(AbstractCommandProcessor):
     def routes(cls) -> tuple[Route, ...]:
         return (
             cls.route(
-                Endpoint.TENANTS_REGIONS,
+                Endpoint.TENANTS_NAME_REGIONS,
                 HTTPMethod.GET,
                 'get',
                 response=(HTTPStatus.OK, RegionsResponse, None),
-                permission=Permission.REGION_DESCRIBE
+                permission=Permission.TENANT_DESCRIBE_REGION
             ),
             cls.route(
-                Endpoint.TENANTS_REGIONS,
+                Endpoint.TENANTS_NAME_REGIONS,
                 HTTPMethod.POST,
                 'post',
-                response=(HTTPStatus.OK, RegionsResponse, None),
-                permission=Permission.REGION_CREATE
+                response=(HTTPStatus.CREATED, RegionsResponse, None),
+                permission=Permission.TENANT_CREATE_REGION
             ),
             cls.route(
-                Endpoint.TENANTS_REGIONS,
+                Endpoint.TENANTS_NAME_REGIONS,
                 HTTPMethod.DELETE,
                 'delete',
-                response=(HTTPStatus.OK, TenantsResponse, None),
-                permission=Permission.REGION_DELETE
+                response=(HTTPStatus.NO_CONTENT, None, None),
+                permission=Permission.TENANT_DELETE_REGION
             )
         )
 
-    @validate_kwargs
-    def get(self, event: TenantRegionGet):
-
-        tenant_name = event.tenant
-
-        _LOG.debug(f'Describing tenant by name \'{tenant_name}\'')
-        tenant = self.tenant_service.get(tenant_name=tenant_name)
-        if not tenant:
-            _LOG.debug(f'Tenant \'{tenant_name}\' does not exist.')
-            raise ResponseFactory(HTTPStatus.NOT_FOUND).message(
-                f'Tenant \'{tenant_name}\' does not exist.'
-            ).exc()
-        if not tenant.regions:
-            _LOG.warning(f'Tenant \'{tenant_name}\' does not have any regions')
-            raise ResponseFactory(HTTPStatus.NOT_FOUND).message(
-                f'Tenant \'{tenant_name}\' does not have any regions'
-            ).exc()
-        _LOG.debug('Describing region dto.')
-        response = [self.region_service.get_dto(region=region) for region
-                    in tenant.regions]
-        _LOG.debug(f'Response: {response}')
-        return build_response(content=response)
+    def _get_tenant(self, name: str, customer_id: str) -> Tenant | None:
+        item = self.tenant_service.get(name)
+        if not item:
+            item = next(self.tenant_service.i_get_by_acc(
+                acc=name, limit=1
+            ), None)
+        if not item or item.customer_name != customer_id:
+            return
+        return item
 
     @validate_kwargs
-    def post(self, event: TenantRegionPost):
+    def get(self, event: BaseModel, name: str):
 
-        tenant_name = event.tenant
-        tenant = self.tenant_service.get(tenant_name=tenant_name)
+        _LOG.debug(f'Describing tenant by name \'{name}\'')
+        tenant = self._get_tenant(name, event.customer_id)
         if not tenant:
-            _LOG.debug(f'Tenant \'{tenant_name}\' does not exist.')
+            _LOG.debug(f'Tenant \'{name}\' does not exist.')
             raise ResponseFactory(HTTPStatus.NOT_FOUND).message(
-                f'Tenant \'{tenant_name}\' does not exist.'
+                f'Tenant \'{name}\' does not exist.'
+            ).exc()
+
+        return build_response([
+            self.region_service.get_dto(region) for region in tenant.regions
+        ])
+
+    @validate_kwargs
+    def post(self, event: TenantRegionPost, name: str):
+
+        tenant = self._get_tenant(name, event.customer_id)
+        if not tenant:
+            _LOG.debug(f'Tenant \'{name}\' does not exist.')
+            raise ResponseFactory(HTTPStatus.NOT_FOUND).message(
+                f'Tenant \'{name}\' does not exist.'
             ).exc()
 
         region_name = event.region
@@ -100,30 +102,26 @@ class TenantRegionProcessor(AbstractCommandProcessor):
             ).exc()
 
         _LOG.debug(f'Activating region \'{region_name}\' in tenant '
-                   f'\'{tenant_name}\'')
+                   f'\'{name}\'')
         self.region_service.activate_region_in_tenant(tenant=tenant,
                                                       region=region)
 
         _LOG.debug('Saving tenant')
         self.tenant_service.save(tenant=tenant)
 
-        _LOG.debug('Describing region dto.')
-        response = [self.region_service.get_dto(region=region) for region
-                    in tenant.regions]
-        _LOG.debug(f'Response: {response}')
-        return build_response(content=response)
+        return build_response([
+            self.region_service.get_dto(region) for region in tenant.regions
+        ], code=HTTPStatus.CREATED)
 
     @validate_kwargs
-    def delete(self, event: TenantRegionDelete):
+    def delete(self, event: TenantRegionDelete, name: str):
 
-        tenant_name = event.tenant
-
-        _LOG.debug(f'Describing tenant by name \'{tenant_name}\'')
-        tenant = self.tenant_service.get(tenant_name=tenant_name)
+        _LOG.debug(f'Describing tenant by name \'{name}\'')
+        tenant = self._get_tenant(name, event.customer_id)
         if not tenant:
-            _LOG.debug(f'Tenant \'{tenant_name}\' does not exist.')
+            _LOG.debug(f'Tenant \'{name}\' does not exist.')
             raise ResponseFactory(HTTPStatus.NOT_FOUND).message(
-                f'Tenant \'{tenant_name}\' does not exist.'
+                f'Tenant \'{name}\' does not exist.'
             ).exc()
         region_name = event.region
         region = self.region_service.get_region(region_name=region_name)
@@ -134,7 +132,7 @@ class TenantRegionProcessor(AbstractCommandProcessor):
             ).exc()
 
         _LOG.debug(f'Deactivating region \'{region_name}\' from tenant '
-                   f'\'{tenant_name}\'')
+                   f'\'{name}\'')
         self.region_service.delete_region_from_tenant(
             tenant=tenant,
             region=region
@@ -142,9 +140,4 @@ class TenantRegionProcessor(AbstractCommandProcessor):
 
         _LOG.debug('Saving tenant')
         self.tenant_service.save(tenant=tenant)
-
-        _LOG.debug('Extracting region dto')
-        response = self.tenant_service.get_dto(tenant=tenant)
-        _LOG.debug(f'Response: {response}')
-
-        return build_response(content=response)
+        return build_response(code=HTTPStatus.NO_CONTENT)
