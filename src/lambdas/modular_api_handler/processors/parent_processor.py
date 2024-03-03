@@ -51,34 +51,34 @@ class ParentProcessor(AbstractCommandProcessor):
     def routes(cls) -> tuple[Route, ...]:
         resp = (HTTPStatus.OK, ParentsResponse, None)
         return (
-            cls.route(
-                Endpoint.PARENTS,
-                HTTPMethod.GET,
-                'get',
-                response=resp,
-                permission=Permission.PARENT_DESCRIBE
-            ),
-            cls.route(
-                Endpoint.PARENTS,
-                HTTPMethod.POST,
-                'post',
-                response=resp,
-                permission=Permission.PARENT_CREATE
-            ),
-            cls.route(
-                Endpoint.PARENTS,
-                HTTPMethod.PATCH,
-                'patch',
-                response=resp,
-                permission=Permission.PARENT_UPDATE
-            ),
-            cls.route(
-                Endpoint.PARENTS,
-                HTTPMethod.DELETE,
-                'delete',
-                response=resp,
-                permission=Permission.PARENT_DELETE
-            ),
+            # cls.route(
+            #     Endpoint.PARENTS,
+            #     HTTPMethod.GET,
+            #     'get',
+            #     response=resp,
+            #     permission=Permission.PARENT_DESCRIBE
+            # ),
+            # cls.route(
+            #     Endpoint.PARENTS,
+            #     HTTPMethod.POST,
+            #     'post',
+            #     response=resp,
+            #     permission=Permission.PARENT_CREATE
+            # ),
+            # cls.route(
+            #     Endpoint.PARENTS,
+            #     HTTPMethod.PATCH,
+            #     'patch',
+            #     response=resp,
+            #     permission=Permission.PARENT_UPDATE
+            # ),
+            # cls.route(
+            #     Endpoint.PARENTS,
+            #     HTTPMethod.DELETE,
+            #     'delete',
+            #     response=resp,
+            #     permission=Permission.PARENT_DELETE
+            # ),
         )
 
     @validate_kwargs

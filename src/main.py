@@ -399,17 +399,17 @@ class UpdateDeploymentResources(ActionHandler):
                             params[f'method.request.querystring.{name}'] = info.is_required()
                         method_data['method_request_parameters'] = params
                     case _:
-                        name =  model.__name__
+                        name = model.__name__
                         method_data['method_request_models'] = {
                             'application/json': name
                         }
                         schema = model.model_json_schema()
                         dereference_json(schema)
                         schema.pop('$defs', None)
-                        api.setdefault('models', {}).setdefault(name, {
+                        api.setdefault('models', {})[name] = {
                             'content_type': 'application/json',
                             'schema': schema
-                        })
+                        }
             responses = []
             for st, m, _ in endpoint.responses:
                 resp: dict[str, Any] = {'status_code': str(st.value)}

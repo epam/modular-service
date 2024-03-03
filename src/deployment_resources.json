@@ -867,173 +867,6 @@
           ]
         }
       },
-      "/tenants/regions": {
-        "policy_statement_singleton": true,
-        "enable_cors": true,
-        "GET": {
-          "enable_proxy": true,
-          "integration_type": "lambda",
-          "lambda_alias": "${lambdas_alias_name}",
-          "authorization_type": "authorizer",
-          "lambda_name": "modular-api-handler",
-          "method_request_parameters": {
-            "method.request.querystring.customer_id": false,
-            "method.request.querystring.tenant": true
-          },
-          "responses": [
-            {
-              "status_code": "200",
-              "response_models": {
-                "application/json": "RegionsResponse"
-              }
-            },
-            {
-              "status_code": "400",
-              "response_models": {
-                "application/json": "ErrorsModel"
-              }
-            },
-            {
-              "status_code": "401",
-              "response_models": {
-                "application/json": "MessageModel"
-              }
-            },
-            {
-              "status_code": "403",
-              "response_models": {
-                "application/json": "MessageModel"
-              }
-            },
-            {
-              "status_code": "500",
-              "response_models": {
-                "application/json": "MessageModel"
-              }
-            },
-            {
-              "status_code": "503",
-              "response_models": {
-                "application/json": "MessageModel"
-              }
-            },
-            {
-              "status_code": "504",
-              "response_models": {
-                "application/json": "MessageModel"
-              }
-            }
-          ]
-        },
-        "POST": {
-          "enable_proxy": true,
-          "integration_type": "lambda",
-          "lambda_alias": "${lambdas_alias_name}",
-          "authorization_type": "authorizer",
-          "lambda_name": "modular-api-handler",
-          "method_request_models": {
-            "application/json": "TenantRegionPost"
-          },
-          "responses": [
-            {
-              "status_code": "200",
-              "response_models": {
-                "application/json": "RegionsResponse"
-              }
-            },
-            {
-              "status_code": "400",
-              "response_models": {
-                "application/json": "ErrorsModel"
-              }
-            },
-            {
-              "status_code": "401",
-              "response_models": {
-                "application/json": "MessageModel"
-              }
-            },
-            {
-              "status_code": "403",
-              "response_models": {
-                "application/json": "MessageModel"
-              }
-            },
-            {
-              "status_code": "500",
-              "response_models": {
-                "application/json": "MessageModel"
-              }
-            },
-            {
-              "status_code": "503",
-              "response_models": {
-                "application/json": "MessageModel"
-              }
-            },
-            {
-              "status_code": "504",
-              "response_models": {
-                "application/json": "MessageModel"
-              }
-            }
-          ]
-        },
-        "DELETE": {
-          "enable_proxy": true,
-          "integration_type": "lambda",
-          "lambda_alias": "${lambdas_alias_name}",
-          "authorization_type": "authorizer",
-          "lambda_name": "modular-api-handler",
-          "method_request_models": {
-            "application/json": "TenantRegionDelete"
-          },
-          "responses": [
-            {
-              "status_code": "200",
-              "response_models": {
-                "application/json": "TenantsResponse"
-              }
-            },
-            {
-              "status_code": "400",
-              "response_models": {
-                "application/json": "ErrorsModel"
-              }
-            },
-            {
-              "status_code": "401",
-              "response_models": {
-                "application/json": "MessageModel"
-              }
-            },
-            {
-              "status_code": "403",
-              "response_models": {
-                "application/json": "MessageModel"
-              }
-            },
-            {
-              "status_code": "500",
-              "response_models": {
-                "application/json": "MessageModel"
-              }
-            },
-            {
-              "status_code": "503",
-              "response_models": {
-                "application/json": "MessageModel"
-              }
-            },
-            {
-              "status_code": "504",
-              "response_models": {
-                "application/json": "MessageModel"
-              }
-            }
-          ]
-        }
-      },
       "/regions": {
         "policy_statement_singleton": true,
         "enable_cors": true,
@@ -1214,8 +1047,7 @@
             "method.request.querystring.customer_id": false,
             "method.request.querystring.limit": false,
             "method.request.querystring.next_token": false,
-            "method.request.querystring.type": false,
-            "method.request.querystring.is_deleted": false
+            "method.request.querystring.type": false
           },
           "responses": [
             {
@@ -1548,6 +1380,9 @@
           "lambda_alias": "${lambdas_alias_name}",
           "authorization_type": "authorizer",
           "lambda_name": "modular-api-handler",
+          "method_request_parameters": {
+            "method.request.querystring.customer_id": false
+          },
           "responses": [
             {
               "status_code": "200",
@@ -1669,6 +1504,9 @@
           "lambda_alias": "${lambdas_alias_name}",
           "authorization_type": "authorizer",
           "lambda_name": "modular-api-handler",
+          "method_request_models": {
+            "application/json": "BaseModel"
+          },
           "responses": [
             {
               "status_code": "200",
@@ -1730,6 +1568,9 @@
           "lambda_alias": "${lambdas_alias_name}",
           "authorization_type": "authorizer",
           "lambda_name": "modular-api-handler",
+          "method_request_models": {
+            "application/json": "BaseModel"
+          },
           "responses": [
             {
               "status_code": "200",
@@ -1791,6 +1632,9 @@
           "lambda_alias": "${lambdas_alias_name}",
           "authorization_type": "authorizer",
           "lambda_name": "modular-api-handler",
+          "method_request_parameters": {
+            "method.request.querystring.customer_id": false
+          },
           "responses": [
             {
               "status_code": "200",
@@ -1848,6 +1692,9 @@
           "lambda_alias": "${lambdas_alias_name}",
           "authorization_type": "authorizer",
           "lambda_name": "modular-api-handler",
+          "method_request_models": {
+            "application/json": "BaseModel"
+          },
           "responses": [
             {
               "status_code": "204"
@@ -1906,6 +1753,9 @@
           "lambda_alias": "${lambdas_alias_name}",
           "authorization_type": "authorizer",
           "lambda_name": "modular-api-handler",
+          "method_request_models": {
+            "application/json": "BaseModel"
+          },
           "responses": [
             {
               "status_code": "200",
@@ -1967,6 +1817,9 @@
           "lambda_alias": "${lambdas_alias_name}",
           "authorization_type": "authorizer",
           "lambda_name": "modular-api-handler",
+          "method_request_models": {
+            "application/json": "BaseModel"
+          },
           "responses": [
             {
               "status_code": "200",
@@ -2318,6 +2171,9 @@
           "lambda_alias": "${lambdas_alias_name}",
           "authorization_type": "authorizer",
           "lambda_name": "modular-api-handler",
+          "method_request_parameters": {
+            "method.request.querystring.customer_id": false
+          },
           "responses": [
             {
               "status_code": "200",
@@ -2383,6 +2239,66 @@
               "status_code": "200",
               "response_models": {
                 "application/json": "ApplicationResponse"
+              }
+            },
+            {
+              "status_code": "400",
+              "response_models": {
+                "application/json": "ErrorsModel"
+              }
+            },
+            {
+              "status_code": "401",
+              "response_models": {
+                "application/json": "MessageModel"
+              }
+            },
+            {
+              "status_code": "403",
+              "response_models": {
+                "application/json": "MessageModel"
+              }
+            },
+            {
+              "status_code": "404",
+              "response_models": {
+                "application/json": "MessageModel"
+              }
+            },
+            {
+              "status_code": "500",
+              "response_models": {
+                "application/json": "MessageModel"
+              }
+            },
+            {
+              "status_code": "503",
+              "response_models": {
+                "application/json": "MessageModel"
+              }
+            },
+            {
+              "status_code": "504",
+              "response_models": {
+                "application/json": "MessageModel"
+              }
+            }
+          ]
+        },
+        "DELETE": {
+          "enable_proxy": true,
+          "integration_type": "lambda",
+          "lambda_alias": "${lambdas_alias_name}",
+          "authorization_type": "authorizer",
+          "lambda_name": "modular-api-handler",
+          "method_request_models": {
+            "application/json": "BaseModel"
+          },
+          "responses": [
+            {
+              "status_code": "200",
+              "response_models": {
+                "application/json": "MessageModel"
               }
             },
             {
@@ -2918,6 +2834,187 @@
             }
           ]
         }
+      },
+      "/tenants/{name}/regions": {
+        "policy_statement_singleton": true,
+        "enable_cors": true,
+        "GET": {
+          "enable_proxy": true,
+          "integration_type": "lambda",
+          "lambda_alias": "${lambdas_alias_name}",
+          "authorization_type": "authorizer",
+          "lambda_name": "modular-api-handler",
+          "method_request_parameters": {
+            "method.request.querystring.customer_id": false
+          },
+          "responses": [
+            {
+              "status_code": "200",
+              "response_models": {
+                "application/json": "RegionsResponse"
+              }
+            },
+            {
+              "status_code": "400",
+              "response_models": {
+                "application/json": "ErrorsModel"
+              }
+            },
+            {
+              "status_code": "401",
+              "response_models": {
+                "application/json": "MessageModel"
+              }
+            },
+            {
+              "status_code": "403",
+              "response_models": {
+                "application/json": "MessageModel"
+              }
+            },
+            {
+              "status_code": "404",
+              "response_models": {
+                "application/json": "MessageModel"
+              }
+            },
+            {
+              "status_code": "500",
+              "response_models": {
+                "application/json": "MessageModel"
+              }
+            },
+            {
+              "status_code": "503",
+              "response_models": {
+                "application/json": "MessageModel"
+              }
+            },
+            {
+              "status_code": "504",
+              "response_models": {
+                "application/json": "MessageModel"
+              }
+            }
+          ]
+        },
+        "POST": {
+          "enable_proxy": true,
+          "integration_type": "lambda",
+          "lambda_alias": "${lambdas_alias_name}",
+          "authorization_type": "authorizer",
+          "lambda_name": "modular-api-handler",
+          "method_request_models": {
+            "application/json": "TenantRegionPost"
+          },
+          "responses": [
+            {
+              "status_code": "201",
+              "response_models": {
+                "application/json": "RegionsResponse"
+              }
+            },
+            {
+              "status_code": "400",
+              "response_models": {
+                "application/json": "ErrorsModel"
+              }
+            },
+            {
+              "status_code": "401",
+              "response_models": {
+                "application/json": "MessageModel"
+              }
+            },
+            {
+              "status_code": "403",
+              "response_models": {
+                "application/json": "MessageModel"
+              }
+            },
+            {
+              "status_code": "404",
+              "response_models": {
+                "application/json": "MessageModel"
+              }
+            },
+            {
+              "status_code": "500",
+              "response_models": {
+                "application/json": "MessageModel"
+              }
+            },
+            {
+              "status_code": "503",
+              "response_models": {
+                "application/json": "MessageModel"
+              }
+            },
+            {
+              "status_code": "504",
+              "response_models": {
+                "application/json": "MessageModel"
+              }
+            }
+          ]
+        },
+        "DELETE": {
+          "enable_proxy": true,
+          "integration_type": "lambda",
+          "lambda_alias": "${lambdas_alias_name}",
+          "authorization_type": "authorizer",
+          "lambda_name": "modular-api-handler",
+          "method_request_models": {
+            "application/json": "TenantRegionDelete"
+          },
+          "responses": [
+            {
+              "status_code": "204"
+            },
+            {
+              "status_code": "400",
+              "response_models": {
+                "application/json": "ErrorsModel"
+              }
+            },
+            {
+              "status_code": "401",
+              "response_models": {
+                "application/json": "MessageModel"
+              }
+            },
+            {
+              "status_code": "403",
+              "response_models": {
+                "application/json": "MessageModel"
+              }
+            },
+            {
+              "status_code": "404",
+              "response_models": {
+                "application/json": "MessageModel"
+              }
+            },
+            {
+              "status_code": "500",
+              "response_models": {
+                "application/json": "MessageModel"
+              }
+            },
+            {
+              "status_code": "503",
+              "response_models": {
+                "application/json": "MessageModel"
+              }
+            },
+            {
+              "status_code": "504",
+              "response_models": {
+                "application/json": "MessageModel"
+              }
+            }
+          ]
+        }
       }
     },
     "models": {
@@ -2925,10 +3022,6 @@
         "content_type": "application/json",
         "schema": {
           "properties": {
-            "customer_id": {
-              "title": "Customer Id",
-              "type": "string"
-            },
             "username": {
               "title": "Username",
               "type": "string"
@@ -2937,16 +3030,28 @@
               "title": "Password",
               "type": "string"
             },
-            "role": {
-              "title": "Role",
+            "customer_name": {
+              "title": "Customer Name",
               "type": "string"
+            },
+            "customer_display_name": {
+              "title": "Customer Display Name",
+              "type": "string"
+            },
+            "customer_admins": {
+              "items": {
+                "type": "string"
+              },
+              "title": "Customer Admins",
+              "type": "array",
+              "uniqueItems": true
             }
           },
           "required": [
-            "customer_id",
             "username",
             "password",
-            "role"
+            "customer_name",
+            "customer_display_name"
           ],
           "title": "SignUpPost",
           "type": "object"
@@ -2983,6 +3088,46 @@
             },
             "permissions": {
               "items": {
+                "description": "Collection of all available rbac permissions",
+                "enum": [
+                  "application:describe",
+                  "application:create",
+                  "application:update",
+                  "application:delete",
+                  "customer:describe",
+                  "customer:create",
+                  "customer:update",
+                  "customer:delete",
+                  "customer:activate",
+                  "customer:deactivate",
+                  "parent:describe",
+                  "parent:create",
+                  "parent:update",
+                  "parent:delete",
+                  "tenant:describe",
+                  "tenant:create",
+                  "tenant:update",
+                  "tenant:delete",
+                  "tenant:activate",
+                  "tenant:deactivate",
+                  "tenant:create_region",
+                  "tenant:describe_region",
+                  "tenant:delete_region",
+                  "region:describe",
+                  "region:create",
+                  "region:delete",
+                  "role:describe",
+                  "role:create",
+                  "role:update",
+                  "role:delete",
+                  "policy:describe",
+                  "policy:create",
+                  "policy:update",
+                  "policy:delete",
+                  "tenant_setting:set",
+                  "tenant_setting:describe"
+                ],
+                "title": "Permission",
                 "type": "string"
               },
               "title": "Permissions",
@@ -3006,12 +3151,48 @@
         "content_type": "application/json",
         "schema": {
           "properties": {
-            "name": {
-              "title": "Name",
-              "type": "string"
-            },
             "permissions": {
               "items": {
+                "description": "Collection of all available rbac permissions",
+                "enum": [
+                  "application:describe",
+                  "application:create",
+                  "application:update",
+                  "application:delete",
+                  "customer:describe",
+                  "customer:create",
+                  "customer:update",
+                  "customer:delete",
+                  "customer:activate",
+                  "customer:deactivate",
+                  "parent:describe",
+                  "parent:create",
+                  "parent:update",
+                  "parent:delete",
+                  "tenant:describe",
+                  "tenant:create",
+                  "tenant:update",
+                  "tenant:delete",
+                  "tenant:activate",
+                  "tenant:deactivate",
+                  "tenant:create_region",
+                  "tenant:describe_region",
+                  "tenant:delete_region",
+                  "region:describe",
+                  "region:create",
+                  "region:delete",
+                  "role:describe",
+                  "role:create",
+                  "role:update",
+                  "role:delete",
+                  "policy:describe",
+                  "policy:create",
+                  "policy:update",
+                  "policy:delete",
+                  "tenant_setting:set",
+                  "tenant_setting:describe"
+                ],
+                "title": "Permission",
                 "type": "string"
               },
               "title": "Permissions",
@@ -3020,6 +3201,46 @@
             },
             "permissions_to_attach": {
               "items": {
+                "description": "Collection of all available rbac permissions",
+                "enum": [
+                  "application:describe",
+                  "application:create",
+                  "application:update",
+                  "application:delete",
+                  "customer:describe",
+                  "customer:create",
+                  "customer:update",
+                  "customer:delete",
+                  "customer:activate",
+                  "customer:deactivate",
+                  "parent:describe",
+                  "parent:create",
+                  "parent:update",
+                  "parent:delete",
+                  "tenant:describe",
+                  "tenant:create",
+                  "tenant:update",
+                  "tenant:delete",
+                  "tenant:activate",
+                  "tenant:deactivate",
+                  "tenant:create_region",
+                  "tenant:describe_region",
+                  "tenant:delete_region",
+                  "region:describe",
+                  "region:create",
+                  "region:delete",
+                  "role:describe",
+                  "role:create",
+                  "role:update",
+                  "role:delete",
+                  "policy:describe",
+                  "policy:create",
+                  "policy:update",
+                  "policy:delete",
+                  "tenant_setting:set",
+                  "tenant_setting:describe"
+                ],
+                "title": "Permission",
                 "type": "string"
               },
               "title": "Permissions To Attach",
@@ -3028,6 +3249,46 @@
             },
             "permissions_to_detach": {
               "items": {
+                "description": "Collection of all available rbac permissions",
+                "enum": [
+                  "application:describe",
+                  "application:create",
+                  "application:update",
+                  "application:delete",
+                  "customer:describe",
+                  "customer:create",
+                  "customer:update",
+                  "customer:delete",
+                  "customer:activate",
+                  "customer:deactivate",
+                  "parent:describe",
+                  "parent:create",
+                  "parent:update",
+                  "parent:delete",
+                  "tenant:describe",
+                  "tenant:create",
+                  "tenant:update",
+                  "tenant:delete",
+                  "tenant:activate",
+                  "tenant:deactivate",
+                  "tenant:create_region",
+                  "tenant:describe_region",
+                  "tenant:delete_region",
+                  "region:describe",
+                  "region:create",
+                  "region:delete",
+                  "role:describe",
+                  "role:create",
+                  "role:update",
+                  "role:delete",
+                  "policy:describe",
+                  "policy:create",
+                  "policy:update",
+                  "policy:delete",
+                  "tenant_setting:set",
+                  "tenant_setting:describe"
+                ],
+                "title": "Permission",
                 "type": "string"
               },
               "title": "Permissions To Detach",
@@ -3035,9 +3296,6 @@
               "uniqueItems": true
             }
           },
-          "required": [
-            "name"
-          ],
           "title": "PolicyPatch",
           "type": "object"
         }
@@ -3093,11 +3351,8 @@
         "content_type": "application/json",
         "schema": {
           "properties": {
-            "name": {
-              "title": "Name",
-              "type": "string"
-            },
             "expiration": {
+              "default": null,
               "format": "date-time",
               "title": "Expiration",
               "type": "string"
@@ -3119,10 +3374,6 @@
               "uniqueItems": true
             }
           },
-          "required": [
-            "name",
-            "expiration"
-          ],
           "title": "RolePatch",
           "type": "object"
         }
@@ -3277,17 +3528,13 @@
         "content_type": "application/json",
         "schema": {
           "properties": {
-            "tenant": {
-              "title": "Tenant",
-              "type": "string"
-            },
             "region": {
+              "description": "Maestro region name",
               "title": "Region",
               "type": "string"
             }
           },
           "required": [
-            "tenant",
             "region"
           ],
           "title": "TenantRegionPost",
@@ -3298,17 +3545,12 @@
         "content_type": "application/json",
         "schema": {
           "properties": {
-            "tenant": {
-              "title": "Tenant",
-              "type": "string"
-            },
             "region": {
               "title": "Region",
               "type": "string"
             }
           },
           "required": [
-            "tenant",
             "region"
           ],
           "title": "TenantRegionDelete",
