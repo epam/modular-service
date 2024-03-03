@@ -1,3 +1,4 @@
+import operator
 from http import HTTPStatus
 
 from routes.route import Route
@@ -67,7 +68,8 @@ class SignUpProcessor(AbstractCommandProcessor):
         policy = self.rbac_service.build_policy(
             customer=event.customer_name,
             name='admin_policy',
-            permissions=list(Permission.all())
+            permissions=list(map(operator.attrgetter('value'),
+                                 Permission.iter_all()))
         )
         role = self.rbac_service.build_role(
             customer=event.customer_name,

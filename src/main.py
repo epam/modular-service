@@ -350,7 +350,7 @@ class GenerateOpenApi(ActionHandler):
 
 class DumpPermissions(ActionHandler):
     def __call__(self):
-        json.dump(sorted(Permission.all()), sys.stdout, indent=2)
+        json.dump(sorted(Permission.iter_all()), sys.stdout, indent=2)
 
 
 class UpdateDeploymentResources(ActionHandler):

@@ -111,7 +111,8 @@ class PolicyProcessor(AbstractCommandProcessor):
         policy = self.rbac_service.build_policy(
             customer=event.customer_id,
             name=event.name,
-            permissions=[perm.value for perm in event.permissions]
+            permissions=sorted(map(operator.attrgetter('value'),
+                                   event.permissions))
         )
         _LOG.debug('Saving policy')
         self.rbac_service.save(policy)
@@ -135,7 +136,7 @@ class PolicyProcessor(AbstractCommandProcessor):
         permissions.update(
             map(operator.attrgetter('value'), event.permissions_to_attach)
         )
-        item.permissions = list(permissions)
+        item.permissions = sorted(permissions)
         _LOG.debug('Saving policy')
         self.rbac_service.save(item)
 

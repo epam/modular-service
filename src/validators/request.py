@@ -61,12 +61,20 @@ class PolicyPost(BaseModel):
     permissions: set[Permission] = Field(default_factory=set)
     permissions_admin: bool = False
 
+    @field_validator('permissions', mode='after')
+    @classmethod
+    def validate_hidden(cls, permission: set[Permission]) -> set[Permission]:
+        if not_allowed := permission & Permission.hidden():
+            raise ValueError(f'Permissions: {", ".join(not_allowed)} are '
+                             f'currently not allowed')
+        return permission
+
     @model_validator(mode='after')
     def _(self) -> Self:
         if not self.permissions_admin and not self.permissions:
             raise ValueError('Provide either permissions or permissions_admin')
         if self.permissions_admin:
-            self.permissions = set(Permission)
+            self.permissions = set(Permission.iter_all())
         return self
 
 
@@ -75,14 +83,23 @@ class PolicyPatch(BaseModel):
     permissions_to_attach: set[Permission] = Field(default_factory=set)
     permissions_to_detach: set[Permission] = Field(default_factory=set)
 
+    @field_validator('permissions', 'permissions_to_attach', mode='after')
+    @classmethod
+    def validate_hidden(cls, permission: set[Permission]) -> set[Permission]:
+        if not_allowed := permission & Permission.hidden():
+            raise ValueError(f'Permissions: {", ".join(not_allowed)} are '
+                             f'currently not allowed')
+        return permission
+
     @model_validator(mode='after')
     def _(self) -> Self:
         if self.permissions and (self.permissions_to_attach or self.permissions_to_detach):
-            raise ValueError('provide either permissions to permissions_to_attach and/or permissions_to_detach')
+            raise ValueError('provide either permissions to permissions_'
+                             'to_attach and/or permissions_to_detach')
         if not any((self.permissions, self.permissions_to_detach,
                     self.permissions_to_detach)):
-            raise ValueError(
-                'Provide at permissions or permissions_to_attach or permissions_to_detach')
+            raise ValueError('Provide at permissions or permissions_to_'
+                             'attach or permissions_to_detach')
         if self.permissions:  # means to replace
             self.permissions_to_attach = self.permissions
             self.permissions_to_detach = set(Permission)

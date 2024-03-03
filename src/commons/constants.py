@@ -150,9 +150,35 @@ class Permission(str, Enum):
     TENANT_SETTING_SET = 'tenant_setting:set'
     TENANT_SETTING_DESCRIBE = 'tenant_setting:describe'
 
+    def __str__(self):
+        return self.value
+
+    def __repr__(self):
+        return self.value
+
     @classmethod
-    def all(cls) -> Iterator[str]:
-        return map(operator.attrgetter('value'), cls)
+    def hidden(cls) -> set[Self]:
+        """
+        These are permissions that are currently hidden for standard users
+        meaning that endpoints behind these permission cannot be used by
+        standard users. Only system user can use those endpoints, though
+        permissions are not checked for system.
+        :return:
+        """
+        return {
+            cls.REGION_DELETE,
+            cls.REGION_CREATE,
+            cls.REGION_DESCRIBE
+        }
+
+    @classmethod
+    def iter_all(cls) -> Iterator[Self]:
+        """
+        Iterates over all the currently available permission
+        :return:
+        """
+        hidden = cls.hidden()
+        return filter(lambda p: p not in hidden, cls)
 
 
 LAMBDA_URL_HEADER_CONTENT_TYPE_UPPER = 'Content-Type'
