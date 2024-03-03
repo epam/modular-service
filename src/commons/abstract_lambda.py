@@ -78,28 +78,6 @@ class ApiGatewayEventProcessor(AbstractEventProcessor):
         }
 
 
-class RestrictCustomerEventProcessor(AbstractEventProcessor):
-    """
-    Each user has its own customer but a system user should be able to 
-    perform actions on behalf of any customer. Every request model has 
-    customer_id attribute that is used by handlers to manage entities of 
-    that customer. This processor inserts user's customer to each event body.
-    Allows to provide customer_id only for system users
-    """
-    def __call__(self, event: ProcessedEvent) -> ProcessedEvent:
-        if not event['cognito_user_id']:
-            # endpoint without auth
-            return event
-        if event['is_system']:
-            return event
-        match event['method']:
-            case HTTPMethod.GET:
-                event['query']['customer_id'] = event['cognito_customer']
-            case _:
-                event['body']['customer_id'] = event['cognito_customer']
-        return event
-
-
 class AbstractLambdaHandler(ABC):
     @abstractmethod
     def handle_request(self, event: ProcessedEvent, context: RequestContext

@@ -12,7 +12,6 @@ from commons.abstract_lambda import (
     ApiGatewayEventProcessor,
     EventProcessorLambdaHandler,
     ProcessedEvent,
-    RestrictCustomerEventProcessor,
 )
 from commons.constants import Endpoint, HTTPMethod, Permission, REQUEST_METHOD_WSGI_ENV
 from commons.lambda_response import ResponseFactory
@@ -40,12 +39,54 @@ from lambdas.modular_api_handler.processors.tenant_processor import TenantProces
 from lambdas.modular_api_handler.processors.tenant_settings_processor import (
     TenantSettingsProcessor,
 )
+from services.customer_mutator_service import CustomerMutatorService
 from services import SP
 from services.openapi_spec_generator import EndpointInfo
 from services.rbac_service import RBACService
 from validators.response import MessageModel, common_responses
 
 _LOG = get_logger('modular_api_handler')
+
+
+class RestrictCustomerEventProcessor(AbstractEventProcessor):
+    """
+    Each user has its own customer but a system user should be able to
+    perform actions on behalf of any customer. Every request model has
+    customer_id attribute that is used by handlers to manage entities of
+    that customer. This processor inserts user's customer to each event body.
+    Allows to provide customer_id only for system users
+    """
+    __slots__ = '_cs',
+
+    def __init__(self, customer_service: CustomerMutatorService):
+        self._cs = customer_service
+
+    def __call__(self, event: ProcessedEvent) -> ProcessedEvent:
+        if not event['cognito_user_id']:
+            # endpoint without auth
+            return event
+        if event['is_system']:
+            # is system user is making a request it should provide customer_id
+            # as a parameter to make a request on his behalf.
+            cid = (event['query'].get('customer_id')
+                   or event['body'].get('customer_id'))
+            if not cid:
+                raise ResponseFactory(HTTPStatus.BAD_REQUEST).message(
+                    'Please, provide customer_id param to make a request on '
+                    'his behalf'
+                ).exc()
+            if not self._cs.get(cid):
+                raise ResponseFactory(HTTPStatus.BAD_REQUEST).message(
+                    f'Customer {cid} does not exist. You cannot make a request'
+                    f' on his behalf'
+                ).exc()
+            return event
+        match event['method']:
+            case HTTPMethod.GET:
+                event['query']['customer_id'] = event['cognito_customer']
+            case _:
+                event['body']['customer_id'] = event['cognito_customer']
+        return event
 
 
 class CheckPermissionEventProcessor(AbstractEventProcessor):
@@ -72,7 +113,7 @@ class CheckPermissionEventProcessor(AbstractEventProcessor):
         if not permission:
             _LOG.info('No permission exist for endpoint, allowing')
             return event
-        # if cognito_username exists, cognito_customer & cognito_user_role 
+        # if cognito_username exists, cognito_customer & cognito_user_role
         # exist as well
         if not self._rs.is_allowed(event['cognito_customer'], event['cognito_user_role'], permission):
             _LOG.info('Not allowed to access')
@@ -106,7 +147,9 @@ class ModularApiHandler(EventProcessorLambdaHandler):
 
         self.processors = (
             ApiGatewayEventProcessor(),
-            RestrictCustomerEventProcessor(),
+            RestrictCustomerEventProcessor(
+                customer_service=SP.customer_service
+            ),
             CheckPermissionEventProcessor(
                 rbac_service=SP.rbac_service,
                 mapping=self._build_permissions_mapping()

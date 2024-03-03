@@ -85,7 +85,7 @@ class ApplicationProcessor(AbstractCommandProcessor):
                 summary='Create application with type AZURE_CREDENTIALS',
                 response=resp,
                 permission=Permission.APPLICATION_CREATE
-        ),
+            ),
             cls.route(
                 Endpoint.APPLICATIONS_AZURE_CERTIFICATE,
                 HTTPMethod.POST,
