@@ -6,10 +6,31 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [3.0.0]
 ### Added
+- Global validation using Pydantic v2
+- Swagger for ON-prem and deployment-resources generator from inner endpoints collection. Request and response models 
+  for each endpoint. Added openapi v3 spec generator
+- Authentication to ON-prem
+- Customer scope for users. Now there are two types of users: system user and standard user. Standard users can 
+  perform actions only for their customers. System users can perform actions on behalf of other customers
+- added pagination to all the endpoints that do query
+- entrypoint main.py script with some useful actions
+- added endpoints for creating different types of applications: AWS_ROLE, AWS_CREDENTIALS, etc
+- added minimal unittests
+
 
 ### Changed
+- moved to python3.10
+- moved to latest modular-sdk (5.1.1)
+- changed API responses. In case api return one object the response json looks like this: `{"data": {...}}`, i.e 
+  `data` with one object instead of a list with one object
+- moved all logically connected constants to enums: Permission, Endpoints, Envs.
+- Added uppercase names for existing envs
+- changed some endpoints (see swagger for the current list of available endpoints)
+
 
 ### Removed
+- removed all not used code & requirements & constants
+- removed `Settings` model because it was useless
 
 ## [2.1.0] - 2024-01-31
 - Add `logs_expiration` attribute for `modular_api_handler` lambda in 
