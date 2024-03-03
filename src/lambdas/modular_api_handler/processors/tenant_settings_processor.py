@@ -6,17 +6,15 @@ from routes.route import Route
 from commons import NextToken
 from commons.constants import Endpoint, HTTPMethod, Permission
 from commons.lambda_response import ResponseFactory, build_response
-from commons.log_helper import get_logger
 from lambdas.modular_api_handler.processors.abstract_processor import (
     AbstractCommandProcessor,
 )
 from services import SP
+from modular_sdk.models.tenant import Tenant
 from services.tenant_mutator_service import TenantMutatorService
 from validators.request import TenantSettingQuery, TenantSettingPut
 from validators.response import TenantSettingsResponse
 from validators.utils import validate_kwargs
-
-_LOG = get_logger(__name__)
 
 
 class TenantSettingsProcessor(AbstractCommandProcessor):
@@ -53,9 +51,17 @@ class TenantSettingsProcessor(AbstractCommandProcessor):
             ),
         )
 
+    def _get_tenant(self, name: str, customer_id: str) -> Tenant | None:
+        item = self._ts.get(name)
+        if not item:
+            item = next(self._ts.i_get_by_acc(acc=name, limit=1), None)
+        if not item or item.customer_name != customer_id:
+            return
+        return item
+
     @validate_kwargs
     def query(self, event: TenantSettingQuery, name: str):
-        tenant = self._ts.get(name)
+        tenant = self._get_tenant(name, event.customer_id)
         if not tenant:
             raise ResponseFactory(HTTPStatus.NOT_FOUND).message(
                 'Tenant not found'
@@ -75,7 +81,7 @@ class TenantSettingsProcessor(AbstractCommandProcessor):
 
     @validate_kwargs
     def put(self, event: TenantSettingPut, name: str):
-        tenant = self._ts.get(name)
+        tenant = self._get_tenant(name, event.customer_id)
         if not tenant:
             raise ResponseFactory(HTTPStatus.NOT_FOUND).message(
                 'Tenant not found'

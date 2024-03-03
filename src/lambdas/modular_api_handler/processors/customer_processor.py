@@ -12,7 +12,7 @@ from lambdas.modular_api_handler.processors.abstract_processor import (
 )
 from services import SERVICE_PROVIDER
 from services.customer_mutator_service import CustomerMutatorService
-from validators.request import CustomerPatch, CustomerPost, CustomerQuery
+from validators.request import CustomerPatch, CustomerPost, CustomerQuery, BaseModel
 from validators.response import CustomerResponse, CustomersResponse
 from validators.utils import validate_kwargs
 
@@ -37,6 +37,10 @@ class CustomerProcessor(AbstractCommandProcessor):
                 HTTPMethod.GET,
                 'query',
                 response=(HTTPStatus.OK, CustomersResponse, None),
+                description='Currently each user can have only one customer. '
+                            'So, generally this endpoint will return a list '
+                            'with only one customer (unless you are a system '
+                            'user)',
                 permission=Permission.CUSTOMER_DESCRIBE
             ),
             cls.route(
@@ -87,16 +91,38 @@ class CustomerProcessor(AbstractCommandProcessor):
             limit=event.limit,
             last_evaluated_key=NextToken.from_input(event.next_token).value,
         )
-        items = list(cursor)
+        if event.customer_id:
+            items = list(filter(lambda c: c.name == event.customer_id, cursor))
+        else:
+            items = list(cursor)
 
         return ResponseFactory().items(
             it=map(self.customer_service.get_dto, items),
             next_token=NextToken(cursor.last_evaluated_key)
         ).build()
 
+    def _get_customer(self, name: str,
+                      customer_id: str | None) -> Customer | None:
+        """
+        Note that name and customer_id are the same logical thing. But name
+        is given by user whereas customer_id is retrieved from user's jwt.
+        This method should work the same way _get_tenant, and other similar
+        methods work in other controllers. But since one user currently can
+        have only one customer this method seems strange. I keep it to make
+        things more or less similar and consistent. Maybe some day one user
+        will be able to have multiple customers. Then the usage of this method
+        will be justified
+        :param name:
+        :param customer_id:
+        :return:
+        """
+        if customer_id and name != customer_id:
+            return
+        return self.customer_service.get(name)
+
     @validate_kwargs
-    def get(self, event: dict, name: str):
-        item = self.customer_service.get(name)
+    def get(self, event: BaseModel, name: str):
+        item = self._get_customer(name, event.customer_id)
         if not item:
             raise ResponseFactory(HTTPStatus.NOT_FOUND).default().exc()
         return build_response(self.customer_service.get_dto(item))
@@ -124,7 +150,7 @@ class CustomerProcessor(AbstractCommandProcessor):
     def patch(self, event: CustomerPatch, name: str):
 
         _LOG.debug(f'Describing customer with name \'{name}\'')
-        customer = self.customer_service.get(name=name)
+        customer = self._get_customer(name, event.customer_id)
         if not customer:
             _LOG.debug(f'Customer with name {name} is not found')
             raise ResponseFactory(HTTPStatus.NOT_FOUND).message(
@@ -138,8 +164,8 @@ class CustomerProcessor(AbstractCommandProcessor):
         return build_response(self.customer_service.get_dto(customer))
 
     @validate_kwargs
-    def activate(self, event: dict, name: str):
-        customer = self.customer_service.get(name=name)
+    def activate(self, event: BaseModel, name: str):
+        customer = self._get_customer(name, event.customer_id)
         if not customer:
             _LOG.debug(f'Customer with name {name} is not found')
             raise ResponseFactory(HTTPStatus.NOT_FOUND).message(
@@ -149,8 +175,8 @@ class CustomerProcessor(AbstractCommandProcessor):
         return build_response(self.customer_service.get_dto(customer))
 
     @validate_kwargs
-    def deactivate(self, event: dict, name: str):
-        customer = self.customer_service.get(name=name)
+    def deactivate(self, event: BaseModel, name: str):
+        customer = self._get_customer(name, event.customer_id)
         if not customer:
             _LOG.debug(f'Customer with name {name} is not found')
             raise ResponseFactory(HTTPStatus.NOT_FOUND).message(

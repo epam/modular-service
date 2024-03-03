@@ -11,18 +11,14 @@ from modular_sdk.services.impl.maestro_credentials_service import (
     AZURECertificateApplicationSecret,
     AZURECredentialsApplicationMeta,
     AZURECredentialsApplicationSecret,
-    GCPServiceAccountApplicationMeta
+    GCPServiceAccountApplicationMeta,
 )
 from modular_sdk.services.ssm_service import AbstractSSMClient
 from routes.route import Route
 
 from commons import NextToken
 from commons.abstract_lambda import ProcessedEvent
-from commons.constants import (
-    Endpoint,
-    HTTPMethod,
-    Permission
-)
+from commons.constants import Endpoint, HTTPMethod, Permission
 from commons.lambda_response import ResponseFactory, build_response
 from commons.log_helper import get_logger
 from lambdas.modular_api_handler.processors.abstract_processor import (
@@ -32,17 +28,16 @@ from services import SERVICE_PROVIDER
 from services.customer_mutator_service import CustomerMutatorService
 from services.parent_mutator_service import ParentMutatorService
 from validators.request import (
-    ApplicationDelete,
+    ApplicationPatch,
     ApplicationPostAWSCredentials,
     ApplicationPostAWSRole,
-    ApplicationPostAZURECredentials,
-    ApplicationQuery,
     ApplicationPostAZURECertificate,
+    ApplicationPostAZURECredentials,
     ApplicationPostGCPServiceAccount,
-    ApplicationPatch
+    ApplicationQuery,
+    BaseModel,
 )
-from validators.response import ApplicationResponse, ApplicationsResponse, \
-    MessageModel
+from validators.response import ApplicationResponse, ApplicationsResponse, MessageModel
 from validators.utils import validate_kwargs
 
 _LOG = get_logger(__name__)
@@ -126,10 +121,10 @@ class ApplicationProcessor(AbstractCommandProcessor):
                 permission=Permission.APPLICATION_UPDATE
             ),
             cls.route(
-                Endpoint.APPLICATIONS,
+                Endpoint.APPLICATIONS_ID,
                 HTTPMethod.DELETE,
                 'delete',
-                summary='Marks an application as removed',
+                summary='Deletes the application',
                 response=(HTTPStatus.OK, MessageModel, None),
                 permission=Permission.APPLICATION_DELETE
             )
@@ -304,7 +299,7 @@ class ApplicationProcessor(AbstractCommandProcessor):
         cursor = self.application_service.list(
             customer=event.customer_id,
             _type=event.type.value if event.type else None,
-            deleted=event.is_deleted,
+            deleted=False,
             limit=event.limit,
             last_evaluated_key=NextToken.from_input(event.next_token).value,
         )
@@ -315,16 +310,23 @@ class ApplicationProcessor(AbstractCommandProcessor):
             next_token=NextToken(cursor.last_evaluated_key)
         ).build()
 
+    def _get_application(self, aid: str, customer_id: str
+                         ) -> Application | None:
+        item = self.application_service.get_application_by_id(aid)
+        if not item or item.customer_id != customer_id or item.is_deleted:
+            return
+        return item
+
     @validate_kwargs
-    def get(self, event: dict, id: str):
-        item = self.application_service.get_application_by_id(id)
+    def get(self, event: BaseModel, id: str):
+        item = self._get_application(id, event.customer_id)
         if not item:
             raise ResponseFactory(HTTPStatus.NOT_FOUND).default().exc()
         return build_response(content=self.application_service.get_dto(item))
 
     @validate_kwargs
     def patch(self, event: ApplicationPatch, _pe: ProcessedEvent, id: str):
-        item = self.application_service.get_application_by_id(id)
+        item = self._get_application(id, event.customer_id)
         if not item:
             raise ResponseFactory(HTTPStatus.NOT_FOUND).default().exc()
         item.description = event.description
@@ -336,21 +338,15 @@ class ApplicationProcessor(AbstractCommandProcessor):
         return build_response(content=self.application_service.get_dto(item))
 
     @validate_kwargs
-    def delete(self, event: ApplicationDelete):
-
-        application_id = event.application_id
-        application = self.application_service.get_application_by_id(
-            application_id=application_id
-        )
+    def delete(self, event: BaseModel, id: str):
+        application = self._get_application(id, event.customer_id)
         if not application:
-            _LOG.error(f'Application with id \'{application_id}\' does not '
-                       f'exist.')
+            _LOG.info(f'Application \'{id}\' does not exist.')
             raise ResponseFactory(HTTPStatus.NOT_FOUND).message(
-                f'Application with id \'{application_id}\' does not exist.'
+                f'Application with id \'{id}\' does not exist.'
             ).exc()
 
-        _LOG.debug(f'Deleting application \'{application_id}\'')
         self.application_service.mark_deleted(
             application=application
         )
-        return build_response(content=f'Application was deleted.')
+        return build_response(content='Application was deleted.')

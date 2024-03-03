@@ -229,7 +229,6 @@ class ParentDelete(BaseModel):
 
 class ApplicationQuery(BasePaginationModel):
     type: ApplicationType = Field(None)
-    is_deleted: bool = Field(None)
 
 
 class ApplicationPatch(BaseModel):
@@ -307,10 +306,6 @@ class GOOGLECredentialsRaw1(TypedDict):
 class ApplicationPostGCPServiceAccount(BaseModel):
     description: str
     credentials: GOOGLECredentialsRaw1
-
-
-class ApplicationDelete(BaseModel):
-    application_id: str
 
 
 class TenantSettingQuery(BasePaginationModel):

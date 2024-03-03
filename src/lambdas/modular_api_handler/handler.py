@@ -23,9 +23,6 @@ from lambdas.modular_api_handler.processors.application_processor import (
     ApplicationProcessor,
 )
 from lambdas.modular_api_handler.processors.customer_processor import CustomerProcessor
-from lambdas.modular_api_handler.processors.customer_settings_processor import (
-    CustomerSettingsProcessor,
-)
 from lambdas.modular_api_handler.processors.parent_processor import ParentProcessor
 from lambdas.modular_api_handler.processors.policies_processor import PolicyProcessor
 from lambdas.modular_api_handler.processors.region_processor import RegionProcessor
@@ -58,6 +55,15 @@ class RestrictCustomerEventProcessor(AbstractEventProcessor):
     """
     __slots__ = '_cs',
 
+    # TODO organize this collection somehow else
+    can_work_without_customer_id = {
+        (Endpoint.CUSTOMERS, HTTPMethod.GET),
+        (Endpoint.CUSTOMERS_NAME, HTTPMethod.GET),
+        (Endpoint.CUSTOMERS_NAME, HTTPMethod.PATCH),
+        (Endpoint.CUSTOMERS_NAME_ACTIVATE, HTTPMethod.POST),
+        (Endpoint.CUSTOMERS_NAME_DEACTIVATE, HTTPMethod.POST)
+    }
+
     def __init__(self, customer_service: CustomerMutatorService):
         self._cs = customer_service
 
@@ -68,6 +74,8 @@ class RestrictCustomerEventProcessor(AbstractEventProcessor):
         if event['is_system']:
             # is system user is making a request it should provide customer_id
             # as a parameter to make a request on his behalf.
+            if (event['resource'], event['method']) in self.can_work_without_customer_id:  # noqa
+                return event
             cid = (event['query'].get('customer_id')
                    or event['body'].get('customer_id'))
             if not cid:
@@ -136,7 +144,6 @@ class ModularApiHandler(EventProcessorLambdaHandler):
         ApplicationProcessor,
         ParentProcessor,
         RegionProcessor,
-        CustomerSettingsProcessor,
         TenantSettingsProcessor
     )
     __slots__ = ('_mapper', '_controllers', 'processors')

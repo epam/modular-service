@@ -1,13 +1,10 @@
 from http import HTTPStatus
 
+from modular_sdk.models.tenant import Tenant
 from routes.route import Route
 
 from commons import NextToken
-from commons.constants import (
-    Endpoint,
-    HTTPMethod,
-    Permission
-)
+from commons.constants import Endpoint, HTTPMethod, Permission
 from commons.lambda_response import ResponseFactory, build_response
 from commons.log_helper import get_logger
 from lambdas.modular_api_handler.processors.abstract_processor import (
@@ -16,8 +13,8 @@ from lambdas.modular_api_handler.processors.abstract_processor import (
 from services import SERVICE_PROVIDER
 from services.customer_mutator_service import CustomerMutatorService
 from services.tenant_mutator_service import TenantMutatorService
-from validators.request import TenantPost, TenantQuery
-from validators.response import TenantsResponse, MessageModel, TenantResponse
+from validators.request import BaseModel, TenantPost, TenantQuery
+from validators.response import MessageModel, TenantResponse, TenantsResponse
 from validators.utils import validate_kwargs
 
 _LOG = get_logger(__name__)
@@ -106,13 +103,19 @@ class TenantProcessor(AbstractCommandProcessor):
             next_token=NextToken(cursor.last_evaluated_key)
         ).build()
 
-    @validate_kwargs
-    def get(self, event: dict, name: str):
-        tenant = self.tenant_service.get(name)
-        if not tenant:
-            tenant = next(self.tenant_service.i_get_by_acc(
+    def _get_tenant(self, name: str, customer_id: str) -> Tenant | None:
+        item = self.tenant_service.get(name)
+        if not item:
+            item = next(self.tenant_service.i_get_by_acc(
                 acc=name, limit=1
             ), None)
+        if not item or item.customer_name != customer_id:
+            return
+        return item
+
+    @validate_kwargs
+    def get(self, event: BaseModel, name: str):
+        tenant = self._get_tenant(name, event.customer_id)
         if not tenant:
             raise ResponseFactory(HTTPStatus.NOT_FOUND).default().exc()
         return build_response(content=self.tenant_service.get_dto(tenant))
@@ -160,24 +163,24 @@ class TenantProcessor(AbstractCommandProcessor):
         )
 
     @validate_kwargs
-    def activate(self, event: dict, name: str):
-        tenant = self.tenant_service.get(name)
+    def activate(self, event: BaseModel, name: str):
+        tenant = self._get_tenant(name, event.customer_id)
         if not tenant:
             raise ResponseFactory(HTTPStatus.NOT_FOUND).default().exc()
         self.tenant_service.activate(tenant)
         return build_response(content=self.tenant_service.get_dto(tenant))
 
     @validate_kwargs
-    def deactivate(self, event: dict, name: str):
-        tenant = self.tenant_service.get(name)
+    def deactivate(self, event: BaseModel, name: str):
+        tenant = self._get_tenant(name, event.customer_id)
         if not tenant:
             raise ResponseFactory(HTTPStatus.NOT_FOUND).default().exc()
         self.tenant_service.deactivate(tenant)
         return build_response(content=self.tenant_service.get_dto(tenant))
 
     @validate_kwargs
-    def delete(self, event: dict, name: str):
-        tenant = self.tenant_service.get(tenant_name=name)
+    def delete(self, event: BaseModel, name: str):
+        tenant = self._get_tenant(name, event.customer_id)
 
         if not tenant:
             _LOG.warning(f'Tenant {name} did not exist before')
