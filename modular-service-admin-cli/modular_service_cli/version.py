@@ -1,7 +1,8 @@
-__version__ = '2.0.7'
+__version__ = '3.0.0'
 
 import sys
 from distutils.version import LooseVersion
+# TODO rewrite, distutils will be removed
 
 
 def check_version_compatibility(api_version):

@@ -1,7 +1,7 @@
 import click
 
-from group import cli_response, ViewCommand
-from service.constants import (
+from modular_service_cli.group import cli_response, ViewCommand
+from modular_service_cli.service.constants import (
     PARAM_NAME, PARAM_PERMISSIONS, PARAM_ID, ALL_PARENT_TYPES,
     AVAILABLE_PARENT_SCOPES, AVAILABLE_CLOUDS
 )

@@ -1,7 +1,7 @@
 import click
-from group import cli_response, ViewCommand
-from group.tenant_regions import regions
-from service.constants import (
+from modular_service_cli.group import cli_response, ViewCommand
+from modular_service_cli.group.tenant_regions import regions
+from modular_service_cli.service.constants import (
     PARAM_NAME, PARAM_PERMISSIONS, PARAM_ID, CLOUD_PROVIDERS
 )
 

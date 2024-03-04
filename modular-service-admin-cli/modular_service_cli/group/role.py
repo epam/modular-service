@@ -1,8 +1,9 @@
 from datetime import datetime
 
 import click
-from group import cli_response, cast_to_list, ViewCommand
-from service.constants import (PARAM_NAME, PARAM_POLICIES, PARAM_EXPIRATION)
+from modular_service_cli.group import cli_response, ViewCommand, ContextObj, build_limit_option, build_next_token_option
+
+from modular_service_cli.service.constants import (PARAM_NAME, PARAM_POLICIES, PARAM_EXPIRATION)
 
 
 @click.group(name='role')
@@ -12,13 +13,21 @@ def role():
 
 @role.command(cls=ViewCommand, name='describe')
 @click.option('--name', '-n', type=str, help='Role name to describe.')
+@build_limit_option()
+@build_next_token_option()
 @cli_response(attributes_order=[PARAM_NAME, PARAM_POLICIES, PARAM_EXPIRATION])
-def describe(name=None):
+def describe(ctx: ContextObj, name: str, limit: int, next_token: str,
+             customer_id: str | None):
     """
     Describes roles.
     """
-    from service.initializer import init_configuration
-    return init_configuration().role_get(role_name=name)
+    if name:
+        return ctx.api_client.get_role(name)
+    return ctx.api_client.query_role(
+        limit=limit,
+        next_token=next_token,
+        customer_id=customer_id
+    )
 
 
 @role.command(cls=ViewCommand, name='add')

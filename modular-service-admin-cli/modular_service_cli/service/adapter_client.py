@@ -1,10 +1,14 @@
 import json
 
+import urllib
+from urllib.parse import quote, urlencode
+import urllib.error
+import urllib.request
 import requests
 
-from service.constants import *
-from service.logger import get_logger, get_user_logger
-from __version__ import check_version_compatibility
+from modular_service_cli.service.constants import *
+from modular_service_cli.service.logger import get_logger, get_user_logger
+from modular_service_cli.__version__ import check_version_compatibility
 
 HTTP_GET = 'get'
 HTTP_POST = 'post'
@@ -128,40 +132,6 @@ class AdapterClient:
     def policy_delete(self, policy_name):
         request = {PARAM_NAME: policy_name}
         return self.__make_request(resource=API_POLICY, method=HTTP_DELETE,
-                                   payload=request)
-
-    def role_get(self, role_name):
-        request = {}
-        if role_name:
-            request[PARAM_NAME] = role_name
-        return self.__make_request(resource=API_ROLE, method=HTTP_GET,
-                                   payload=request)
-
-    def role_post(self, role_name, expiration, policies):
-        request = {PARAM_NAME: role_name,
-                   PARAM_POLICIES: policies}
-        if expiration:
-            request[PARAM_EXPIRATION] = expiration
-        return self.__make_request(resource=API_ROLE, method=HTTP_POST,
-                                   payload=request)
-
-    def role_patch(self, role_name, expiration,
-                   attach_policies,
-                   detach_policies):
-        request = {PARAM_NAME: role_name}
-        if expiration:
-            request[PARAM_EXPIRATION] = expiration
-        if attach_policies:
-            request[POLICIES_TO_ATTACH] = attach_policies
-        if detach_policies:
-            request[POLICIES_TO_DETACH] = detach_policies
-        request = {k: v for k, v in request.items() if v}
-        return self.__make_request(resource=API_ROLE, method=HTTP_PATCH,
-                                   payload=request)
-
-    def role_delete(self, role_name):
-        request = {PARAM_NAME: role_name}
-        return self.__make_request(resource=API_ROLE, method=HTTP_DELETE,
                                    payload=request)
 
     def customer_get(self, name=None):

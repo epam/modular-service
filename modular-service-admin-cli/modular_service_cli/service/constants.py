@@ -1,3 +1,61 @@
+from enum import Enum
+
+# from http import HTTPMethod  # python3.11+
+
+
+class HTTPMethod(str, Enum):
+    HEAD = 'HEAD'
+    GET = 'GET'
+    POST = 'POST'
+    PATCH = 'PATCH'
+    DELETE = 'DELETE'
+    PUT = 'PUT'
+
+
+class Endpoint(str, Enum):
+    ROLES = '/roles'
+    SIGNUP = '/signup'
+    SIGNIN = '/signin'
+    TENANTS = '/tenants'
+    REGIONS = '/regions'
+    PARENTS = '/parents'
+    POLICIES = '/policies'
+    CUSTOMERS = '/customers'
+    ROLES_NAME = '/roles/{name}'
+    APPLICATIONS = '/applications'
+    TENANTS_NAME = '/tenants/{name}'
+    POLICIES_NAME = '/policies/{name}'
+    CUSTOMERS_NAME = '/customers/{name}'
+    APPLICATIONS_ID = '/applications/{id}'
+    TENANTS_NAME_REGIONS = '/tenants/{name}/regions'
+    APPLICATIONS_AWS_ROLE = '/applications/aws-role'
+    TENANTS_NAME_SETTINGS = '/tenants/{name}/settings'
+    TENANTS_NAME_ACTIVATE = '/tenants/{name}/activate'
+    TENANTS_NAME_DEACTIVATE = '/tenants/{name}/deactivate'
+    CUSTOMERS_NAME_ACTIVATE = '/customers/{name}/activate'
+    CUSTOMERS_NAME_DEACTIVATE = '/customers/{name}/deactivate'
+    APPLICATIONS_AWS_CREDENTIALS = '/applications/aws-credentials'
+    APPLICATIONS_AZURE_CREDENTIALS = '/applications/azure-credentials'
+    APPLICATIONS_AZURE_CERTIFICATE = '/applications/azure-certificate'
+    APPLICATIONS_GCP_SERVICE_ACCOUNT = '/applications/gcp-service-account'
+
+
+DATA_ATTR = 'data'
+ITEMS_ATTR = 'items'
+ERRORS_ATTR = 'errors'
+MESSAGE_ATTR = 'message'
+NEXT_TOKEN_ATTR = 'next_token'
+
+
+LAMBDA_INVOCATION_TRACE_ID_HEADER = 'Lambda-Invocation-Trace-Id'
+SERVER_VERSION_HEADER = 'Accept-Version'
+
+
+# responses
+NO_ITEMS_TO_DISPLAY_RESPONSE_MESSAGE = 'No items to display'
+NO_CONTENT_RESPONSE_MESSAGE = 'Request is successful. No content returned'  # 204
+
+
 PARAM_NAME = 'name'
 PARAM_DISPLAY_NAME = 'display_name'
 PARAM_PERMISSIONS = 'permissions'

@@ -1,6 +1,6 @@
 import click
 
-from group import ViewCommand, cli_response
+from modular_service_cli.group import ViewCommand, cli_response
 
 
 @click.group(name='mode')
