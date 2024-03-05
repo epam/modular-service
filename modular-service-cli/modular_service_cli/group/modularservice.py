@@ -4,7 +4,6 @@ from modular_service_cli.group import ContextObj
 from modular_service_cli.group import cli_response, ViewCommand
 from modular_service_cli.group.application import application
 from modular_service_cli.group.customer import customer
-# from modular_service_cli.group.parent import parent
 from modular_service_cli.group.policy import policy
 from modular_service_cli.group.region import region
 from modular_service_cli.group.role import role
@@ -73,6 +72,5 @@ modularservice.add_command(policy)
 modularservice.add_command(role)
 modularservice.add_command(customer)
 modularservice.add_command(application)
-# modularservice.add_command(parent)
 modularservice.add_command(tenant)
 modularservice.add_command(region)
