@@ -39,7 +39,7 @@ def describe(ctx: ContextObj, tenant_name, limit, next_token, cloud,
     Describes Tenant.
     """
     if tenant_name:
-        return ctx.api_client.get_tenant(name, customer_id=customer_id)
+        return ctx.api_client.get_tenant(tenant_name, customer_id=customer_id)
     return ctx.api_client.query_tenants(
         customer_id=customer_id,
         limit=limit,

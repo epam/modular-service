@@ -24,7 +24,7 @@ if TYPE_CHECKING:
     from bottle import Bottle
 
 DEFAULT_HOST = '0.0.0.0'
-DEFAULT_PORT = 8000
+DEFAULT_PORT = 8040
 DEFAULT_NUMBER_OF_WORKERS = (multiprocessing.cpu_count() * 2) + 1
 DEFAULT_ON_PREM_API_LINK = f'http://{DEFAULT_HOST}:{str(DEFAULT_PORT)}/caas'
 DEFAULT_API_GATEWAY_NAME = 'custodian-as-a-service-api'

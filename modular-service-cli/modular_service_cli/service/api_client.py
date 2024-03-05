@@ -32,8 +32,7 @@ class ApiClient:
                   query: dict | None = None) -> str:
         """
         The methods return full built url which can be used to make request
-        :param path: some custodian resource. One variable from
-        CustodianEndpoints class
+        :param path: some custodian resource.
         :param params: path params
         :param query: dict with query params
         :return:
