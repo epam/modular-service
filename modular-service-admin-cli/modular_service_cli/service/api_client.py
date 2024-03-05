@@ -196,43 +196,269 @@ class ModularServiceApiClient:
         self._open_request(req, response)
         return response
 
-    def get_role(self, name):
+    def get_role(self, name, **kwargs):
         return self.make_request(
             path=Endpoint.ROLES_NAME,
             path_params={'name': name},
             method=HTTPMethod.GET,
+            query=sifted(kwargs)
         )
 
-    def query_role(self, **kwargs):
+    def query_roles(self, **kwargs):
         return self.make_request(
             path=Endpoint.ROLES,
             method=HTTPMethod.GET,
             query=sifted(kwargs)
         )
 
-    def role_post(self, role_name, expiration, policies):
-        request = {PARAM_NAME: role_name,
-                   PARAM_POLICIES: policies}
-        if expiration:
-            request[PARAM_EXPIRATION] = expiration
-        return self.__make_request(resource=API_ROLE, method=HTTP_POST,
-                                   payload=request)
+    def create_role(self, **kwargs):
+        return self.make_request(
+            path=Endpoint.ROLES,
+            method=HTTPMethod.POST,
+            data=sifted(kwargs)
+        )
 
-    def role_patch(self, role_name, expiration,
-                   attach_policies,
-                   detach_policies):
-        request = {PARAM_NAME: role_name}
-        if expiration:
-            request[PARAM_EXPIRATION] = expiration
-        if attach_policies:
-            request[POLICIES_TO_ATTACH] = attach_policies
-        if detach_policies:
-            request[POLICIES_TO_DETACH] = detach_policies
-        request = {k: v for k, v in request.items() if v}
-        return self.__make_request(resource=API_ROLE, method=HTTP_PATCH,
-                                   payload=request)
+    def patch_role(self, name: str, **kwargs):
+        return self.make_request(
+            path=Endpoint.ROLES_NAME,
+            method=HTTPMethod.PATCH,
+            path_params={'name': name},
+            data=sifted(kwargs)
+        )
 
-    def role_delete(self, role_name):
-        request = {PARAM_NAME: role_name}
-        return self.__make_request(resource=API_ROLE, method=HTTP_DELETE,
-                                   payload=request)
+    def delete_role(self, name: str, **kwargs):
+        return self.make_request(
+            path=Endpoint.ROLES_NAME,
+            method=HTTPMethod.DELETE,
+            path_params={'name': name},
+            data=sifted(kwargs)
+        )
+
+    def get_policy(self, name, **kwargs):
+        return self.make_request(
+            path=Endpoint.POLICIES_NAME,
+            method=HTTPMethod.GET,
+            path_params={'name': name},
+            query=sifted(kwargs)
+        )
+
+    def query_policies(self, **kwargs):
+        return self.make_request(
+            path=Endpoint.POLICIES_NAME,
+            method=HTTPMethod.GET,
+            query=sifted(kwargs)
+        )
+
+    def create_policy(self, **kwargs):
+        return self.make_request(
+            path=Endpoint.POLICIES,
+            method=HTTPMethod.POST,
+            data=sifted(kwargs) 
+        )
+
+    def patch_policy(self, name, **kwargs):
+        return self.make_request(
+            path=Endpoint.POLICIES_NAME,
+            method=HTTPMethod.PATCH,
+            path_params={'name': name},
+            data=sifted(kwargs)
+        )
+
+    def delete_policy(self, name, **kwargs):
+        return self.make_request(
+            path=Endpoint.POLICIES_NAME,
+            method=HTTPMethod.DELETE,
+            path_params={'name': name},
+            data=sifted(kwargs)
+        )
+
+    def get_customer(self, name, **kwargs):
+        return self.make_request(
+            path=Endpoint.CUSTOMERS_NAME,
+            method=HTTPMethod.GET,
+            path_params={'name': name},
+            query=sifted(kwargs)
+        )
+
+    def query_customer(self, **kwargs):
+        return self.make_request(
+            path=Endpoint.CUSTOMERS,
+            method=HTTPMethod.GET,
+            query=sifted(kwargs)
+        )
+
+    def create_customer(self, **kwargs):
+        return self.make_request(
+            path=Endpoint.CUSTOMERS,
+            method=HTTPMethod.POST,
+            data=sifted(kwargs)
+        )
+
+    def patch_customer(self, name, **kwargs):
+        return self.make_request(
+            path=Endpoint.CUSTOMERS_NAME,
+            method=HTTPMethod.PATCH,
+            path_params={'name': name},
+            data=sifted(kwargs)
+        )
+
+    def activate_customer(self, name, **kwargs):
+        return self.make_request(
+            path=Endpoint.CUSTOMERS_NAME_ACTIVATE,
+            method=HTTPMethod.POST,
+            path_params={'name': name},
+            data=sifted(kwargs)
+        )
+
+    def deactivate_customer(self, name, **kwargs):
+        return self.make_request(
+            path=Endpoint.CUSTOMERS_NAME_DEACTIVATE,
+            method=HTTPMethod.POST,
+            path_params={'name': name},
+            data=sifted(kwargs)
+        )
+
+    def get_region(self, name):
+        return self.make_request(
+            path=Endpoint.REGIONS_NAME,
+            method=HTTPMethod.GET,
+            path_params={'name': name}
+        )
+
+    def query_regions(self, **kwargs):
+        return self.make_request(
+            path=Endpoint.REGIONS,
+            method=HTTPMethod.GET,
+            data=sifted(kwargs)
+        )
+
+    def create_region(self, **kwargs):
+        return self.make_request(
+            path=Endpoint.REGIONS,
+            method=HTTPMethod.POST,
+            data=sifted(kwargs)
+        )
+
+    def delete_region(self, name):
+        return self.make_request(
+            path=Endpoint.REGIONS_NAME,
+            method=HTTPMethod.DELETE,
+            path_params={'name': name}
+        )
+
+    def get_tenant(self, name, **kwargs):
+        return self.make_request(
+            path=Endpoint.TENANTS_NAME,
+            method=HTTPMethod.GET,
+            path_params={'name': name},
+            query=sifted(kwargs)
+        )
+
+    def query_tenants(self, **kwargs):
+        return self.make_request(
+            path=Endpoint.TENANTS,
+            method=HTTPMethod.GET,
+            query=sifted(kwargs)
+        )
+
+    def create_tenant(self, **kwargs):
+        return self.make_request(
+            path=Endpoint.TENANTS,
+            method=HTTPMethod.POST,
+            data=sifted(kwargs)
+        )
+
+    def delete_tenant(self, name, **kwargs):
+        return self.make_request(
+            path=Endpoint.TENANTS_NAME,
+            method=HTTPMethod.DELETE,
+            path_params={'name': name},
+            data=sifted(kwargs)
+        )
+
+    def activate_tenant(self, name, **kwargs):
+        return self.make_request(
+            path=Endpoint.TENANTS_NAME_ACTIVATE,
+            method=HTTPMethod.POST,
+            path_params={'name': name},
+            data=sifted(kwargs)
+        )
+
+    def deactivate_tenant(self, name, **kwargs):
+        return self.make_request(
+            path=Endpoint.TENANTS_NAME_DEACTIVATE,
+            method=HTTPMethod.POST,
+            path_params={'name': name},
+            data=sifted(kwargs)
+        )
+
+    def get_tenant_regions(self, name, **kwargs):
+        return self.make_request(
+            path=Endpoint.TENANTS_NAME_REGIONS,
+            method=HTTPMethod.GET,
+            path_params={'name': name},
+            query=sifted(kwargs)
+        )
+
+    def add_tenant_region(self, name, **kwargs):
+        return self.make_request(
+            path=Endpoint.TENANTS_NAME_REGIONS,
+            method=HTTPMethod.POST,
+            path_params={'name': name},
+            data=sifted(kwargs)
+        )
+
+    def delete_tenant_region(self, name, **kwargs):
+        return self.make_request(
+            path=Endpoint.TENANTS_NAME_REGIONS,
+            method=HTTPMethod.DELETE,
+            path_params={'name': name},
+            data=sifted(kwargs)
+        )
+
+    def get_tenant_settings(self, name, **kwargs):
+        return self.make_request(
+            path=Endpoint.TENANTS_NAME_SETTINGS,
+            method=HTTPMethod.GET,
+            path_params={'name': name},
+            query=sifted(kwargs)
+        )
+
+    def put_tenant_settings(self, name, **kwargs):
+        return self.make_request(
+            path=Endpoint.TENANTS_NAME_SETTINGS,
+            method=HTTPMethod.PUT,
+            path_params={'name': name},
+            query=sifted(kwargs)
+        )
+
+    def get_application(self, id, **kwargs):
+        return self.make_request(
+            path=Endpoint.APPLICATIONS_ID,
+            method=HTTPMethod.GET,
+            path_params={'id': id},
+            query=sifted(kwargs)
+        )
+
+    def query_application(self, **kwargs):
+        return self.make_request(
+            path=Endpoint.APPLICATIONS,
+            method=HTTPMethod.GET,
+            query=sifted(kwargs)
+        )
+
+    def patch_application(self, id, **kwargs):
+        return self.make_request(
+            path=Endpoint.APPLICATIONS_ID,
+            method=HTTPMethod.PATCH,
+            path_params={'id': id},
+            query=sifted(kwargs)
+        )
+
+    def delete_application(self, id, **kwargs):
+        return self.make_request(
+            path=Endpoint.APPLICATIONS_ID,
+            method=HTTPMethod.DELETE,
+            path_params={'id': id},
+            query=sifted(kwargs)
+        )

@@ -186,23 +186,11 @@ class TenantPost(BaseModel):
     default_owner: str = Field(None)
 
 
-class TenantDelete(BaseModel):
-    name: str
-
-
-class RegionGet(BaseModel):
-    maestro_name: str = Field(None)
-
-
 class RegionPost(BaseModel):
     maestro_name: str
     native_name: str
     cloud: str
     region_id: str = Field(default_factory=lambda: str(uuid.uuid4()))
-
-
-class RegionDelete(BaseModel):
-    maestro_name: str
 
 
 class TenantRegionPost(BaseModel):

@@ -28,6 +28,7 @@ class Endpoint(str, Enum):
     ROLES_NAME = '/roles/{name}'
     APPLICATIONS = '/applications'
     TENANTS_NAME = '/tenants/{name}'
+    REGIONS_NAME = '/regions/{name}'  # maestro name
     POLICIES_NAME = '/policies/{name}'
     CUSTOMERS_NAME = '/customers/{name}'
     APPLICATIONS_ID = '/applications/{id}'
@@ -117,7 +118,6 @@ class Permission(str, Enum):
     CUSTOMER_DESCRIBE = 'customer:describe'
     CUSTOMER_CREATE = 'customer:create'
     CUSTOMER_UPDATE = 'customer:update'
-    CUSTOMER_DELETE = 'customer:delete'
     CUSTOMER_ACTIVATE = 'customer:activate'
     CUSTOMER_DEACTIVATE = 'customer:deactivate'
 
@@ -168,6 +168,7 @@ class Permission(str, Enum):
         return {
             cls.REGION_DELETE,
             cls.REGION_CREATE,
+            cls.CUSTOMER_CREATE
         }
 
     @classmethod

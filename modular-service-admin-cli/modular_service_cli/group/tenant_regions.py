@@ -1,7 +1,9 @@
 import click
 
-from modular_service_cli.group import cli_response, ViewCommand
-from modular_service_cli.service.constants import (PARAM_NAME, PARAM_PERMISSIONS, PARAM_ID)
+from modular_service_cli.group import ContextObj, ViewCommand, cli_response
+
+
+attributes_order = 'maestro_name', 'native_name', 'cloud', 'is_active'
 
 
 @click.group(name='regions')
@@ -12,13 +14,13 @@ def regions():
 @regions.command(cls=ViewCommand, name='describe')
 @click.option('--tenant_name', '-name', type=str, required=True,
               help='Tenant name to describe.')
-@cli_response(attributes_order=[PARAM_NAME, PARAM_ID, PARAM_PERMISSIONS])
-def describe(tenant_name):
+@cli_response(attributes_order=attributes_order)
+def describe(ctx: ContextObj, tenant_name, customer_id):
     """
     Describes Tenant region.
     """
-    from service.initializer import init_configuration
-    return init_configuration().tenant_region_get(tenant_name=tenant_name)
+    return ctx.api_client.get_tenant_regions(tenant_name, 
+                                             customer_id=customer_id)
 
 
 @regions.command(cls=ViewCommand, name='activate')
@@ -26,14 +28,16 @@ def describe(tenant_name):
               help='Tenant name to activate.')
 @click.option('--region_name', '-rn', type=str, required=True,
               help='Region Maestro name to activate.')
-@cli_response(attributes_order=[PARAM_NAME, PARAM_ID, PARAM_PERMISSIONS])
-def activate(tenant_name, region_name):
+@cli_response(attributes_order=attributes_order)
+def activate(ctx: ContextObj, tenant_name, region_name, customer_id):
     """
     Activates region in tenant.
     """
-    from service.initializer import init_configuration
-    return init_configuration().tenant_region_post(
-        tenant_name=tenant_name, region_name=region_name)
+    return ctx.api_client.add_tenant_region(
+        name=tenant_name,
+        region=region_name,
+        customer_id=customer_id
+    )
 
 
 @regions.command(cls=ViewCommand, name='deactivate')
@@ -41,11 +45,13 @@ def activate(tenant_name, region_name):
               help='Tenant name to activate.')
 @click.option('--region_name', '-rn', type=str, required=True,
               help='Region Maestro name to activate.')
-@cli_response(attributes_order=[PARAM_NAME, PARAM_ID, PARAM_PERMISSIONS])
-def deactivate(tenant_name, region_name):
+@cli_response()
+def deactivate(ctx: ContextObj, tenant_name, region_name, customer_id):
     """
     Deactivates region in tenant.
     """
-    from service.initializer import init_configuration
-    return init_configuration().tenant_region_delete(
-        tenant_name=tenant_name, region_name=region_name)
+    return ctx.api_client.delete_tenant_region(
+        name=tenant_name,
+        region=region_name,
+        customer_id=customer_id
+    )

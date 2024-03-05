@@ -124,6 +124,7 @@ class RolesResponse(BaseModel):
 class RoleResponse(BaseModel):
     data: Role
 
+
 class PoliciesResponse(BaseModel):
     items: list[Policy]
 
@@ -147,6 +148,10 @@ class ApplicationResponse(BaseModel):
 
 class RegionsResponse(BaseModel):
     items: list[Region]
+
+
+class RegionResponse(BaseModel):
+    data: Region
 
 
 class SignInResponse(BaseModel):

@@ -2,11 +2,7 @@ from http import HTTPStatus
 
 from routes.route import Route
 
-from commons.constants import (
-    Endpoint,
-    HTTPMethod,
-    Permission
-)
+from commons.constants import Endpoint, HTTPMethod, Permission
 from commons.lambda_response import ResponseFactory, build_response
 from commons.log_helper import get_logger
 from lambdas.modular_api_handler.processors.abstract_processor import (
@@ -15,9 +11,9 @@ from lambdas.modular_api_handler.processors.abstract_processor import (
 from services import SERVICE_PROVIDER
 from services.region_mutator_service import RegionMutatorService
 from services.tenant_mutator_service import TenantMutatorService
-from validators.request import RegionDelete, RegionGet, RegionPost
+from validators.request import BaseModel, RegionPost
+from validators.response import RegionResponse, RegionsResponse
 from validators.utils import validate_kwargs
-from validators.response import RegionsResponse, MessageModel
 
 _LOG = get_logger(__name__)
 
@@ -37,55 +33,56 @@ class RegionProcessor(AbstractCommandProcessor):
 
     @classmethod
     def routes(cls) -> tuple[Route, ...]:
-        resp = (HTTPStatus.OK, RegionsResponse, None)
         return (
             cls.route(
                 Endpoint.REGIONS,
                 HTTPMethod.GET,
+                'query',
+                response=(HTTPStatus.OK, RegionsResponse, None),
+                permission=Permission.REGION_DESCRIBE
+            ),
+            cls.route(
+                Endpoint.REGIONS_NAME,
+                HTTPMethod.GET,
                 'get',
-                response=resp,
+                response=(HTTPStatus.OK, RegionResponse, None),
                 permission=Permission.REGION_DESCRIBE
             ),
             cls.route(
                 Endpoint.REGIONS,
                 HTTPMethod.POST,
                 'post',
-                response=resp,
+                response=(HTTPStatus.CREATED, RegionResponse, None),
                 permission=Permission.REGION_CREATE
             ),
             cls.route(
-                Endpoint.REGIONS,
+                Endpoint.REGIONS_NAME,
                 HTTPMethod.DELETE,
                 'delete',
-                response=(HTTPStatus.OK, MessageModel, None),
+                response=(HTTPStatus.NO_CONTENT, None, None),
                 permission=Permission.REGION_DELETE
             ),
         )
 
     @validate_kwargs
-    def get(self, event: RegionGet):
-
-        maestro_name = event.maestro_name
-
-        if maestro_name:
-            _LOG.debug(f'Describing region by maestro name \'{maestro_name}\'')
-            regions = [self.region_service.get_region(region_name=maestro_name)]
-        else:
-            _LOG.debug('Describing all regions')
-            regions = self.region_service.get_all_regions(only_active=False)
-
-        regions = [item for item in regions if item]
-        if not regions:
-            _LOG.warning('No regions found matching given query')
+    def get(self, event: BaseModel, name: str):
+        item = self.region_service.get_region(region_name=name)
+        if not item:
             raise ResponseFactory(HTTPStatus.NOT_FOUND).message(
-                'No regions found matching given query'
+                'Region not found'
             ).exc()
+        return build_response(content=self.region_service.get_dto(item))
 
-        _LOG.debug('Extracting region dto')
-        response = [self.region_service.get_dto(region=region)
-                    for region in regions]
-        _LOG.debug(f'Response: {response}')
-        return build_response(content=response)
+    @validate_kwargs
+    def query(self, event: BaseModel):
+
+        _LOG.debug('Describing all regions')
+        # TODO for modular-sdk -> rewrite get_all_regions
+        regions = self.region_service.get_all_regions(only_active=False)
+
+        return build_response(
+            content=map(self.region_service.get_dto, regions)
+        )
 
     @validate_kwargs
     def post(self, event: RegionPost):
@@ -110,25 +107,15 @@ class RegionProcessor(AbstractCommandProcessor):
         _LOG.debug('Saving region')
         self.region_service.save(region_item=region)
 
-        _LOG.debug('Extracting region dto')
-        response = self.region_service.get_dto(region=region)
-        _LOG.debug(f'Response: {response}')
-        return build_response(content=response)
+        return build_response(content=self.region_service.get_dto(region))
 
     @validate_kwargs
-    def delete(self, event: RegionDelete):
-        region_name = event.maestro_name
+    def delete(self, event: BaseModel, name: str):
 
-        region = self.region_service.get_region(
-            region_name=region_name)
+        region = self.region_service.get_region(name)
         if not region:
-            _LOG.warning(f'Region {region_name} does not exist.')
-            raise ResponseFactory(HTTPStatus.NOT_FOUND).message(
-                f'Region {region_name} does not exist.'
-            ).exc()
+            return build_response(code=HTTPStatus.NO_CONTENT)
 
-        _LOG.warning(f'Going to remove region {region_name}')
         self.region_service.delete(region=region)
 
-        _LOG.debug(f'Region \'{region_name}\' has been removed')
-        return build_response(content=f'Region \'{region_name}\' has been removed')
+        return build_response(code=HTTPStatus.NO_CONTENT)

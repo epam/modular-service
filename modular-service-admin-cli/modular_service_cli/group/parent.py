@@ -1,10 +1,9 @@
 import click
 
 from modular_service_cli.group import cli_response, ViewCommand
-from modular_service_cli.service.constants import (
-    PARAM_NAME, PARAM_PERMISSIONS, PARAM_ID, ALL_PARENT_TYPES,
-    AVAILABLE_PARENT_SCOPES, AVAILABLE_CLOUDS
-)
+from modular_service_cli.service.constants import Cloud, ParentScope, ParentType
+
+attributes_order = ()
 
 
 @click.group(name='parent')
@@ -17,7 +16,7 @@ def parent():
               help='Parent id to describe.')
 @click.option('--application_id', '-aid', type=str,
               help='Application id to describe parents.')
-@cli_response(attributes_order=[PARAM_NAME, PARAM_ID, PARAM_PERMISSIONS])
+@cli_response(attributes_order=attributes_order)
 def describe(parent_id=None, application_id=None):
     """
     Describes Parent.
@@ -44,8 +43,9 @@ def describe(parent_id=None, application_id=None):
               help='Tenant name to be linked to Parent.')
 @click.option('--cloud', type=click.Choice(AVAILABLE_CLOUDS),
               help='Parent cloud - Allowed values are: AWS, AZURE, GOOGLE.')
-@cli_response(attributes_order=[PARAM_NAME, PARAM_ID, PARAM_PERMISSIONS])
-def add(application_id, customer, parent_type, scope, description=None, meta=None,
+@cli_response(attributes_order=attributes_order)
+def add(application_id, customer, parent_type, scope, description=None,
+        meta=None,
         tenant_name=None, cloud=None):
     """
     Adds Parent.
@@ -72,7 +72,7 @@ def add(application_id, customer, parent_type, scope, description=None, meta=Non
               help='Parent type')
 @click.option('--description', '-d', type=str,
               help='Parent description.')
-@cli_response(attributes_order=[PARAM_NAME, PARAM_ID, PARAM_PERMISSIONS])
+@cli_response(attributes_order=attributes_order)
 def update(parent_id, application_id=None, parent_type=None, description=None):
     """
     Updates Parent.
@@ -88,7 +88,7 @@ def update(parent_id, application_id=None, parent_type=None, description=None):
 @parent.command(cls=ViewCommand, name='deactivate')
 @click.option('--parent_id', '-pid', type=str,
               help='Parent id to deactivate.')
-@cli_response(attributes_order=[PARAM_NAME, PARAM_ID, PARAM_PERMISSIONS])
+@cli_response(attributes_order=attributes_order)
 def deactivate(parent_id):
     """
     Deactivates Parent.

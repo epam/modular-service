@@ -71,7 +71,7 @@ class ContextObj:
 class cli_response:  # noqa
     __slots__ = ('_attributes_order', '_check_api_link', '_check_access_token')
 
-    def __init__(self, attributes_order: list[str] | None = None,
+    def __init__(self, attributes_order: tuple[str, ...] = (),
                  check_api_link: bool = True,
                  check_access_token: bool = True):
         self._attributes_order = attributes_order
@@ -287,7 +287,7 @@ class TablePrinter:
     def __init__(self, format: str = 'pretty',
                  datetime_format: str = default_datetime_format,
                  items_per_column: int | None = None,
-                 attributes_order: list[str] | None = None):
+                 attributes_order: tuple[str, ...] = ()):
         self._format = format
         self._datetime_format = datetime_format
         self._items_per_column = items_per_column

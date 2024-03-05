@@ -89,12 +89,10 @@ class CustomerProcessor(AbstractCommandProcessor):
         cursor = self.customer_service.i_get_customer(
             is_active=event.is_active,
             limit=event.limit,
+            name=event.customer_id,
             last_evaluated_key=NextToken.from_input(event.next_token).value,
         )
-        if event.customer_id:
-            items = list(filter(lambda c: c.name == event.customer_id, cursor))
-        else:
-            items = list(cursor)
+        items = list(cursor)
 
         return ResponseFactory().items(
             it=map(self.customer_service.get_dto, items),
