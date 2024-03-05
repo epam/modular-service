@@ -38,10 +38,12 @@ class ApiClient:
         :param query: dict with query params
         :return:
         """
+        _LOG.debug(f'Building url from {path=}, {params=}, {query=}')
         url = path.format(**(params or {}))
         url = quote(urljoin(url))  # to remove /
         if query:
             url += f'?{urlencode(sifted(query))}'
+        _LOG.debug(f'Resulting url: {url=}')
         return urljoin(self._api_link, url)
 
     @staticmethod
@@ -54,6 +56,7 @@ class ApiClient:
         :param data:
         :return:
         """
+        _LOG.debug(f'Preparing request: {url=}, {method=}, {data=}')
         if isinstance(data, dict):
             return urllib.request.Request(
                 url=url,

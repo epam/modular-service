@@ -1,4 +1,4 @@
-from typing import MutableMapping
+from typing import MutableMapping, Mapping
 
 from commons.constants import Env
 
@@ -6,6 +6,9 @@ from commons.constants import Env
 class EnvironmentService:
     def __init__(self, source: MutableMapping):
         self._env = source
+
+    def update(self, source: Mapping):
+        self._env.update(source)
 
     def aws_region(self) -> str:
         return (self._env.get('AWS_REGION')

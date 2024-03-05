@@ -31,7 +31,7 @@ from modular_service_cli.service.constants import (
     NO_CONTENT_RESPONSE_MESSAGE,
     NO_ITEMS_TO_DISPLAY_RESPONSE_MESSAGE,
 )
-from modular_service_cli.service.logger import get_logger, get_user_logger
+from modular_service_cli.service.logger import get_logger, write_verbose_logs
 
 CredentialsProvider = None
 try:
@@ -42,7 +42,6 @@ except ImportError:
     pass
 
 _LOG = get_logger(__name__)
-USER_LOG = get_user_logger(__name__)
 
 REVERT_TO_JSON_MESSAGE = 'The command`s response is pretty huge and the ' \
                          'result table structure can be broken.\n' \
@@ -143,8 +142,7 @@ class cli_response:  # noqa
             json_view = kwargs.pop('json')
             verbose = kwargs.pop('verbose')
             if verbose:
-                pass
-                # write_verbose_logs()
+                write_verbose_logs()
 
             ctx = cast(click.Context, click.get_current_context())
             self.update_context(ctx)

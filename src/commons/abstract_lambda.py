@@ -5,8 +5,9 @@ from typing import TypedDict
 
 from modular_sdk.commons.exception import ModularException
 
+from services import SP
 from commons import RequestContext, deep_get
-from commons.constants import Endpoint, HTTPMethod, Permission
+from commons.constants import Endpoint, HTTPMethod, Permission, Env
 from commons.lambda_response import ApplicationException, LambdaOutput, ResponseFactory
 from commons.log_helper import get_logger, hide_secret_values
 
@@ -106,6 +107,9 @@ class EventProcessorLambdaHandler(AbstractLambdaHandler):
     def lambda_handler(self, event: dict, context: RequestContext
                        ) -> LambdaOutput:
         _LOG.info(f'Starting request: {context.aws_request_id}')
+        SP.environment_service.update(
+            {Env.INVOCATION_REQUEST_ID: context.aws_request_id}
+        )
         # This is the only place where we print the event. Do not print it
         # somewhere else
         _LOG.debug('Incoming event')
