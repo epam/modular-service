@@ -5,7 +5,10 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## [3.0.0] - 2023-03-04
-- 
+- adapt responses parser to API v3
+- add commands to create different types of applications
+- remove `requests`, `PyYAML` from requirements
+- refactor code
 
 ## [2.0.7] - 2023-12-19
 - Update `policy add` to handle policy names in lower case, same logic are in
