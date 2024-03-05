@@ -462,3 +462,38 @@ class ModularServiceApiClient:
             path_params={'id': id},
             query=sifted(kwargs)
         )
+
+    def create_application_aws_role(self, **kwargs):
+        return self.make_request(
+            path=Endpoint.APPLICATIONS_AWS_ROLE,
+            method=HTTPMethod.POST,
+            data=sifted(kwargs)
+        )
+
+    def create_application_aws_credentials(self, **kwargs):
+        return self.make_request(
+            path=Endpoint.APPLICATIONS_AWS_CREDENTIALS,
+            method=HTTPMethod.POST,
+            data=sifted(kwargs)
+        )
+
+    def create_application_azure_credentials(self, **kwargs):
+        return self.make_request(
+            path=Endpoint.APPLICATIONS_AZURE_CREDENTIALS,
+            method=HTTPMethod.POST,
+            data=sifted(kwargs)
+        )
+
+    def create_application_azure_certificate(self, **kwargs):
+        return self.make_request(
+            path=Endpoint.APPLICATIONS_AZURE_CERTIFICATE,
+            method=HTTPMethod.POST,
+            data=sifted(kwargs)
+        )
+
+    def create_application_gcp_service_account(self, **kwargs):
+        return self.make_request(
+            path=Endpoint.APPLICATIONS_GCP_SERVICE_ACCOUNT,
+            method=HTTPMethod.POST,
+            data=sifted(kwargs)
+        )
