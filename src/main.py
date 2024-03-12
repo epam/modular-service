@@ -1,3 +1,4 @@
+#!/usr/local/bin/python
 from abc import ABC, abstractmethod
 import argparse
 import base64
@@ -41,6 +42,8 @@ CREATE_INDEXES_ACTION = 'create-indexes'
 DUMP_PERMISSIONS_ACTION = 'dump-permissions'
 CREATE_SYSTEM_USER_ACTION = 'create-system-user'
 UPDATE_DEPLOYMENT_RESOURCES_ACTION = 'update-deployment-resources'
+
+SYSTEM_USER = 'system_user'
 
 
 def get_logger():
@@ -105,13 +108,11 @@ def build_parser() -> argparse.ArgumentParser:
     _ = sub_parsers.add_parser(INIT_VAULT_ACTION, help='Init token in vault')
 
     # init
-    parser_init = sub_parsers.add_parser(
+    _ = sub_parsers.add_parser(
         CREATE_SYSTEM_USER_ACTION,
         help='Creates a system user that can perform actions on behalf of '
              'other users'
     )
-    parser_init.add_argument('--username', required=True, type=str,
-                             help='Admin username')
 
     # create-indexes
     _ = sub_parsers.add_parser(
@@ -255,16 +256,18 @@ class CreateSystemUser(ActionHandler):
                 break
         return password
 
-    def __call__(self, username: str):
-        from models.user import User
+    def __call__(self):
         from services import SP
         password = self.gen_password()
+        if SP.user_service.client.is_user_exists(SYSTEM_USER):
+            _LOG.info('System user already exists')
+            return
         SP.user_service.save(
-            username=username,
+            username=SYSTEM_USER,
             password=password,
             is_system=True
         )
-        print(password)
+        _LOG.info(f'System ({SYSTEM_USER}) password: {password}')
 
 
 class CreateIndexes(ActionHandler):
@@ -288,7 +291,7 @@ class CreateIndexes(ActionHandler):
         else:
             raise ValueError(f'Unknown key schema: {key_schema}')
 
-    def create_indexes_for_model(self, model: type['BaseModel']):
+    def create_indexes_for_model(self, model: 'BaseModel'):
         table_name = model.Meta.table_name
         collection = model.mongodb_handler().mongodb.collection(table_name)
         collection.drop_indexes()
@@ -324,7 +327,19 @@ class CreateIndexes(ActionHandler):
         from models.policy import Policy
         from models.role import Role
         from models.user import User
-        for model in (Policy, Role, User):
+        from modular_sdk.models.application import Application
+        from modular_sdk.models.customer import Customer
+        from modular_sdk.models.job import Job as ModularJob
+        from modular_sdk.models.region import RegionModel
+        from modular_sdk.models.tenant import Tenant
+        from modular_sdk.models.tenant_settings import TenantSettings
+        from modular_sdk.models.parent import Parent
+        models = (
+            Policy, Role, User,
+            Application, Customer, ModularJob, RegionModel, Tenant,
+            TenantSettings, Parent
+        )
+        for model in models:
             self.create_indexes_for_model(model)
 
 
