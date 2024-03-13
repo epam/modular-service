@@ -191,7 +191,7 @@ class Run(ActionHandler):
             with urllib.request.urlopen(
                     'http://169.254.169.254/latest/meta-data/public-ipv4',
                     timeout=1) as resp:
-                urls.add(resp.read().decode())
+                urls.add(f'http://{resp.read().decode()}:{self._port}')
         except urllib.error.URLError:
             _LOG.warning('Cannot resolve public-ipv4 from instance metadata')
         return urls
