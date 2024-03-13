@@ -1,7 +1,8 @@
 services:
   wsgi:
     build: .
-    container_name: modular-service-wsgi
+    image: modular-service:latest
+    container_name: modular-service
     ports:
       - "8040:8040"
     environment:
