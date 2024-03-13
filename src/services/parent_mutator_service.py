@@ -8,7 +8,7 @@ from modular_sdk.services.customer_service import CustomerService
 from modular_sdk.services.parent_service import ParentService
 from modular_sdk.services.tenant_service import TenantService
 
-_LOG = get_logger('modular-application_mutator_service')
+_LOG = get_logger(__name__)
 
 
 class ParentMutatorService(ParentService):

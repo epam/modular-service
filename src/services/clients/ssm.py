@@ -1,73 +1,42 @@
-import json
-
-import boto3
-from botocore.client import ClientError
+from modular_sdk.services.ssm_service import VaultSSMClient
 
 from commons.log_helper import get_logger
+from services.environment_service import EnvironmentService
 
 _LOG = get_logger(__name__)
 
 
-class SSMClient:
-    def __init__(self, region):
-        self._region = region
-        self._client = None
+class ModularVaultSSMClient(VaultSSMClient):
+    """
+    Our custom Vault ssm client because we use different envs
+    """
+    mount_point = 'kv'
+    key = 'data'
 
-    @property
-    def client(self):
-        if not self._client:
-            _LOG.info('Initializing ssm client')
-            self._client = boto3.client('ssm', self._region)
-        return self._client
+    def __init__(self, environment_service: EnvironmentService):
+        super().__init__()
+        self._env = environment_service
 
-    def get_secret_value(self, secret_name):
+    def _init_client(self) -> None:
+        import hvac
+        _LOG.info('Initializing hvac client')
+        self._client = hvac.Client(
+            url=self._env.vault_endpoint(),
+            token=self._env.vault_token()
+        )
+
+    def enable_secrets_engine(self, mount_point=None) -> bool:
         try:
-            response = self.client.get_parameter(
-                Name=secret_name,
-                WithDecryption=True
+            self.client.sys.enable_secrets_engine(
+                backend_type='kv',
+                path=(mount_point or self.mount_point),
+                options={'version': 2}
             )
-            value_str = response['Parameter']['Value']
-            try:
-                return json.loads(value_str)
-            except json.decoder.JSONDecodeError:
-                return value_str
-        except ClientError as e:
-            error_code = e.response['Error']['Code']
-            _LOG.error(f'Can\'t get secret for name \'{secret_name}\', '
-                       f'error code: \'{error_code}\'')
+            return True
+        except Exception:  # hvac.exceptions.InvalidRequest
+            return False  # already exists
 
-    def get_secret_values(self, secret_names: list):
-        try:
-            response = self.client.get_parameters(
-                Names=secret_names,
-                WithDecryption=True)
-            parameters = {item.get('Name'): item.get('Value') for item in
-                          response.get('Parameters')}
-            return parameters
-        except ClientError as e:
-            error_code = e.response['Error']['Code']
-            _LOG.error(f'Can\'t get secret for names \'{secret_names}\', '
-                       f'error code: \'{error_code}\'')
-
-    def create_secret(self, secret_name: str, secret_value: str,
-                      secret_type='SecureString'):
-        try:
-            if isinstance(secret_value, (list, dict)):
-                secret_value = json.dumps(secret_value)
-            self.client.put_parameter(
-                Name=secret_name,
-                Value=secret_value,
-                Overwrite=True,
-                Type=secret_type)
-        except ClientError as e:
-            error_code = e.response['Error']['Code']
-            _LOG.error(f'Can\'t get secret for name \'{secret_name}\', '
-                       f'error code: \'{error_code}\'')
-
-    def delete_parameter(self, secret_name: str):
-        try:
-            self.client.delete_parameter(Name=secret_name)
-        except ClientError as e:
-            error_code = e.response['Error']['Code']
-            _LOG.error(f'Can\'t delete secret name \'{secret_name}\', '
-                       f'error code: \'{error_code}\'')
+    def is_secrets_engine_enabled(self, mount_point=None) -> bool:
+        mount_points = self.client.sys.list_mounted_secrets_engines()
+        target_point = mount_point or self.mount_point
+        return f'{target_point}/' in mount_points

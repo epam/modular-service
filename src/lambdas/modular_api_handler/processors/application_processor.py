@@ -1,192 +1,352 @@
-from commons import RESPONSE_BAD_REQUEST_CODE, \
-    validate_params, build_response, \
-    RESPONSE_RESOURCE_NOT_FOUND_CODE, RESPONSE_OK_CODE
-from typing import List
+from http import HTTPStatus
+
+from modular_sdk.commons.constants import ApplicationType
+from modular_sdk.models.application import Application
+from modular_sdk.services.application_service import ApplicationService
+from modular_sdk.services.impl.maestro_credentials_service import (
+    AWSCredentialsApplicationMeta,
+    AWSCredentialsApplicationSecret,
+    AWSRoleApplicationMeta,
+    AZURECertificateApplicationMeta,
+    AZURECertificateApplicationSecret,
+    AZURECredentialsApplicationMeta,
+    AZURECredentialsApplicationSecret,
+    GCPServiceAccountApplicationMeta,
+)
+from modular_sdk.services.ssm_service import AbstractSSMClient
 from routes.route import Route
-from commons.constants import GET_METHOD, POST_METHOD, PATCH_METHOD, \
-    DELETE_METHOD, TYPE_ATTR, DESCRIPTION_ATTR, CUSTOMER_ID_ATTR, \
-    APPLICATION_ID_ATTR, META_ATTR
+
+from commons import NextToken
+from commons.abstract_lambda import ProcessedEvent
+from commons.constants import Endpoint, HTTPMethod, Permission
+from commons.lambda_response import ResponseFactory, build_response
 from commons.log_helper import get_logger
-from lambdas.modular_api_handler.processors.abstract_processor import \
-    AbstractCommandProcessor
+from lambdas.modular_api_handler.processors.abstract_processor import (
+    AbstractCommandProcessor,
+)
 from services import SERVICE_PROVIDER
-from services.application_mutator_service import ApplicationMutatorService
 from services.customer_mutator_service import CustomerMutatorService
 from services.parent_mutator_service import ParentMutatorService
+from validators.request import (
+    ApplicationPatch,
+    ApplicationPostAWSCredentials,
+    ApplicationPostAWSRole,
+    ApplicationPostAZURECertificate,
+    ApplicationPostAZURECredentials,
+    ApplicationPostGCPServiceAccount,
+    ApplicationQuery,
+    BaseModel,
+)
+from validators.response import ApplicationResponse, ApplicationsResponse, MessageModel
+from validators.utils import validate_kwargs
 
 _LOG = get_logger(__name__)
 
 
 class ApplicationProcessor(AbstractCommandProcessor):
-    def __init__(self, application_service: ApplicationMutatorService,
+    def __init__(self, application_service: ApplicationService,
                  customer_service: CustomerMutatorService,
-                 parent_service: ParentMutatorService):
+                 parent_service: ParentMutatorService,
+                 ssm_client: AbstractSSMClient):
         self.application_service = application_service
         self.customer_service = customer_service
         self.parent_service = parent_service
+        self.ssm = ssm_client
 
     @classmethod
-    def routes(cls) -> List[Route]:
-        name = cls.controller_name()
-        return [
-            Route(None, '/applications', controller=name, action='get',
-                  conditions={'method': [GET_METHOD]}),
-            Route(None, '/applications', controller=name, action='post',
-                  conditions={'method': [POST_METHOD]}),
-            Route(None, '/applications', controller=name, action='patch',
-                  conditions={'method': [PATCH_METHOD]}),
-            Route(None, '/applications', controller=name, action='delete',
-                  conditions={'method': [DELETE_METHOD]}),
-        ]
+    def routes(cls) -> tuple[Route, ...]:
+        resp = (HTTPStatus.CREATED, ApplicationResponse, None)
+        return (
+            cls.route(
+                Endpoint.APPLICATIONS_AWS_ROLE,
+                HTTPMethod.POST,
+                'post_aws_role',
+                summary='Create application with type AWS_ROLE',
+                response=resp,
+                permission=Permission.APPLICATION_CREATE
+            ),
+            cls.route(
+                Endpoint.APPLICATIONS_AWS_CREDENTIALS,
+                HTTPMethod.POST,
+                'post_aws_credentials',
+                summary='Create application with type AWS_CREDENTIALS',
+                response=resp,
+                permission=Permission.APPLICATION_CREATE
+            ),
+            cls.route(
+                Endpoint.APPLICATIONS_AZURE_CREDENTIALS,
+                HTTPMethod.POST,
+                'post_azure_credentials',
+                summary='Create application with type AZURE_CREDENTIALS',
+                response=resp,
+                permission=Permission.APPLICATION_CREATE
+            ),
+            cls.route(
+                Endpoint.APPLICATIONS_AZURE_CERTIFICATE,
+                HTTPMethod.POST,
+                'post_azure_certificate',
+                summary='Create application with type AZURE_CERTIFICATE',
+                response=resp,
+                permission=Permission.APPLICATION_CREATE
+            ),
+            cls.route(
+                Endpoint.APPLICATIONS_GCP_SERVICE_ACCOUNT,
+                HTTPMethod.POST,
+                'post_gcp_service_account',
+                summary='Create application with type GCP_SERVICE_ACCOUNT',
+                response=resp,
+                permission=Permission.APPLICATION_CREATE
+            ),
+            cls.route(
+                Endpoint.APPLICATIONS,
+                HTTPMethod.GET,
+                'query',
+                response=(HTTPStatus.OK, ApplicationsResponse, None),
+                permission=Permission.APPLICATION_DESCRIBE
+            ),
+            cls.route(
+                Endpoint.APPLICATIONS_ID,
+                HTTPMethod.GET,
+                'get',
+                response=(HTTPStatus.OK, ApplicationResponse, None),
+                summary='Queries a single application by id',
+                permission=Permission.APPLICATION_DESCRIBE
+            ),
+            cls.route(
+                Endpoint.APPLICATIONS_ID,
+                HTTPMethod.PATCH,
+                'patch',
+                response=(HTTPStatus.OK, ApplicationResponse, None),
+                summary='Allows to update certain fields in application',
+                permission=Permission.APPLICATION_UPDATE
+            ),
+            cls.route(
+                Endpoint.APPLICATIONS_ID,
+                HTTPMethod.DELETE,
+                'delete',
+                summary='Deletes the application',
+                response=(HTTPStatus.OK, MessageModel, None),
+                permission=Permission.APPLICATION_DELETE
+            )
+        )
 
     @classmethod
     def build(cls) -> 'ApplicationProcessor':
         return cls(
-            application_service=SERVICE_PROVIDER.application_service(),
-            customer_service=SERVICE_PROVIDER.customer_service(),
-            parent_service=SERVICE_PROVIDER.parent_service()
+            application_service=SERVICE_PROVIDER.modular.application_service(),
+            customer_service=SERVICE_PROVIDER.customer_service,
+            parent_service=SERVICE_PROVIDER.parent_service,
+            ssm_client=SERVICE_PROVIDER.ssm
         )
 
-    def get(self, event):
-        _LOG.debug(f'Describe application event: {event}')
-
-        application_id = event.get(APPLICATION_ID_ATTR)
-
-        if application_id:
-            _LOG.debug(f'Describing application with id \'{application_id}\'')
-            applications = [self.application_service.get_application_by_id(
-                application_id=application_id)]
-        else:
-            _LOG.debug(f'Describing all applications available')
-            applications = self.application_service.list()
-
-        applications = [item for item in applications if item]
-        if not applications:
-            _LOG.error('No application found matching given query')
-            return build_response(
-                code=RESPONSE_RESOURCE_NOT_FOUND_CODE,
-                content='No application found matching given query'
-            )
-
-        _LOG.debug(f'Extracting application dto')
-        response = [self.application_service.get_dto(app) for app
-                    in applications]
-        _LOG.debug(f'Response: {response}')
-
-        return build_response(
-            code=RESPONSE_OK_CODE,
-            content=response
+    @validate_kwargs
+    def post_aws_role(self, event: ApplicationPostAWSRole,
+                      _pe: ProcessedEvent):
+        meta = AWSRoleApplicationMeta(
+            roleName=event.role_name,
+            accountNumber=event.account_id
         )
 
-    def post(self, event):
-        _LOG.debug(f'Activate application event: {event}')
-
-        validate_params(event, (TYPE_ATTR, CUSTOMER_ID_ATTR))
-
-        app_type = event.get(TYPE_ATTR)
-        customer_id = event.get(CUSTOMER_ID_ATTR)
-        description = event.get(DESCRIPTION_ATTR)
-        meta = event.get(META_ATTR)
-
-        _LOG.debug(f'Creating application')
-        application = self.application_service.create(
-            customer_id=customer_id,
-            type=app_type,
-            description=description,
+        app = self.application_service.build(
+            customer_id=event.customer_id,
+            type=ApplicationType.AWS_ROLE.value,
+            description=event.description,
             is_deleted=False,
-            meta=meta
+            meta=meta.dict(),
+            created_by=_pe['cognito_user_id']
         )
-        _LOG.debug(f'Saving application')
-        self.application_service.save(application)
+        _LOG.debug('Saving application')
+        self.application_service.save(app)
 
-        _LOG.debug(f'Extracting application dto')
-        application_dto = self.application_service.get_dto(application)
-
-        _LOG.debug(f'Response: {application_dto}')
         return build_response(
-            code=RESPONSE_OK_CODE,
-            content=application_dto
+            content=self.application_service.get_dto(app),
+            code=HTTPStatus.CREATED
         )
 
-    def patch(self, event):
-        _LOG.debug(f'Update application event: {event}')
+    @validate_kwargs
+    def post_aws_credentials(self, event: ApplicationPostAWSCredentials,
+                             _pe: ProcessedEvent):
+        meta = AWSCredentialsApplicationMeta(accountNumber=event.account_id)
+        secret = AWSCredentialsApplicationSecret(
+            accessKeyId=event.access_key_id,
+            secretAccessKey=event.secret_access_key,
+            sessionToken=event.session_token,
+            defaultRegion=event.default_region
+        )
+        app = self.application_service.build(
+            customer_id=event.customer_id,
+            type=ApplicationType.AWS_CREDENTIALS.value,
+            description=event.description,
+            is_deleted=False,
+            meta=meta.dict(),
+            created_by=_pe['cognito_user_id'],
+        )
+        secret_name = self.ssm.safe_name(
+            name=f'modular-service.app.{app.application_id}',
+            date=False
+        )
+        app.secret = self.ssm.put_parameter(
+            name=secret_name,
+            value=secret.dict()
+        )
+        _LOG.debug('Saving application')
+        self.application_service.save(app)
+        return build_response(
+            content=self.application_service.get_dto(app),
+            code=HTTPStatus.CREATED
+        )
 
-        validate_params(event, (APPLICATION_ID_ATTR,))
+    @validate_kwargs
+    def post_azure_credentials(self, event: ApplicationPostAZURECredentials,
+                               _pe: ProcessedEvent):
+        meta = AZURECredentialsApplicationMeta(
+            clientId=event.client_id,
+            tenantId=event.tenant_id
+        )
+        secret = AZURECredentialsApplicationSecret(
+            client_id=event.client_id,
+            tenant_id=event.tenant_id,
+            api_key=event.api_key
+        )
+        app = self.application_service.build(
+            customer_id=event.customer_id,
+            type=ApplicationType.AZURE_CREDENTIALS.value,
+            description=event.description,
+            is_deleted=False,
+            meta=meta.dict(),
+            created_by=_pe['cognito_user_id'],
+        )
+        secret_name = self.ssm.safe_name(
+            name=f'modular-service.app.{app.application_id}',
+            date=False
+        )
+        app.secret = self.ssm.put_parameter(
+            name=secret_name,
+            value=secret.dict()
+        )
+        _LOG.debug('Saving application')
+        self.application_service.save(app)
+        return build_response(
+            content=self.application_service.get_dto(app),
+            code=HTTPStatus.CREATED
+        )
 
-        optional_attrs = (TYPE_ATTR, CUSTOMER_ID_ATTR, DESCRIPTION_ATTR)
-        if not any([attr in event for attr in optional_attrs]):
-            _LOG.error(f'At least one of the following attributes must be '
-                       f'specified: \'{optional_attrs}\'')
-            return build_response(
-                code=RESPONSE_BAD_REQUEST_CODE,
-                content=f'At least one of the following attributes must be '
-                        f'specified: \'{optional_attrs}\''
-            )
+    @validate_kwargs
+    def post_azure_certificate(self, event: ApplicationPostAZURECertificate,
+                               _pe: ProcessedEvent):
+        meta = AZURECertificateApplicationMeta(
+            clientId=event.client_id,
+            tenantId=event.tenant_id
+        )
+        secret = AZURECertificateApplicationSecret(
+            certificate_base64=event.certificate,
+            certificate_password=event.password
+        )
+        app = self.application_service.build(
+            customer_id=event.customer_id,
+            type=ApplicationType.AZURE_CERTIFICATE.value,
+            description=event.description,
+            is_deleted=False,
+            meta=meta.dict(),
+            created_by=_pe['cognito_user_id'],
+        )
+        secret_name = self.ssm.safe_name(
+            name=f'modular-service.app.{app.application_id}',
+            date=False
+        )
+        app.secret = self.ssm.put_parameter(
+            name=secret_name,
+            value=secret.dict()
+        )
+        _LOG.debug('Saving application')
+        self.application_service.save(app)
+        return build_response(
+            content=self.application_service.get_dto(app),
+            code=HTTPStatus.CREATED
+        )
 
-        application_id = event.get(APPLICATION_ID_ATTR)
-        application = self.application_service.get_application_by_id(
-            application_id=application_id)
-        if not application:
-            _LOG.error(f'Application with id \'{application_id}\' does not '
-                       f'exist.')
-            return build_response(
-                code=RESPONSE_RESOURCE_NOT_FOUND_CODE,
-                content=f'Application with id \'{application_id}\' does not '
-                        f'exist.'
-            )
+    @validate_kwargs
+    def post_gcp_service_account(self, event: ApplicationPostGCPServiceAccount,
+                                 _pe: ProcessedEvent):
+        meta = GCPServiceAccountApplicationMeta(
+            adminProjectId=event.credentials['project_id']
+        )
+        app = self.application_service.build(
+            customer_id=event.customer_id,
+            type=ApplicationType.AZURE_CERTIFICATE.value,
+            description=event.description,
+            is_deleted=False,
+            meta=meta.dict(),
+            created_by=_pe['cognito_user_id'],
+        )
+        secret_name = self.ssm.safe_name(
+            name=f'modular-service.app.{app.application_id}',
+            date=False
+        )
+        app.secret = self.ssm.put_parameter(
+            name=secret_name,
+            value=event.credentials
+        )
+        _LOG.debug('Saving application')
+        self.application_service.save(app)
+        return build_response(
+            content=self.application_service.get_dto(app),
+            code=HTTPStatus.CREATED
+        )
 
-        app_type = event.get(TYPE_ATTR)
-        customer_id = event.get(CUSTOMER_ID_ATTR)
-        description = event.get(DESCRIPTION_ATTR)
+    @validate_kwargs
+    def query(self, event: ApplicationQuery):
+        cursor = self.application_service.list(
+            customer=event.customer_id,
+            _type=event.type.value if event.type else None,
+            deleted=False,
+            limit=event.limit,
+            last_evaluated_key=NextToken.from_input(event.next_token).value,
+        )
+        items = list(cursor)
 
-        _LOG.debug(f'Updating application')
+        return ResponseFactory().items(
+            it=map(self.application_service.get_dto, items),
+            next_token=NextToken(cursor.last_evaluated_key)
+        ).build()
+
+    def _get_application(self, aid: str, customer_id: str
+                         ) -> Application | None:
+        item = self.application_service.get_application_by_id(aid)
+        if not item or item.customer_id != customer_id or item.is_deleted:
+            return
+        return item
+
+    @validate_kwargs
+    def get(self, event: BaseModel, id: str):
+        item = self._get_application(id, event.customer_id)
+        if not item:
+            raise ResponseFactory(HTTPStatus.NOT_FOUND).default().exc()
+        return build_response(content=self.application_service.get_dto(item))
+
+    @validate_kwargs
+    def patch(self, event: ApplicationPatch, _pe: ProcessedEvent, id: str):
+        item = self._get_application(id, event.customer_id)
+        if not item:
+            raise ResponseFactory(HTTPStatus.NOT_FOUND).default().exc()
+        item.description = event.description
         self.application_service.update(
-            application=application,
-            application_type=app_type,
-            customer_id=customer_id,
-            description=description
+            application=item,
+            attributes=[Application.description],
+            updated_by=_pe['cognito_user_id']
         )
+        return build_response(content=self.application_service.get_dto(item))
 
-        _LOG.debug(f'Saving application')
-        self.application_service.save(application=application)
-
-        _LOG.debug(f'Extracting application dto')
-        response = self.application_service.get_dto(application=application)
-        _LOG.debug(f'Response: {response}')
-        return build_response(
-            code=RESPONSE_OK_CODE,
-            content=response
-        )
-
-    def delete(self, event):
-        _LOG.debug(f'Delete application event: {event}')
-
-        validate_params(event, (APPLICATION_ID_ATTR,))
-
-        application_id = event.get(APPLICATION_ID_ATTR)
-        application = self.application_service.get_application_by_id(
-            application_id=application_id)
+    @validate_kwargs
+    def delete(self, event: BaseModel, id: str):
+        application = self._get_application(id, event.customer_id)
         if not application:
-            _LOG.error(f'Application with id \'{application_id}\' does not '
-                       f'exist.')
-            return build_response(
-                code=RESPONSE_RESOURCE_NOT_FOUND_CODE,
-                content=f'Application with id \'{application_id}\' does not '
-                        f'exist.'
-            )
+            _LOG.info(f'Application \'{id}\' does not exist.')
+            raise ResponseFactory(HTTPStatus.NOT_FOUND).message(
+                f'Application with id \'{id}\' does not exist.'
+            ).exc()
 
-        _LOG.debug(f'Deleting application \'{application_id}\'')
         self.application_service.mark_deleted(
             application=application
         )
-
-        _LOG.debug(f'Saving application')
-        self.application_service.save(application)
-
-        _LOG.info(f'Application with id \'{application_id}\' has been '
-                  f'deleted.')
-        return build_response(
-            code=RESPONSE_OK_CODE,
-            content=f'Application with id \'{application_id}\' has '
-                    f'been deleted.'
-        )
+        return build_response(content='Application was deleted.')

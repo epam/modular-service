@@ -11,7 +11,7 @@ from modular_sdk.models.tenant import Tenant
 from modular_sdk.services.region_service import RegionService
 from modular_sdk.services.tenant_service import TenantService
 
-_LOG = get_logger('services.region_mutator_service')
+_LOG = get_logger(__name__)
 
 
 class RegionMutatorService(RegionService):

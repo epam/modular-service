@@ -8,7 +8,7 @@ Modular Service - (repo/modular-service) a serverless module that extends
 Modular SDK to provide API to manage Modular entities: full read/write access.
 Modular Service Admin CLI - (repo/modular-service-admin-cli) is a CLI client
 for the Modular Service API. For details, please navigate
-to [Modular Service Admin CLI README](modular-service-admin-cli/README.md)
+to [Modular Service Admin CLI README](modular-service-cli/README.md)
 
 ### Notice
 
@@ -74,7 +74,7 @@ This lambda is designed as a handler for all API resources:
 * `/tenants/regions CRUD` - Manage tenant regions;
 
 Refer
-to [Modular Service Admin CLI's README](modular-service-admin-cli/README.md)
+to [Modular Service Admin CLI's README](modular-service-cli/README.md)
 for more details. It provides a separate
 command for each of the available endpoints.
 

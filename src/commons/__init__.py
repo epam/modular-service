@@ -1,125 +1,27 @@
-from datetime import datetime
-from uuid import uuid4
-from typing import Union, Iterable, Optional, Any
-from commons.constants import (
-    PARAM_MESSAGE, PARAM_ITEMS, PASSWORD_ATTR, ID_TOKEN_ATTR, REFRESH_TOKEN_ATTR
-)
+import base64
+import binascii
 import json
+import math
+import uuid
 from functools import reduce
+from typing import Any
 
-from commons.exception import ApplicationException
-
-RESPONSE_BAD_REQUEST_CODE = 400
-RESPONSE_UNAUTHORIZED = 401
-RESPONSE_FORBIDDEN_CODE = 403
-RESPONSE_RESOURCE_NOT_FOUND_CODE = 404
-RESPONSE_CONFLICT_CODE = 409
-RESPONSE_OK_CODE = 200
-RESPONSE_INTERNAL_SERVER_ERROR = 500
-RESPONSE_NOT_IMPLEMENTED = 501
-RESPONSE_SERVICE_UNAVAILABLE_CODE = 503
-
-MISSING_PARAMETER_ERROR_PATTERN = '{0} must be specified'
+from typing_extensions import Self
 
 
-def build_response(content: Union[str, dict, list, Iterable],
-                   code: int = RESPONSE_OK_CODE, meta: Optional[dict] = None):
-    meta = meta or {}
-    _body = {
-        **meta
-    }
-    if isinstance(content, str):
-        _body.update({PARAM_MESSAGE: content})
-    elif isinstance(content, dict) and content:
-        _body.update({PARAM_ITEMS: [content, ]})
-    elif isinstance(content, list):
-        _body.update({PARAM_ITEMS: content})
-    elif isinstance(content, Iterable):
-        _body.update({PARAM_ITEMS: list(content)})
-    else:
-        _body.update({PARAM_ITEMS: []})
+class RequestContext:
+    __slots__ = ('aws_request_id', 'function_name')
 
-    if 200 <= code <= 206:
-        return {
-            'statusCode': code,
-            'headers': {
-                'Content-Type': 'application/json',
-                'Access-Control-Allow-Headers': 'Content-Type,X-Amz-Date,Authorization,X-Api-Key,X-Amz-Security-Token',
-                'Access-Control-Allow-Origin': '*',
-                'Access-Control-Allow-Methods': '*'
-            },
-            'isBase64Encoded': False,
-            'multiValueHeaders': {},
-            'body': json.dumps(_body)
-        }
-    raise ApplicationException(
-        code=code,
-        content=content
-    )
+    def __init__(self, request_id: str | None = None):
+        self.aws_request_id: str = request_id or str(uuid.uuid4())
+        self.function_name: str = 'modular-api-handler'  # currently only one
+
+    @staticmethod
+    def get_remaining_time_in_millis():
+        return math.inf
 
 
-def raise_error_response(code, content):
-    raise ApplicationException(code=code, content=content)
-
-
-def assert_param_is_not_none(parameter, parameter_name,
-                             raise_if_none=True):
-    if not parameter and raise_if_none:
-        return build_response(
-            code=RESPONSE_BAD_REQUEST_CODE,
-            content=MISSING_PARAMETER_ERROR_PATTERN.format(parameter_name))
-
-
-def get_iso_timestamp():
-    return datetime.now().isoformat()
-
-
-def get_missing_parameters(event, required_params_list):
-    missing_params_list = []
-    for param in required_params_list:
-        if event.get(param) is None:
-            missing_params_list.append(param)
-    return missing_params_list
-
-
-def validate_params(event, required_params_list):
-    """
-    Checks if all required parameters present in lambda payload.
-    :param event: the lambda payload
-    :param required_params_list: list of the lambda required parameters
-    :return: bad request response if some parameter[s] is/are missing,
-        otherwise - none
-    """
-    missing_params_list = get_missing_parameters(event, required_params_list)
-
-    if missing_params_list:
-        raise_error_response(RESPONSE_BAD_REQUEST_CODE,
-                             'Bad Request. The following parameters '
-                             'are missing: {0}'.format(missing_params_list))
-
-
-class LambdaContext:
-    """
-    For more info:
-        https://docs.aws.amazon.com/lambda/latest/dg/python-context.html
-
-    Attributes:
-        function_name: The name of the Lambda function.
-        aws_request_id: The identifier of the invocation request.
-    """
-
-    function_name: str
-    aws_request_id: str = 'mock'
-
-    def __init__(self):
-        self.aws_request_id = str(uuid4())
-
-
-def generate_id():
-    return str(uuid4())
-
-
-def deep_get(dct: dict, path: Union[list, tuple]) -> Any:
+def deep_get(dct: dict, path: list | tuple) -> Any:
     """
     >>> d = {'a': {'b': 1}}
     >>> deep_get(d, ('a', 'b'))
@@ -129,7 +31,8 @@ def deep_get(dct: dict, path: Union[list, tuple]) -> Any:
     """
     return reduce(
         lambda d, key: d.get(key, None) if isinstance(d, dict) else None,
-        path, dct)
+        path, dct
+    )
 
 
 def deep_set(dct: dict, path: tuple, item: Any):
@@ -142,6 +45,46 @@ def deep_set(dct: dict, path: tuple, item: Any):
         deep_set(dct[path[0]], path[1:], item)
 
 
+def dereference_json(obj: dict) -> None:
+    """
+    Changes the given dict in place de-referencing all $ref. Does not support
+    files and http references. If you need them, better use jsonref
+    lib. Works only for dict as root object.
+    Note that it does not create new objects but only replaces {'$ref': ''}
+    with objects that ref(s) are referring to, so:
+    - works really fast, 20x faster than jsonref, at least relying on my
+      benchmarks;
+    - changes your existing object;
+    - can reference the same object multiple times so changing some arbitrary
+      values afterward can change object in multiple places.
+    Though, it's perfectly fine in case you need to dereference obj, dump it
+    to file and forget
+    :param obj:
+    :return:
+    """
+
+    def _inner(o):
+        match o:
+            case str() | int() | float() | bool() | None:
+                return
+            case dict():
+                for k, v in o.items():
+                    if isinstance(v, dict) and isinstance(v.get('$ref'), str):
+                        _path = v['$ref'].strip('#/').split('/')
+                        o[k] = deep_get(obj, _path)
+                    else:
+                        _inner(v)
+            case _:  # list()
+                for i, v in enumerate(o):
+                    if isinstance(v, dict) and isinstance(v.get('$ref'), str):
+                        _path = v['$ref'].strip('#/').split('/')
+                        o[i] = deep_get(obj, _path)
+                    else:
+                        _inner(v)
+
+    _inner(obj)
+
+
 class SingletonMeta(type):
     _instances = {}
 
@@ -152,47 +95,53 @@ class SingletonMeta(type):
         return cls._instances[cls]
 
 
-def reformat_request_path(request_path: str) -> str:
+def urljoin(*args: str) -> str:
     """
-    /hello -> /hello/
-    hello/ -> /hello/
-    hello -> /hello/
+    Joins all the parts with one "/"
+    :param args:
+    :return:
     """
-    if not request_path.startswith('/'):
-        request_path = '/' + request_path
-    if not request_path.endswith('/'):
-        request_path += '/'
-    return request_path
+    return '/'.join(map(lambda x: str(x).strip('/'), args))
 
 
-def secured_params() -> tuple:
-    return (
-        'refresh_token', 'id_token', 'password', 'authorization', 'secret',
-        'private_key', 'private_key_id', 'Authorization', 'Authentication'
-    )
+class NextToken:
+    __slots__ = ('_lak',)
 
+    def __init__(self, lak: dict | int | None = None):
+        """
+        Wrapper over dynamodb last_evaluated_key and pymongo offset
+        :param lak:
+        """
+        self._lak = lak
 
-def secure_event(event: dict, secured_keys=secured_params()):
-    result_event = {}
-    if not isinstance(event, dict):
-        return event
-    for key, value in event.items():
-        if key in secured_keys:
-            result_event[key] = '*****'
-        elif isinstance(value, dict):
-            result_event[key] = secure_event(value, secured_keys)
-        elif isinstance(value, list):
-            result_event[key] = []
-            for item in value:
-                result_event[key].append(secure_event(item, secured_keys))
-        elif isinstance(value, str):
-            try:
-                result_event[key] = json.dumps(
-                    secure_event(json.loads(value), secured_keys)
-                )
-            except ValueError:
-                result_event[key] = value
-        else:
-            result_event[key] = value
+    def __json__(self) -> str | None:
+        """
+        Handled only inside commons.lambda_response
+        :return:
+        """
+        if not self:
+            return
+        # TODO encrypt
+        return base64.urlsafe_b64encode(
+            json.dumps(self._lak, separators=(',', ':')).encode()
+        ).decode()
 
-    return result_event
+    @property
+    def value(self) -> dict | int | None:
+        return self._lak
+
+    @classmethod
+    def from_input(cls, s: str | None = None) -> Self:
+        if not s or not isinstance(s, str):
+            return cls()
+        decoded = None
+        try:
+            decoded = json.loads(base64.urlsafe_b64decode(s).decode())
+        except (binascii.Error, json.JSONDecodeError):
+            pass
+        except Exception:  # noqa
+            pass
+        return cls(decoded)
+
+    def __bool__(self) -> bool:
+        return not not self._lak  # 0 and empty dict are None

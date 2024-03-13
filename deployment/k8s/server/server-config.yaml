@@ -1,0 +1,7 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: modular-service-config
+data:
+  modular-service-database-name: modular_service
+  modular-sdk-database-name: modular-sdk
