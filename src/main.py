@@ -1,6 +1,8 @@
 #!/usr/local/bin/python
 from abc import ABC, abstractmethod
 import argparse
+import urllib.request
+import urllib.error
 import base64
 from functools import cached_property
 import json
@@ -178,6 +180,22 @@ class InitVault(ABC):
 
 
 class Run(ActionHandler):
+
+    def _resolve_urls(self) -> set[str]:
+        """
+        Builds some additional urls for swagger ui
+        :return:
+        """
+        urls = {f'http://127.0.0.1:{self._port}'}
+        try:
+            with urllib.request.urlopen(
+                    'http://169.254.169.254/latest/meta-data/public-ipv4',
+                    timeout=1) as resp:
+                urls.add(resp.read().decode())
+        except urllib.error.URLError:
+            _LOG.warning('Cannot resolve public-ipv4 from instance metadata')
+        return urls
+
     def _init_swagger(self, app: 'Bottle', prefix: str, stage: str) -> None:
         """
         :param app:
@@ -191,11 +209,12 @@ class Run(ActionHandler):
 
         # from validators import registry
         url = f'http://{self._host}:{self._port}'
-        url_additional = f'http://127.0.0.1:{self._port}'
+        urls = self._resolve_urls()
+        urls.add(url)
         generator = OpenApiGenerator(
             title='Modular service API',
             description='Modular service rest API',
-            url=[url_additional, url],
+            url=list(urls),
             stages=stage,
             version=__version__,
             endpoints=HANDLER.iter_endpoint()
