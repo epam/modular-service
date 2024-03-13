@@ -191,10 +191,11 @@ class Run(ActionHandler):
 
         # from validators import registry
         url = f'http://{self._host}:{self._port}'
+        url_additional = f'http://127.0.0.1:{self._port}'
         generator = OpenApiGenerator(
             title='Modular service API',
             description='Modular service rest API',
-            url=url,
+            url=[url_additional, url],
             stages=stage,
             version=__version__,
             endpoints=HANDLER.iter_endpoint()

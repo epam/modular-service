@@ -84,7 +84,7 @@ class EndpointInfo:
 class OpenApiGenerator:
     dynamic_resource_regex = re.compile(r'([^{/]+)(?=})')
 
-    def __init__(self, title: str, description: str, url: str,
+    def __init__(self, title: str, description: str, url: list[str] | str,
                  stages: list[str] | str, version: str,
                  endpoints: Iterable[EndpointInfo], auto_tags: bool = True):
         """
@@ -100,7 +100,10 @@ class OpenApiGenerator:
         """
         self._title = title
         self._description = description
-        self._url = url
+        if isinstance(url, str):
+            self._urls = [url]
+        else:
+            self._urls = url
 
         assert stages, 'stages cannot be empty'
         self._stages: list[str] | str = stages
@@ -130,10 +133,10 @@ class OpenApiGenerator:
                 }
             },
             'servers': [{
-                'url': urljoin(self._url, '{stage}'),
+                'url': urljoin(url, '{stage}'),
                 'description': 'Main url',
                 'variables': {'stage': stages}
-            }],
+            } for url in self._urls],
             'paths': {},
             'tags': [],
             'components': {

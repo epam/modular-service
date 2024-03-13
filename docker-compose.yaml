@@ -1,0 +1,65 @@
+services:
+  wsgi:
+    build: .
+    container_name: modular-service-wsgi
+    ports:
+      - "8040:8040"
+    environment:
+      MODULAR_SERVICE_VAULT_ENDPOINT: http://vault:8200
+      MODULAR_SERVICE_VAULT_TOKEN: ${MY_VAULT_TOKEN:-test}
+      MODULAR_SERVICE_MONGO_URI: mongodb://mongouser:mongopassword@mongo:27017/
+      MODULAR_SERVICE_MONGO_DATABASE: custodian_as_a_service
+      modular_service_mode: docker
+      modular_mongo_db_name: custodian_as_a_service
+      modular_mongo_user: mongouser
+      modular_mongo_password: mongopassword
+      modular_mongo_url: mongo:27017
+      VAULT_TOKEN: ${MY_VAULT_TOKEN:-test}
+      VAULT_URL: vault
+      VAULT_SERVICE_SERVICE_PORT: 8200
+    depends_on:
+      - mongo
+      - vault-init
+    restart: always
+  mongo:
+    image: mongo:latest
+    container_name: mongo
+    volumes:
+      - mongo-data:/data/db
+    environment:
+      MONGO_INITDB_ROOT_USERNAME: mongouser
+      MONGO_INITDB_ROOT_PASSWORD: mongopassword
+#    ports:
+#      - "27017:27017"
+    restart: always
+  vault:
+    image: vault:1.13.3
+    container_name: vault
+    ports:
+      - 8200:8200
+    volumes:
+      - ./deployment/compose/config.hcl:/vault/config/config.hcl
+      - vault-data:/vault/file/
+    environment:
+      - VAULT_ADDR=http://127.0.0.1:8200
+    cap_add:
+      - IPC_LOCK
+    command: server
+    restart: always
+  vault-init:
+    image: vault:1.13.3
+    container_name: vault-init
+    environment:
+      - VAULT_ADDR=http://vault:8200
+      - MY_VAULT_TOKEN=${MY_VAULT_TOKEN:-test}
+    volumes:
+      - ./vault-root-token:/vault/file/vault-root-token
+      - ./deployment/compose/vault-init.sh:/usr/local/bin/vault-init.sh
+      - vault-data:/vault/file/
+    command: /usr/local/bin/vault-init.sh
+    restart: on-failure
+    depends_on:
+      - vault
+volumes:
+  vault-data:
+  mongo-data:
