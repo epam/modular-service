@@ -3,5 +3,5 @@ kind: ConfigMap
 metadata:
   name: modular-service-config
 data:
-  modular-service-database-name: custodian_as_a_service
-  modular-sdk-database-name: custodian_as_a_service
+  modular-service-database-name: modular_service
+  modular-sdk-database-name: modular-sdk
