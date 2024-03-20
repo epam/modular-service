@@ -109,7 +109,7 @@ class ApiResponse:
             body.update({ITEMS_ATTR: content})
         elif isinstance(content, Iterable):
             body.update(({ITEMS_ATTR: list(content)}))
-        return cls(data=body)
+        return cls(data=body, code=HTTPStatus.OK)
 
     @property
     def ok(self) -> bool:
