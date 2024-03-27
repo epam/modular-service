@@ -23,6 +23,7 @@ class Endpoint(str, Enum):
     TENANTS = '/tenants'
     REGIONS = '/regions'
     PARENTS = '/parents'
+    REFRESH = '/refresh'
     POLICIES = '/policies'
     CUSTOMERS = '/customers'
     ROLES_NAME = '/roles/{name}'

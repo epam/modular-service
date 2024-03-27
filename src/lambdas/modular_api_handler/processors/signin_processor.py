@@ -10,7 +10,7 @@ from lambdas.modular_api_handler.processors.abstract_processor import (
 )
 from services import SERVICE_PROVIDER
 from services.user_service import CognitoUserService
-from validators.request import SignInPost
+from validators.request import SignInPost, RefreshPostModel
 from validators.utils import validate_kwargs
 from validators.response import SignInResponse
 
@@ -38,6 +38,14 @@ class SignInProcessor(AbstractCommandProcessor):
                 require_auth=False,
                 permission=None
             ),
+            cls.route(
+                Endpoint.REFRESH,
+                HTTPMethod.POST,
+                'refresh',
+                response=(HTTPStatus.OK, SignInResponse, 'Successful token refresh'),
+                require_auth=False,
+                permission=None
+            )
         )
 
     @validate_kwargs
@@ -52,10 +60,22 @@ class SignInProcessor(AbstractCommandProcessor):
                 'Incorrect username or password'
             ).exc()
 
-        refresh_token = auth_result['AuthenticationResult']['RefreshToken']
-        id_token = auth_result['AuthenticationResult']['IdToken']
+        return ResponseFactory().raw({
+            'access_token': auth_result['id_token'],
+            'refresh_token': auth_result['refresh_token'],
+            'expires_in': auth_result['expires_in']
+        }).build()
+
+    @validate_kwargs
+    def refresh(self, event: RefreshPostModel):
+        _LOG.debug('Going to initiate refresh flow')
+        res = self.user_service.refresh_token(event.refresh_token)
+        if not res:
+            raise ResponseFactory(HTTPStatus.UNAUTHORIZED).default().exc()
 
         return ResponseFactory().raw({
-            'access_token': id_token,
-            # 'refresh_token': refresh_token
+            'access_token': res['id_token'],
+            'refresh_token': res['refresh_token'],
+            'expires_in': res['expires_in']
         }).build()
+

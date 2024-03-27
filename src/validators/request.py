@@ -148,6 +148,10 @@ class SignInPost(BaseModel):
     password: str
 
 
+class RefreshPostModel(BaseModel):
+    refresh_token: str
+
+
 class SignUpPost(BaseModel):
     username: str
     password: str

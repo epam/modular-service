@@ -877,8 +877,7 @@
           "authorization_type": "authorizer",
           "lambda_name": "modular-api-handler",
           "method_request_parameters": {
-            "method.request.querystring.customer_id": false,
-            "method.request.querystring.maestro_name": false
+            "method.request.querystring.customer_id": false
           },
           "responses": [
             {
@@ -936,9 +935,9 @@
           },
           "responses": [
             {
-              "status_code": "200",
+              "status_code": "201",
               "response_models": {
-                "application/json": "RegionsResponse"
+                "application/json": "RegionResponse"
               }
             },
             {
@@ -3015,6 +3014,185 @@
             }
           ]
         }
+      },
+      "/refresh": {
+        "policy_statement_singleton": true,
+        "enable_cors": true,
+        "POST": {
+          "enable_proxy": true,
+          "integration_type": "lambda",
+          "lambda_alias": "${lambdas_alias_name}",
+          "authorization_type": "NONE",
+          "lambda_name": "modular-api-handler",
+          "method_request_models": {
+            "application/json": "RefreshPostModel"
+          },
+          "responses": [
+            {
+              "status_code": "200",
+              "response_models": {
+                "application/json": "SignInResponse"
+              }
+            },
+            {
+              "status_code": "400",
+              "response_models": {
+                "application/json": "ErrorsModel"
+              }
+            },
+            {
+              "status_code": "401",
+              "response_models": {
+                "application/json": "MessageModel"
+              }
+            },
+            {
+              "status_code": "403",
+              "response_models": {
+                "application/json": "MessageModel"
+              }
+            },
+            {
+              "status_code": "500",
+              "response_models": {
+                "application/json": "MessageModel"
+              }
+            },
+            {
+              "status_code": "503",
+              "response_models": {
+                "application/json": "MessageModel"
+              }
+            },
+            {
+              "status_code": "504",
+              "response_models": {
+                "application/json": "MessageModel"
+              }
+            }
+          ]
+        }
+      },
+      "/regions/{name}": {
+        "policy_statement_singleton": true,
+        "enable_cors": true,
+        "GET": {
+          "enable_proxy": true,
+          "integration_type": "lambda",
+          "lambda_alias": "${lambdas_alias_name}",
+          "authorization_type": "authorizer",
+          "lambda_name": "modular-api-handler",
+          "method_request_parameters": {
+            "method.request.querystring.customer_id": false
+          },
+          "responses": [
+            {
+              "status_code": "200",
+              "response_models": {
+                "application/json": "RegionResponse"
+              }
+            },
+            {
+              "status_code": "400",
+              "response_models": {
+                "application/json": "ErrorsModel"
+              }
+            },
+            {
+              "status_code": "401",
+              "response_models": {
+                "application/json": "MessageModel"
+              }
+            },
+            {
+              "status_code": "403",
+              "response_models": {
+                "application/json": "MessageModel"
+              }
+            },
+            {
+              "status_code": "404",
+              "response_models": {
+                "application/json": "MessageModel"
+              }
+            },
+            {
+              "status_code": "500",
+              "response_models": {
+                "application/json": "MessageModel"
+              }
+            },
+            {
+              "status_code": "503",
+              "response_models": {
+                "application/json": "MessageModel"
+              }
+            },
+            {
+              "status_code": "504",
+              "response_models": {
+                "application/json": "MessageModel"
+              }
+            }
+          ]
+        },
+        "DELETE": {
+          "enable_proxy": true,
+          "integration_type": "lambda",
+          "lambda_alias": "${lambdas_alias_name}",
+          "authorization_type": "authorizer",
+          "lambda_name": "modular-api-handler",
+          "method_request_models": {
+            "application/json": "BaseModel"
+          },
+          "responses": [
+            {
+              "status_code": "204"
+            },
+            {
+              "status_code": "400",
+              "response_models": {
+                "application/json": "ErrorsModel"
+              }
+            },
+            {
+              "status_code": "401",
+              "response_models": {
+                "application/json": "MessageModel"
+              }
+            },
+            {
+              "status_code": "403",
+              "response_models": {
+                "application/json": "MessageModel"
+              }
+            },
+            {
+              "status_code": "404",
+              "response_models": {
+                "application/json": "MessageModel"
+              }
+            },
+            {
+              "status_code": "500",
+              "response_models": {
+                "application/json": "MessageModel"
+              }
+            },
+            {
+              "status_code": "503",
+              "response_models": {
+                "application/json": "MessageModel"
+              }
+            },
+            {
+              "status_code": "504",
+              "response_models": {
+                "application/json": "MessageModel"
+              }
+            }
+          ]
+        }
       }
     },
     "models": {
@@ -3097,7 +3275,6 @@
                   "customer:describe",
                   "customer:create",
                   "customer:update",
-                  "customer:delete",
                   "customer:activate",
                   "customer:deactivate",
                   "parent:describe",
@@ -3162,7 +3339,6 @@
                   "customer:describe",
                   "customer:create",
                   "customer:update",
-                  "customer:delete",
                   "customer:activate",
                   "customer:deactivate",
                   "parent:describe",
@@ -3210,7 +3386,6 @@
                   "customer:describe",
                   "customer:create",
                   "customer:update",
-                  "customer:delete",
                   "customer:activate",
                   "customer:deactivate",
                   "parent:describe",
@@ -3258,7 +3433,6 @@
                   "customer:describe",
                   "customer:create",
                   "customer:update",
-                  "customer:delete",
                   "customer:activate",
                   "customer:deactivate",
                   "parent:describe",
@@ -4012,6 +4186,22 @@
         "schema": {
           "properties": {},
           "title": "BaseModel",
+          "type": "object"
+        }
+      },
+      "RefreshPostModel": {
+        "content_type": "application/json",
+        "schema": {
+          "properties": {
+            "refresh_token": {
+              "title": "Refresh Token",
+              "type": "string"
+            }
+          },
+          "required": [
+            "refresh_token"
+          ],
+          "title": "RefreshPostModel",
           "type": "object"
         }
       }

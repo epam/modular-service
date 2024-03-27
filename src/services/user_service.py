@@ -5,7 +5,7 @@ from commons.lambda_response import ResponseFactory
 from commons.log_helper import get_logger
 
 if TYPE_CHECKING:
-    from services.clients.cognito import BaseAuthClient
+    from services.clients.cognito import BaseAuthClient, AuthenticationResult
 
 _LOG = get_logger(__name__)
 
@@ -29,6 +29,11 @@ class CognitoUserService:
         self.client.set_password(username=username,
                                  password=password)
 
-    def initiate_auth(self, username, password):
-        return self.client.admin_initiate_auth(username=username,
-                                               password=password)
+    def initiate_auth(self, username, password) -> 'AuthenticationResult | None':
+        return self.client.admin_initiate_auth(
+            username=username,
+            password=password
+        )
+
+    def refresh_token(self, refresh_token: str) -> 'AuthenticationResult | None':
+        return self.client.admin_refresh_token(refresh_token)

@@ -37,6 +37,16 @@ class AbstractConfig(ABC):
     def access_token(self, value):
         ...
 
+    @property
+    @abstractmethod
+    def refresh_token(self) -> str | None:
+        ...
+
+    @refresh_token.setter
+    @abstractmethod
+    def refresh_token(self, value):
+        ...
+
     @abstractmethod
     def items(self) -> Generator[tuple[str, Json], None, None]:
         ...
@@ -97,6 +107,19 @@ class OnDiskModularServiceConfig(JSONFileCache, AbstractConfig):
         if 'access_token' in self:
             del self['access_token']
 
+    @property
+    def refresh_token(self) -> str | None:
+        return self.get('refresh_token')
+
+    @refresh_token.setter
+    def refresh_token(self, value: str):
+        self['refresh_token'] = value
+
+    @refresh_token.deleter
+    def refresh_token(self):
+        if 'refresh_token' in self:
+            del self['refresh_token']
+
     @classmethod
     def public_config_params(cls) -> list[property]:
         return [
@@ -107,6 +130,7 @@ class OnDiskModularServiceConfig(JSONFileCache, AbstractConfig):
     def private_config_params(cls) -> list[property]:
         return [
             cls.access_token,
+            cls.refresh_token
         ]
 
     def items(self, private: bool = False) -> Generator[tuple[str, Json], None, None]:
@@ -177,6 +201,14 @@ class ModularCliSdkConfig(AbstractConfig):
     @access_token.setter
     def access_token(self, value: str):
         self.set('access_token', value)
+
+    @property
+    def refresh_token(self) -> str | None:
+        return self.config_dict.get('refresh_token')
+
+    @refresh_token.setter
+    def refresh_token(self, value: str):
+        self.set('refresh_token', value)
 
     def items(self) -> Generator[tuple[str, Json], None, None]:
         yield 'api_link', self.api_link

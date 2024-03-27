@@ -52,6 +52,8 @@ def login(ctx: ContextObj, username: str, password: str, **kwargs):
     # check_version_compatibility(resp.api_version)
 
     ctx.config.access_token = resp.data['access_token']
+    if rt := resp.data.get('refresh_token'):
+        ctx.config.refresh_token = rt
     resp.data = {'message': 'Logged in successfully'}
     # if rt := resp.data.get('refresh_token'):
     #     ctx['config'].refresh_token = rt

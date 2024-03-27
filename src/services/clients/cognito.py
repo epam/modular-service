@@ -1,23 +1,38 @@
 from abc import ABC, abstractmethod
 from functools import cached_property
 from http import HTTPStatus
-from typing import Generator
+from typing import Generator, TypedDict
 
 import boto3
+from botocore.exceptions import ClientError
 
 from commons.lambda_response import ResponseFactory
 from commons.log_helper import get_logger
 from services.environment_service import EnvironmentService
 
 _LOG = get_logger(__name__)
+
+
 CUSTOM_ROLE_ATTR = 'custom:modular_role'
 CUSTOM_CUSTOMER = 'custom:customer'
 CUSTOM_IS_SYSTEM = 'custom:is_system'
 
 
+class AuthenticationResult(TypedDict):
+    id_token: str
+    refresh_token: str | None
+    expires_in: int
+
+
 class BaseAuthClient(ABC):
     @abstractmethod
-    def admin_initiate_auth(self, username: str, password: str) -> dict | None:
+    def admin_initiate_auth(self, username: str, password: str
+                            ) -> AuthenticationResult | None:
+        ...
+
+    @abstractmethod
+    def admin_refresh_token(self, refresh_token: str
+                            ) -> AuthenticationResult | None:
         ...
 
     @abstractmethod
@@ -92,7 +107,8 @@ class CognitoClient(BaseAuthClient):
             if first:
                 first = False
 
-    def admin_initiate_auth(self, username: str, password: str) -> dict | None:
+    def admin_initiate_auth(self, username: str, password: str
+                            ) -> AuthenticationResult | None:
         """
         Initiates the authentication flow. Returns AuthenticationResult if
         the caller does not need to pass another challenge. If the caller
@@ -100,7 +116,7 @@ class CognitoClient(BaseAuthClient):
         ChallengeName, ChallengeParameters, and Session are returned.
         """
         try:
-            result = self.client.admin_initiate_auth(
+            r = self.client.admin_initiate_auth(
                 UserPoolId=self.user_pool_id,
                 ClientId=self.client_id,
                 AuthFlow='ADMIN_NO_SRP_AUTH',
@@ -109,11 +125,34 @@ class CognitoClient(BaseAuthClient):
                     'PASSWORD': password
                 }
             )
-            return result
+            return {
+                'id_token': r['AuthenticationResult']['IdToken'],
+                'refresh_token': r['AuthenticationResult'].get('RefreshToken'),
+                'expires_in': r['AuthenticationResult']['ExpiresIn']
+            }
         except self.client.exceptions.UserNotFoundException:
             return
         except self.client.exceptions.NotAuthorizedException:
             return
+
+    def admin_refresh_token(self, refresh_token: str
+                            ) -> AuthenticationResult | None:
+        try:
+            r = self.client.admin_initiate_auth(
+                UserPoolId=self.user_pool_id,
+                ClientId=self.client_id,
+                AuthFlow='REFRESH_TOKEN_AUTH',
+                AuthParameters={'REFRESH_TOKEN': refresh_token}
+            )
+            return {
+                'id_token': r['AuthenticationResult']['IdToken'],
+                'refresh_token': r['AuthenticationResult'].get('RefreshToken'),
+                'expires_in': r['AuthenticationResult']['ExpiresIn']
+            }
+        except ClientError:
+            _LOG.warning('Client error occurred trying to refresh token',
+                         exc_info=True)
+
 
     def sign_up(self, username: str, password: str, role: str | None = None,
                 customer: str | None = None, is_system: bool = False):
