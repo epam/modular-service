@@ -1,6 +1,9 @@
+import base64
+import json
+import time
+from typing import Callable, TypeVar
 import urllib.error
 import urllib.request
-from typing import Callable, TypeVar
 
 from urllib3.exceptions import LocationParseError
 from urllib3.util import parse_url
@@ -70,3 +73,38 @@ def catch(func: Callable[[], RT], exception: type[ET] = Exception
         return func(), None
     except exception as e:
         return None, e
+
+
+class JWTToken:
+    """
+    A simple wrapper over jwt token
+    """
+    EXP_THRESHOLD = 300  # in seconds
+    __slots__ = '_token', '_exp_threshold'
+
+    def __init__(self, token: str, exp_threshold: int = EXP_THRESHOLD):
+        self._token = token
+        self._exp_threshold = exp_threshold
+
+    @property
+    def raw(self) -> str:
+        return self._token
+
+    @property
+    def payload(self) -> dict | None:
+        try:
+            return json.loads(
+                base64.b64decode(self._token.split('.')[1] + '==').decode()
+            )
+        except Exception:
+            return
+
+    def is_expired(self) -> bool:
+        p = self.payload
+        if not p:
+            return True
+        exp = p.get('exp')
+        if not exp:
+            return False
+        return exp < time.time() + self._exp_threshold
+

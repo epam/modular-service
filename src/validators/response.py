@@ -156,6 +156,8 @@ class RegionResponse(BaseModel):
 
 class SignInResponse(BaseModel):
     access_token: str
+    refresh_token: str | None
+    expired_in: int
 
 
 class TenantSettingsResponse(BaseModel):

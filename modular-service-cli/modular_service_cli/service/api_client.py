@@ -2,7 +2,7 @@ from functools import partial
 from http import HTTPStatus
 from http.client import HTTPResponse
 import json
-from typing import Iterable
+from typing import Iterable, cast
 import urllib
 import urllib.error
 from urllib.parse import quote, urlencode
@@ -11,7 +11,7 @@ import urllib.request
 from modular_service_cli.service.config import AbstractConfig
 from modular_service_cli.service.constants import *
 from modular_service_cli.service.logger import get_logger
-from modular_service_cli.service.utils import catch, sifted, urljoin
+from modular_service_cli.service.utils import catch, sifted, urljoin, JWTToken
 
 _LOG = get_logger(__name__)
 
@@ -125,7 +125,7 @@ class ModularServiceApiClient:
         self._client = ApiClient(api_link=config.api_link)
 
     def add_token(self, rec: urllib.request.Request,
-                  header: str | None = 'Authorization'):
+                  header: str = 'Authorization'):
         """
         Adds token to the given request instance. Refreshes the token if needed
         :param header:
@@ -134,7 +134,23 @@ class ModularServiceApiClient:
         """
         # access token should definitely exist here because we check its
         # presence before creating this class
-        rec.add_header(header, self._config.access_token)
+        at = cast(str, self._config.access_token)
+        rt = self._config.refresh_token
+        if JWTToken(at).is_expired() and rt:
+            _LOG.info('Trying to auto-refresh token')
+            resp = self.refresh(rt)
+            if resp.ok:
+                _LOG.info('Token was refreshed successfully. Updating config')
+                at = resp.data.get('access_token')
+                rt = resp.data.get('refresh_token')
+                dct = {'access_token': at}
+                if rt:
+                    # if new one. This probably won't happen because Cognito
+                    # does not return a new refresh token. But just in case
+                    dct['refresh_token'] = rt
+                self._config.update(dct)
+
+        rec.add_header(header, at)
 
     def _open_request(self, request: urllib.request.Request,
                       response: ApiResponse) -> None:
@@ -187,6 +203,17 @@ class ModularServiceApiClient:
         response = ApiResponse(method=method, path=path)
         self._open_request(req, response)
         return response
+
+    def refresh(self, token: str):
+        req = self._client.prepare_request(
+            url=self._client.build_url(Endpoint.REFRESH.value),
+            method=HTTPMethod.POST,
+            data={'refresh_token': token}
+        )
+        response = ApiResponse(HTTPMethod.POST, Endpoint.REFRESH)
+        self._open_request(req, response)
+        return response
+
 
     def login(self, username: str, password: str):
         req = self._client.prepare_request(
@@ -246,7 +273,7 @@ class ModularServiceApiClient:
 
     def query_policies(self, **kwargs):
         return self.make_request(
-            path=Endpoint.POLICIES_NAME,
+            path=Endpoint.POLICIES,
             method=HTTPMethod.GET,
             query=sifted(kwargs)
         )

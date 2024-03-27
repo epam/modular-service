@@ -40,3 +40,8 @@ clean:
 
 image:
 	$(DOCKER_EXECUTABLE) build -t $(SERVER_IMAGE_NAME):$(SERVER_IMAGE_TAG) .
+
+
+cli-dist:
+	python -m build --sdist modular-service-cli/
+
