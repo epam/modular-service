@@ -307,7 +307,7 @@ class CreateSystemUser(ActionHandler):
     @staticmethod
     def gen_password(digits: int = 20) -> str:
         allowed_punctuation = ''.join(
-            set(string.punctuation) - {'"', "'", "!", "`"})
+            set(string.punctuation) - {'"', "'", "!", "`", "\\"})
         chars = string.ascii_letters + string.digits + allowed_punctuation
         while True:
             password = ''.join(
