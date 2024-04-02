@@ -214,7 +214,6 @@ class ModularServiceApiClient:
         self._open_request(req, response)
         return response
 
-
     def login(self, username: str, password: str):
         req = self._client.prepare_request(
             url=self._client.build_url(Endpoint.SIGNIN.value),
@@ -222,6 +221,16 @@ class ModularServiceApiClient:
             data={'username': username, 'password': password}
         )
         response = ApiResponse(HTTPMethod.POST, Endpoint.SIGNIN)
+        self._open_request(req, response)
+        return response
+
+    def signup(self, **kwargs):
+        req = self._client.prepare_request(
+            url=self._client.build_url(Endpoint.SIGNUP.value),
+            method=HTTPMethod.POST,
+            data=sifted(kwargs)
+        )
+        response = ApiResponse(HTTPMethod.POST, Endpoint.SIGNUP)
         self._open_request(req, response)
         return response
 

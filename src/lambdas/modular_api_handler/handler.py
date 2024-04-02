@@ -58,6 +58,7 @@ class RestrictCustomerEventProcessor(AbstractEventProcessor):
     # TODO organize this collection somehow else
     can_work_without_customer_id = {
         (Endpoint.CUSTOMERS, HTTPMethod.GET),
+        (Endpoint.CUSTOMERS, HTTPMethod.POST),
         (Endpoint.CUSTOMERS_NAME, HTTPMethod.GET),
         (Endpoint.CUSTOMERS_NAME, HTTPMethod.PATCH),
         (Endpoint.CUSTOMERS_NAME_ACTIVATE, HTTPMethod.POST),
