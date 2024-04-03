@@ -46,62 +46,25 @@ UPDATE_DEPLOYMENT_RESOURCES_ACTION = 'update-deployment-resources'
 SYSTEM_USER = 'system_user'
 
 
-class TermColor:
-    HEADER = '\033[95m'
-    OKBLUE = '\033[94m'
-    OKCYAN = '\033[96m'
-    OKGREEN = '\033[92m'
-    WARNING = '\033[93m'
-    DEBUG = '\033[90m'
-    FAIL = '\033[91m'
-    ENDC = '\033[0m'
-    BOLD = '\033[1m'
-    UNDERLINE = '\033[4m'
-
-    @classmethod
-    def blue(cls, st: str) -> str:
-        return f'{cls.OKBLUE}{st}{cls.ENDC}'
-
-    @classmethod
-    def cyan(cls, st: str) -> str:
-        return f'{cls.OKCYAN}{st}{cls.ENDC}'
-
-    @classmethod
-    def green(cls, st: str) -> str:
-        return f'{cls.OKGREEN}{st}{cls.ENDC}'
-
-    @classmethod
-    def yellow(cls, st: str) -> str:
-        return f'{cls.WARNING}{st}{cls.ENDC}'
-
-    @classmethod
-    def red(cls, st: str) -> str:
-        return f'{cls.FAIL}{st}{cls.ENDC}'
-
-    @classmethod
-    def gray(cls, st: str) -> str:
-        return f'{cls.DEBUG}{st}{cls.DEBUG}'
-
-
 class Logger:
     """
     Just for this cli entrypoint
     """
     @staticmethod
     def debug(msg):
-        print(TermColor.gray(f'[DEBUG] - {msg}'))
+        print(f'[DEBUG] - {msg}')
 
     @staticmethod
     def info(msg):
-        print(TermColor.green(f'[INFO] - {msg}'))
+        print(f'[INFO] - {msg}')
 
     @staticmethod
     def warning(msg):
-        print(TermColor.yellow(f'[WARNING] - {msg}'))
+        print(f'[WARNING] - {msg}')
 
     @staticmethod
     def error(msg):
-        print(TermColor.red(f'[ERROR] - {msg}'))
+        print(f'[ERROR] - {msg}')
 
 
 _LOG = Logger()
