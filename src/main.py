@@ -306,10 +306,10 @@ class Run(ActionHandler):
 class CreateSystemUser(ActionHandler):
     @staticmethod
     def gen_password(digits: int = 20) -> str:
-        chars = string.ascii_letters + string.digits + "=()-_<>@^"
+        chars = string.ascii_letters + string.digits
         while True:
             password = ''.join(
-                secrets.choice(chars) for _ in range(digits)) + '='
+                secrets.choice(chars) for _ in range(digits))
             if (any(c.islower() for c in password)
                     and any(c.isupper() for c in password)
                     and sum(c.isdigit() for c in password) >= 3):

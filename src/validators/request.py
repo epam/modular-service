@@ -168,8 +168,6 @@ class SignUpPost(BaseModel):
             raise ValueError('password must contain uppercase characters')
         if not any([char.isdigit() for char in v]):
             raise ValueError('password must contain numeric characters')
-        if not any([not char.isalnum() for char in v]):
-            raise ValueError('password must contain symbol characters')
         return v
 
 
