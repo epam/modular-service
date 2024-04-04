@@ -28,7 +28,7 @@ def tenant():
 @build_limit_option()
 @build_next_token_option()
 @click.option('--cloud', '-c', 
-              type=click.Choice(map(operator.attrgetter('value'), Cloud)), 
+              type=click.Choice(tuple(map(operator.attrgetter('value'), Cloud))),
               help='Cloud to filter tenants by')
 @click.option('--is_active', '-act', type=bool, 
               help='Whether to query only active tenants')
@@ -54,7 +54,7 @@ def describe(ctx: ContextObj, tenant_name, limit, next_token, cloud,
               help='Tenant name to activate.')
 @click.option('--display_name', '-dn', type=str, required=True,
               help='Tenant display name.')
-@click.option('--cloud', '-c', type=click.Choice(map(operator.attrgetter('value'), Cloud)),
+@click.option('--cloud', '-c', type=click.Choice(tuple(map(operator.attrgetter('value'), Cloud))),
               required=True, help='Tenant cloud')
 @click.option('--account_id', '-acc', required=True,
               help='Tenant account ID')

@@ -32,7 +32,7 @@ def describe(ctx: ContextObj, maestro_name, customer_id):
               help='Region name.', required=True)
 @click.option('--native_name', '-nn', type=str,
               help='Native region name.', required=True)
-@click.option('--cloud', '-c', type=click.Choice(map(operator.attrgetter('value'), Cloud)),
+@click.option('--cloud', '-c', type=click.Choice(tuple(map(operator.attrgetter('value'), Cloud))),
               required=True, help='Region cloud')
 @click.option('--region_id', '-rid', type=str,
               help='Region id.', required=False)

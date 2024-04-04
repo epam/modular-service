@@ -27,8 +27,7 @@ def application():
 @build_limit_option()
 @build_next_token_option()
 @click.option('--type', '-t',
-              type=click.Choice(
-                  map(operator.attrgetter('value'), ApplicationType)),
+              type=click.Choice(tuple(map(operator.attrgetter('value'), ApplicationType))),
               help='Application type to filter applications')
 @cli_response(attributes_order=attributes_order)
 def describe(ctx: ContextObj, application_id, limit, next_token, type,
