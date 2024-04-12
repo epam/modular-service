@@ -11,7 +11,7 @@ setup(
         'charset-normalizer==3.3.1',
         'click==7.1.2',
         'colorama==0.4.5',
-        'idna==3.4',
+        'idna==3.7',
         'pika==1.0.0b1',
         'PyYAML==6.0.1',
         'requests==2.31.0',
