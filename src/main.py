@@ -1,11 +1,11 @@
 #!/usr/local/bin/python
 from abc import ABC, abstractmethod
 import argparse
-import urllib.request
-import urllib.error
 import base64
 from functools import cached_property
 import json
+import logging
+import logging.config
 import multiprocessing
 import os
 from pathlib import Path
@@ -13,13 +13,14 @@ import secrets
 import string
 import sys
 from typing import Any, Callable, Literal, TYPE_CHECKING
+import urllib.error
+import urllib.request
 
-from commons.__version__ import __version__
 from commons import dereference_json
+from commons.__version__ import __version__
 from commons.constants import Env, HTTPMethod, PRIVATE_KEY_SECRET_NAME, Permission
 
-# NOTE, all imports are inside corresponding methods in order to make
-# CLI more or less fast
+# NOTE, all imports are inside corresponding methods in order to make cli faster
 if TYPE_CHECKING:
     from models import BaseModel
     from bottle import Bottle
@@ -46,28 +47,25 @@ UPDATE_DEPLOYMENT_RESOURCES_ACTION = 'update-deployment-resources'
 SYSTEM_USER = 'system_user'
 
 
-class Logger:
-    """
-    Just for this cli entrypoint
-    """
-    @staticmethod
-    def debug(msg):
-        print(f'[DEBUG] - {msg}')
-
-    @staticmethod
-    def info(msg):
-        print(f'[INFO] - {msg}')
-
-    @staticmethod
-    def warning(msg):
-        print(f'[WARNING] - {msg}')
-
-    @staticmethod
-    def error(msg):
-        print(f'[ERROR] - {msg}')
+logging.config.dictConfig({
+    'version': 1,
+    'formatters': {
+        'console_formatter': {'format': '%(levelname)s - %(message)s'},
+    },
+    'handlers': {
+        'console_handler': {
+            'class': 'logging.StreamHandler',
+            'formatter': 'console_formatter'
+        },
+    },
+    'loggers': {
+        '__main__': {'level': 'DEBUG', 'handlers': ['console_handler']},
+    }
+})
 
 
-_LOG = Logger()
+_LOG = logging.getLogger(__name__)
+
 
 
 def build_parser() -> argparse.ArgumentParser:
@@ -281,16 +279,22 @@ class CreateSystemUser(ActionHandler):
 
     def __call__(self):
         from services import SP
-        password = self.gen_password()
         if SP.user_service.client.is_user_exists(SYSTEM_USER):
             _LOG.info('System user already exists')
             return
+        password = os.getenv(Env.SYSTEM_USER_PASSWORD)
+        from_env = bool(password)
+        if not from_env:
+            password = self.gen_password()
         SP.user_service.save(
             username=SYSTEM_USER,
             password=password,
             is_system=True
         )
-        _LOG.info(f'System ({SYSTEM_USER}) password: {password}')
+        if not from_env:
+            print(f'System ({SYSTEM_USER}) password: {password}')
+        else:
+            print(f'System ({SYSTEM_USER}) was created')
 
 
 class CreateIndexes(ActionHandler):
