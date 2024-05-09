@@ -100,6 +100,8 @@ class Env(str, Enum):
 
     EXTERNAL_SSM = 'MODULAR_SERVICE_USE_EXTERNAL_SSM'
 
+    SYSTEM_USER_PASSWORD = 'MODULAR_SERVICE_SYSTEM_USER_PASSWORD'
+
     def __str__(self):
         return self.value
 
