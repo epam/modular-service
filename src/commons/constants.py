@@ -1,4 +1,3 @@
-import operator
 from enum import Enum
 from typing import Iterator
 
@@ -33,6 +32,7 @@ class Endpoint(str, Enum):
     POLICIES_NAME = '/policies/{name}'
     CUSTOMERS_NAME = '/customers/{name}'
     APPLICATIONS_ID = '/applications/{id}'
+    USERS_RESET_PASSWORD = '/users/reset-password'
     TENANTS_NAME_REGIONS = '/tenants/{name}/regions'
     APPLICATIONS_AWS_ROLE = '/applications/aws-role'
     TENANTS_NAME_SETTINGS = '/tenants/{name}/settings'
@@ -155,6 +155,8 @@ class Permission(str, Enum):
 
     TENANT_SETTING_SET = 'tenant_setting:set'
     TENANT_SETTING_DESCRIBE = 'tenant_setting:describe'
+
+    USERS_RESET_PASSWORD = 'users:reset_password'
 
     def __str__(self):
         return self.value

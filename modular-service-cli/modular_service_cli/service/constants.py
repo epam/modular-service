@@ -30,6 +30,7 @@ class Endpoint(str, Enum):
     POLICIES_NAME = '/policies/{name}'
     CUSTOMERS_NAME = '/customers/{name}'
     APPLICATIONS_ID = '/applications/{id}'
+    USERS_RESET_PASSWORD = '/users/reset-password'
     TENANTS_NAME_REGIONS = '/tenants/{name}/regions'
     APPLICATIONS_AWS_ROLE = '/applications/aws-role'
     TENANTS_NAME_SETTINGS = '/tenants/{name}/settings'

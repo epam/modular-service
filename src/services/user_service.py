@@ -1,5 +1,5 @@
 from http import HTTPStatus
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, Optional
 
 from commons.lambda_response import ResponseFactory
 from commons.log_helper import get_logger
@@ -29,11 +29,16 @@ class CognitoUserService:
         self.client.set_password(username=username,
                                  password=password)
 
-    def initiate_auth(self, username, password) -> 'AuthenticationResult | None':
+    def initiate_auth(self, username, password
+                      ) -> Optional['AuthenticationResult']:
         return self.client.admin_initiate_auth(
             username=username,
             password=password
         )
 
-    def refresh_token(self, refresh_token: str) -> 'AuthenticationResult | None':
+    def refresh_token(self, refresh_token: str
+                      ) -> Optional['AuthenticationResult']:
         return self.client.admin_refresh_token(refresh_token)
+
+    def set_password(self, username: str, password: str):
+        return self.client.set_password(username, password, True)

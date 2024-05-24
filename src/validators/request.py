@@ -152,6 +152,22 @@ class RefreshPostModel(BaseModel):
     refresh_token: str
 
 
+class UserResetPasswordModel(BaseModel):
+    new_password: str
+
+    @field_validator('new_password')
+    @classmethod
+    def _(cls, v: str) -> str:
+        if len(v) < 8:
+            raise ValueError('password must be at least 8 characters long')
+        if not any([char.isupper() for char in v]):
+            raise ValueError('password must contain uppercase characters')
+        if not any([char.isdigit() for char in v]):
+            raise ValueError('password must contain numeric characters')
+        return v
+
+
+
 class SignUpPost(BaseModel):
     username: str
     password: str
