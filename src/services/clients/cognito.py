@@ -153,7 +153,6 @@ class CognitoClient(BaseAuthClient):
             _LOG.warning('Client error occurred trying to refresh token',
                          exc_info=True)
 
-
     def sign_up(self, username: str, password: str, role: str | None = None,
                 customer: str | None = None, is_system: bool = False):
         custom_attr = [{

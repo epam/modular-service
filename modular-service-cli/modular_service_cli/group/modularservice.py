@@ -8,6 +8,7 @@ from modular_service_cli.group.policy import policy
 from modular_service_cli.group.region import region
 from modular_service_cli.group.role import role
 from modular_service_cli.group.tenant import tenant
+from modular_service_cli.group.users import users
 from modular_service_cli.service.api_client import ApiResponse
 from modular_service_cli.service.utils import validate_api_link
 from modular_service_cli.version import __version__
@@ -105,3 +106,4 @@ modularservice.add_command(customer)
 modularservice.add_command(application)
 modularservice.add_command(tenant)
 modularservice.add_command(region)
+modularservice.add_command(users)

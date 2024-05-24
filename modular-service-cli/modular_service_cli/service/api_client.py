@@ -535,3 +535,10 @@ class ModularServiceApiClient:
             method=HTTPMethod.POST,
             data=sifted(kwargs)
         )
+
+    def reset_password(self, **kwargs):
+        return self.make_request(
+            path=Endpoint.USERS_RESET_PASSWORD,
+            method=HTTPMethod.POST,
+            data=sifted(kwargs)
+        )

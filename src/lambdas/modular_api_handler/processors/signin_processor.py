@@ -1,18 +1,20 @@
 from http import HTTPStatus
+from typing import cast
 
 from routes.route import Route
 
-from commons.constants import Endpoint, HTTPMethod
-from commons.lambda_response import ResponseFactory
+from commons.abstract_lambda import ProcessedEvent
+from commons.constants import Endpoint, HTTPMethod, Permission
+from commons.lambda_response import ResponseFactory, build_response
 from commons.log_helper import get_logger
 from lambdas.modular_api_handler.processors.abstract_processor import (
     AbstractCommandProcessor,
 )
 from services import SERVICE_PROVIDER
 from services.user_service import CognitoUserService
-from validators.request import SignInPost, RefreshPostModel
-from validators.utils import validate_kwargs
+from validators.request import RefreshPostModel, SignInPost, UserResetPasswordModel
 from validators.response import SignInResponse
+from validators.utils import validate_kwargs
 
 _LOG = get_logger(__name__)
 
@@ -45,6 +47,14 @@ class SignInProcessor(AbstractCommandProcessor):
                 response=(HTTPStatus.OK, SignInResponse, 'Successful token refresh'),
                 require_auth=False,
                 permission=None
+            ),
+            cls.route(
+                Endpoint.USERS_RESET_PASSWORD,
+                HTTPMethod.POST,
+                'reset_password',
+                response=(HTTPStatus.NO_CONTENT, None, 'Successfully changed'),
+                require_auth=True,
+                permission=Permission.USERS_RESET_PASSWORD
             )
         )
 
@@ -79,3 +89,9 @@ class SignInProcessor(AbstractCommandProcessor):
             'expires_in': res['expires_in']
         }).build()
 
+    @validate_kwargs
+    def reset_password(self, event: UserResetPasswordModel,
+                       _pe: ProcessedEvent):
+        username = cast(str, _pe['cognito_username'])
+        self.user_service.set_password(username, event.new_password)
+        return build_response(code=HTTPStatus.NO_CONTENT)

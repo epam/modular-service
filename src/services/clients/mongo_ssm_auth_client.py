@@ -36,7 +36,6 @@ class MongoAndSSMAuthClient(BaseAuthClient):
             os.getenv(Env.MONGO_DATABASE)
         ).get_collection('ModularRefreshTokenChains')
 
-
     @property
     def jwt_client(self) -> JWTManagementClient:
         if self._jwt_client:
@@ -82,7 +81,6 @@ class MongoAndSSMAuthClient(BaseAuthClient):
             return
         dct = json.loads(t.claims)
         return dct['username'], dct['version']
-
 
     def _gen_access_token(self, user: User) -> str:
         return self.jwt_client.sign(
