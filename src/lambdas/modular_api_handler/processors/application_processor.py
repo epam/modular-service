@@ -273,7 +273,7 @@ class ApplicationProcessor(AbstractCommandProcessor):
         )
         app = self.application_service.build(
             customer_id=event.customer_id,
-            type=ApplicationType.AZURE_CERTIFICATE.value,
+            type=ApplicationType.GCP_SERVICE_ACCOUNT.value,
             description=event.description,
             is_deleted=False,
             meta=meta.dict(),
