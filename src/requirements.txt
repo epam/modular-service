@@ -6,4 +6,4 @@ cryptography==42.0.4
 jwcrypto==1.5.4
 swagger-ui-py==23.9.23
 python-dotenv==1.0.1
-gunicorn==21.2.0
+gunicorn==22.0.0
