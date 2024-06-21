@@ -1,0 +1,36 @@
+[build-system]
+requires = ["setuptools"]
+build-backend = "setuptools.build_meta"
+
+
+[project]
+name = "modular-service-cli"
+description = "Command line tool for modular service"
+requires-python = ">=3.10"
+readme = "README.md"
+dynamic = ["version"]
+dependencies = [
+    "click==7.1.2",
+    "tabulate==0.9.0",
+    "boto3==1.26.80",
+    "python-dateutil==2.8.2",
+    "modular-cli-sdk[hvac]==2.0.0",
+]
+
+[project.scripts]
+modular-service = "modular_service_cli.group.modularservice:modularservice"
+
+[tool.setuptools.dynamic]
+version = {attr = "modular_service_cli.version.__version__"}
+
+[tool.setuptools]
+packages = ["modular_service_cli"]
+
+
+[tool.pyright]
+include = ["modular_service_cli"]
+exclude = [
+    "**/__pycache__",
+]
+pythonVersion = "3.10"
+reportIncompatibleMethodOverride = "warning"

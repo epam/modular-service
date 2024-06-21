@@ -1,15 +1,20 @@
-from typing import List
+from http import HTTPStatus
+from typing import cast
 
 from routes.route import Route
 
-from commons import RESPONSE_BAD_REQUEST_CODE, build_response, RESPONSE_OK_CODE
-from commons.__version__ import __version__
-from commons.constants import POST_METHOD, USERNAME_ATTR, PASSWORD_ATTR
+from commons.abstract_lambda import ProcessedEvent
+from commons.constants import Endpoint, HTTPMethod, Permission
+from commons.lambda_response import ResponseFactory, build_response
 from commons.log_helper import get_logger
-from lambdas.modular_api_handler.processors.abstract_processor import \
-    AbstractCommandProcessor
+from lambdas.modular_api_handler.processors.abstract_processor import (
+    AbstractCommandProcessor,
+)
 from services import SERVICE_PROVIDER
 from services.user_service import CognitoUserService
+from validators.request import RefreshPostModel, SignInPost, UserResetPasswordModel
+from validators.response import SignInResponse
+from validators.utils import validate_kwargs
 
 _LOG = get_logger(__name__)
 
@@ -21,49 +26,72 @@ class SignInProcessor(AbstractCommandProcessor):
     @classmethod
     def build(cls) -> 'SignInProcessor':
         return cls(
-            user_service=SERVICE_PROVIDER.user_service()
+            user_service=SERVICE_PROVIDER.user_service,
         )
 
     @classmethod
-    def routes(cls) -> List[Route]:
-        name = cls.controller_name()
-        return [
-            Route(None, '/signin', controller=name, action='post',
-                  conditions={'method': [POST_METHOD]}),
-        ]
+    def routes(cls) -> tuple[Route, ...]:
+        return (
+            cls.route(
+                Endpoint.SIGNIN,
+                HTTPMethod.POST,
+                'post',
+                response=(HTTPStatus.OK, SignInResponse, 'Successful login'),
+                require_auth=False,
+                permission=None
+            ),
+            cls.route(
+                Endpoint.REFRESH,
+                HTTPMethod.POST,
+                'refresh',
+                response=(HTTPStatus.OK, SignInResponse, 'Successful token refresh'),
+                require_auth=False,
+                permission=None
+            ),
+            cls.route(
+                Endpoint.USERS_RESET_PASSWORD,
+                HTTPMethod.POST,
+                'reset_password',
+                response=(HTTPStatus.NO_CONTENT, None, 'Successfully changed'),
+                require_auth=True,
+                permission=Permission.USERS_RESET_PASSWORD
+            )
+        )
 
-    def post(self, event):
-        _LOG.debug(f'Sign in event: {event}')
-        username = event.get(USERNAME_ATTR)
-        password = event.get(PASSWORD_ATTR)
-        if not username or not password:
-            return build_response(
-                code=RESPONSE_BAD_REQUEST_CODE,
-                content='You must specify both username and password')
-
-        _LOG.debug(f'Going to initiate the authentication flow')
+    @validate_kwargs
+    def post(self, event: SignInPost):
+        _LOG.debug('Going to initiate the authentication flow')
         auth_result = self.user_service.initiate_auth(
-            username=username,
-            password=password)
+            username=event.username,
+            password=event.password
+        )
         if not auth_result:
-            return build_response(
-                code=RESPONSE_BAD_REQUEST_CODE,
-                content=f'Incorrect username or password')
+            raise ResponseFactory(HTTPStatus.UNAUTHORIZED).message(
+                'Incorrect username or password'
+            ).exc()
 
-        _state = "contains" if auth_result.get(
-            "ChallengeName") else "does not contain"
-        _LOG.debug(f'Authentication initiation response '
-                   f'{_state} the challenge')
+        return ResponseFactory().raw({
+            'access_token': auth_result['id_token'],
+            'refresh_token': auth_result['refresh_token'],
+            'expires_in': auth_result['expires_in']
+        }).build()
 
-        if auth_result.get('ChallengeName'):
-            _LOG.debug(f'Responding to an authentication challenge '
-                       f'{auth_result.get("ChallengeName")} ')
-            auth_result = self.user_service.respond_to_auth_challenge(
-                challenge_name=auth_result['ChallengeName'])
-        refresh_token = auth_result['AuthenticationResult']['RefreshToken']
-        id_token = auth_result['AuthenticationResult']['IdToken']
+    @validate_kwargs
+    def refresh(self, event: RefreshPostModel):
+        _LOG.debug('Going to initiate refresh flow')
+        res = self.user_service.refresh_token(event.refresh_token)
+        if not res:
+            raise ResponseFactory(HTTPStatus.UNAUTHORIZED).default().exc()
 
-        return build_response(
-            code=RESPONSE_OK_CODE,
-            content={'id_token': id_token, 'refresh_token': refresh_token,
-                     'api_version': __version__})
+        return ResponseFactory().raw({
+            'access_token': res['id_token'],
+            'refresh_token': res['refresh_token'],
+            'expires_in': res['expires_in']
+        }).build()
+
+    @validate_kwargs
+    def reset_password(self, event: UserResetPasswordModel,
+                       _pe: ProcessedEvent):
+        username = cast(str, _pe['cognito_username'])
+        self.user_service.set_password(username, event.new_password)
+        return build_response(code=HTTPStatus.NO_CONTENT)

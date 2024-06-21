@@ -1,16 +1,21 @@
+from modular_sdk.models.base_meta import BaseMeta
+from commons.time_helper import utc_datetime
 from pynamodb.attributes import UnicodeAttribute, ListAttribute
 
-
-from modular_sdk.models.base_meta import BaseMeta
-from modular_sdk.models.pynamodb_extension.base_safe_update_model import \
-    BaseSafeUpdateModel
+from models import BaseSafeUpdateModel
 
 
 class Role(BaseSafeUpdateModel):
     class Meta(BaseMeta):
-        table_name = 'ModularRoles'
+        table_name = 'ModularServiceRoles'
 
-    name = UnicodeAttribute(hash_key=True)
+    customer = UnicodeAttribute(hash_key=True)
+    name = UnicodeAttribute(range_key=True)
     expiration = UnicodeAttribute(null=True)  # ISO8601, valid to date
-    policies = ListAttribute(null=True, default=list)
-    resource = ListAttribute(null=True, default=list)
+    policies = ListAttribute(default=list)
+
+    @property
+    def has_expired(self) -> bool:
+        if not self.expiration:
+            return False
+        return utc_datetime() >= utc_datetime(self.expiration)

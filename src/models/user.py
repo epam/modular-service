@@ -1,8 +1,7 @@
-from pynamodb.attributes import UnicodeAttribute, ListAttribute
-
 from modular_sdk.models.base_meta import BaseMeta
-from modular_sdk.models.pynamodb_extension.base_safe_update_model import \
-    BaseSafeUpdateModel
+from pynamodb.attributes import BooleanAttribute, UnicodeAttribute
+
+from models import BaseSafeUpdateModel
 
 
 class User(BaseSafeUpdateModel):
@@ -10,8 +9,8 @@ class User(BaseSafeUpdateModel):
         table_name = 'ModularUsers'
 
     user_id = UnicodeAttribute(hash_key=True)
-    tenants = ListAttribute(null=True, default=False)
-    customer = UnicodeAttribute(null=True)
-    role = UnicodeAttribute(null=True)
-    password = UnicodeAttribute(null=True)
+    password = UnicodeAttribute()
+    customer = UnicodeAttribute(null=True)  # null if system user
+    role = UnicodeAttribute(null=True)  # null if system user
+    is_system = BooleanAttribute(default=False)
     latest_login = UnicodeAttribute(null=True)

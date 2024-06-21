@@ -1,0 +1,85 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: modular-service-python-deployment
+  labels:
+    app: modular-service
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: modular-service
+  template:
+    metadata:
+      labels:
+        app: modular-service
+    spec:
+      containers:
+      - name: modular-service
+        image: modular-service:latest
+        imagePullPolicy: Never
+        ports:
+        - containerPort: 3000  # ?
+        env:
+        - name: modular_mongo_user
+          valueFrom:
+            secretKeyRef:
+              name: mongo-secret
+              key: mongo-user
+        - name: modular_mongo_password
+          valueFrom:
+            secretKeyRef:
+              name: mongo-secret
+              key: mongo-password
+        - name: modular_mongo_url
+          valueFrom:
+            configMapKeyRef:
+              name: mongo-config
+              key: mongo-url
+        - name: modular_mongo_db_name
+          valueFrom:
+            configMapKeyRef:
+              name: modular-service-config
+              key: modular-sdk-database-name
+        - name: modular_service_mode
+          value: docker
+        - name: MODULAR_SERVICE_MODE
+          value: docker
+        - name: MODULAR_SERVICE_MONGO_URI
+          value: "mongodb://$(modular_mongo_user):$(modular_mongo_password)@$(modular_mongo_url)/"
+        - name: MODULAR_SERVICE_MONGO_DATABASE
+          valueFrom:
+            configMapKeyRef:
+              name: modular-service-config
+              key: modular-service-database-name
+        - name: VAULT_URL
+          valueFrom:
+            configMapKeyRef:
+              name: vault-config
+              key: vault-url
+        - name: MODULAR_SERVICE_VAULT_ENDPOINT
+          value: "http://$(VAULT_URL):$(VAULT_SERVICE_SERVICE_PORT)"
+        - name: MODULAR_SERVICE_VAULT_TOKEN
+          valueFrom:
+            secretKeyRef:
+              name: vault-secret
+              key: root-token
+        - name: VAULT_TOKEN
+          valueFrom:
+            secretKeyRef:
+              name: vault-secret
+              key: root-token
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: modular-service
+spec:
+  type: NodePort
+  selector:
+    app: modular-service
+  ports:
+    - protocol: TCP
+      port: 8000
+      targetPort: 8000
+      nodePort: 30300

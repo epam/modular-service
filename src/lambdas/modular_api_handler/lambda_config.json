@@ -7,12 +7,13 @@
   "runtime": "python3.10",
   "memory": 128,
   "timeout": 100,
-  "lambda_path": "lambdas/modular_api_handler",
+  "lambda_path": "/lambdas/modular_api_handler",
+  "logs_expiration": "${logs_expiration}",
   "dependencies": [],
   "event_sources": [],
   "env_variables": {
-    "log_level": "${log_level}",
-    "cognito_user_pool_name": "${cognito_user_pool_name}"
+    "MODULAR_SERVICE_LOG_LEVEL": "${log_level}",
+    "MODULAR_SERVICE_COGNITO_USER_POOL_NAME": "${cognito_user_pool_name}"
   },
   "publish_version": true,
   "alias": "${lambdas_alias_name}",

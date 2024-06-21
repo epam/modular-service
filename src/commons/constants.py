@@ -1,57 +1,199 @@
+from enum import Enum
+from typing import Iterator
 
-GET_METHOD = 'GET'
-POST_METHOD = 'POST'
-PATCH_METHOD = 'PATCH'
-DELETE_METHOD = 'DELETE'
-
-ID_ATTR = 'id'
-USERNAME_ATTR = 'username'
-PASSWORD_ATTR = 'password'
-ROLE_ATTR = 'role'
-USER_ID_ATTR = 'user_id'
-NAME_ATTR = 'name'
-DISPLAY_NAME_ATTR = 'display_name'
-ADMINS_ATTR = 'admins'
-OVERRIDE_ATTR = 'override'
-EMAILS_ATTR = 'emails'
-
-SETTING_IAM_PERMISSIONS = 'IAM_PERMISSIONS'
+from typing_extensions import Self
 
 
-BODY_ATTR = 'body'
-EXPIRATION_ATTR = 'expiration'
-PERMISSIONS_ATTR = 'permissions'
-PERMISSIONS_ADMIN_ATTR = 'permissions_admin'
-PERMISSIONS_TO_ATTACH = 'permissions_to_attach'
-PERMISSIONS_TO_DETACH = 'permissions_to_detach'
-POLICIES_TO_ATTACH = 'policies_to_attach'
-POLICIES_TO_DETACH = 'policies_to_detach'
-POLICIES_ATTR = 'policies'
+# from http import HTTPMethod  # python3.11+
+
+class HTTPMethod(str, Enum):
+    HEAD = 'HEAD'
+    GET = 'GET'
+    POST = 'POST'
+    PATCH = 'PATCH'
+    DELETE = 'DELETE'
+    PUT = 'PUT'
+
+
+class Endpoint(str, Enum):
+    ROLES = '/roles'
+    SIGNUP = '/signup'
+    SIGNIN = '/signin'
+    TENANTS = '/tenants'
+    REGIONS = '/regions'
+    PARENTS = '/parents'
+    REFRESH = '/refresh'
+    POLICIES = '/policies'
+    CUSTOMERS = '/customers'
+    ROLES_NAME = '/roles/{name}'
+    APPLICATIONS = '/applications'
+    TENANTS_NAME = '/tenants/{name}'
+    REGIONS_NAME = '/regions/{name}'  # maestro name
+    POLICIES_NAME = '/policies/{name}'
+    CUSTOMERS_NAME = '/customers/{name}'
+    APPLICATIONS_ID = '/applications/{id}'
+    USERS_RESET_PASSWORD = '/users/reset-password'
+    TENANTS_NAME_REGIONS = '/tenants/{name}/regions'
+    APPLICATIONS_AWS_ROLE = '/applications/aws-role'
+    TENANTS_NAME_SETTINGS = '/tenants/{name}/settings'
+    TENANTS_NAME_ACTIVATE = '/tenants/{name}/activate'
+    TENANTS_NAME_DEACTIVATE = '/tenants/{name}/deactivate'
+    CUSTOMERS_NAME_ACTIVATE = '/customers/{name}/activate'
+    CUSTOMERS_NAME_DEACTIVATE = '/customers/{name}/deactivate'
+    APPLICATIONS_AWS_CREDENTIALS = '/applications/aws-credentials'
+    APPLICATIONS_AZURE_CREDENTIALS = '/applications/azure-credentials'
+    APPLICATIONS_AZURE_CERTIFICATE = '/applications/azure-certificate'
+    APPLICATIONS_GCP_SERVICE_ACCOUNT = '/applications/gcp-service-account'
+
+    @classmethod
+    def match(cls, resource: str) -> Self | None:
+        """
+        Tries to resolve endpoint from our enum from Api Gateway resource.
+        Enum contains endpoints without stage. Though in general trailing
+        slashes matter and endpoints with and without such slash are
+        considered different we ignore this and consider such paths equal:
+        - /path/to/resource
+        - /path/to/resource/
+        This method does the following:
+        >>> Endpoint.match('/roles') == Endpoint.ROLES
+        >>> Endpoint.match('roles') == Endpoint.ROLES
+        >>> Endpoint.match('roles/') == Endpoint.ROLES
+        :param resource:
+        :return:
+        """
+        raw = resource.strip('/')  # without trailing slashes
+        for case in (raw, f'/{raw}', f'{raw}/', f'/{raw}/'):
+            try:
+                return cls(case)
+            except ValueError:
+                pass
+        return
+
+
+class Env(str, Enum):
+    """
+    Collection of available environment variables
+    """
+    # internal envs
+    INVOCATION_REQUEST_ID = '_INVOCATION_REQUEST_ID'
+
+    # deprecated envs, but still can be used, but should NOT be used
+    OLD_SERVICE_MODE = 'service_mode'
+    OLD_COGNITO_USER_POOL_NAME = 'cognito_user_pool_name'
+    OLD_COGNITO_USER_POOL_ID = 'user_pool_id'
+    OLD_VAULT_TOKEN = 'VAULT_TOKEN'
+    OLD_VAULT_URL = 'VAULT_URL'
+    OLD_VAULT_PORT = 'VAULT_SERVICE_SERVICE_PORT'
+
+    # external envs
+    AWS_REGION = 'AWS_REGION'
+    SERVICE_MODE = 'MODULAR_SERVICE_MODE'
+    LOG_LEVEL = 'MODULAR_SERVICE_LOG_LEVEL'
+    COGNITO_USER_POOL_NAME = 'MODULAR_SERVICE_COGNITO_USER_POOL_NAME'
+    COGNITO_USER_POOL_ID = 'MODULAR_SERVICE_COGNITO_USER_POOL_ID'
+
+    VAULT_ENDPOINT = 'MODULAR_SERVICE_VAULT_ENDPOINT'
+    VAULT_TOKEN = 'MODULAR_SERVICE_VAULT_TOKEN'
+
+    MONGO_URI = 'MODULAR_SERVICE_MONGO_URI'
+    MONGO_DATABASE = 'MODULAR_SERVICE_MONGO_DATABASE'
+
+    EXTERNAL_SSM = 'MODULAR_SERVICE_USE_EXTERNAL_SSM'
+
+    SYSTEM_USER_PASSWORD = 'MODULAR_SERVICE_SYSTEM_USER_PASSWORD'
+
+    def __str__(self):
+        return self.value
+
+    def __repr__(self):
+        return self.value
+
+
+class Permission(str, Enum):
+    """
+    Collection of all available rbac permissions
+    """
+    APPLICATION_DESCRIBE = 'application:describe'
+    APPLICATION_CREATE = 'application:create'
+    APPLICATION_UPDATE = 'application:update'
+    APPLICATION_DELETE = 'application:delete'
+
+    CUSTOMER_DESCRIBE = 'customer:describe'
+    CUSTOMER_CREATE = 'customer:create'
+    CUSTOMER_UPDATE = 'customer:update'
+    CUSTOMER_ACTIVATE = 'customer:activate'
+    CUSTOMER_DEACTIVATE = 'customer:deactivate'
+
+    PARENT_DESCRIBE = 'parent:describe'
+    PARENT_CREATE = 'parent:create'
+    PARENT_UPDATE = 'parent:update'
+    PARENT_DELETE = 'parent:delete'
+
+    TENANT_DESCRIBE = 'tenant:describe'
+    TENANT_CREATE = 'tenant:create'
+    TENANT_UPDATE = 'tenant:update'
+    TENANT_DELETE = 'tenant:delete'
+    TENANT_ACTIVATE = 'tenant:activate'
+    TENANT_DEACTIVATE = 'tenant:deactivate'
+    TENANT_CREATE_REGION = 'tenant:create_region'
+    TENANT_DESCRIBE_REGION = 'tenant:describe_region'
+    TENANT_DELETE_REGION = 'tenant:delete_region'
+
+    REGION_DESCRIBE = 'region:describe'
+    REGION_CREATE = 'region:create'
+    REGION_DELETE = 'region:delete'
+
+    ROLE_DESCRIBE = 'role:describe'
+    ROLE_CREATE = 'role:create'
+    ROLE_UPDATE = 'role:update'
+    ROLE_DELETE = 'role:delete'
+
+    POLICY_DESCRIBE = 'policy:describe'
+    POLICY_CREATE = 'policy:create'
+    POLICY_UPDATE = 'policy:update'
+    POLICY_DELETE = 'policy:delete'
+
+    TENANT_SETTING_SET = 'tenant_setting:set'
+    TENANT_SETTING_DESCRIBE = 'tenant_setting:describe'
+
+    USERS_RESET_PASSWORD = 'users:reset_password'
+
+    def __str__(self):
+        return self.value
+
+    @classmethod
+    def hidden(cls) -> set[Self]:
+        """
+        These are permissions that are currently hidden for standard users
+        meaning that endpoints behind these permission cannot be used by
+        standard users. Only system user can use those endpoints, though
+        permissions are not checked for system.
+        :return:
+        """
+        return {
+            cls.REGION_DELETE,
+            cls.REGION_CREATE,
+            cls.CUSTOMER_CREATE
+        }
+
+    @classmethod
+    def iter_all(cls) -> Iterator[Self]:
+        """
+        Iterates over all the currently available permission
+        :return:
+        """
+        hidden = cls.hidden()
+        return filter(lambda p: p not in hidden, cls)
+
+
+LAMBDA_URL_HEADER_CONTENT_TYPE_UPPER = 'Content-Type'
+JSON_CONTENT_TYPE = 'application/json'
 
 TYPE_ATTR = 'type'
 DESCRIPTION_ATTR = 'description'
-CUSTOMER_ID_ATTR = 'customer_id'
 APPLICATION_ID_ATTR = 'application_id'
 PARENT_ID_ATTR = 'parent_id'
-TENANT_CUSTOMER_ATTR = 'tenant_customer'
-READ_ONLY_ATTR = 'read_only'
-CLOUD_ATTR = 'cloud'
-TENANT_ATTR = 'tenant'
-REGION_ATTR = 'region'
-HIDDEN_ATTR = 'hidden'
-
-MAESTRO_NAME_ATTR = 'maestro_name'
-NATIVE_NAME_ATTR = 'native_name'
-REGION_ID_ATTR = 'region_id'
-
-
-PARAM_ITEMS = 'items'
-PARAM_MESSAGE = 'message'
-SCOPE_ATTR = 'scope'
-
 
 # standard for wsgi applications
 REQUEST_METHOD_WSGI_ENV = 'REQUEST_METHOD'
-REQUEST_PATH_WSGI_ENV = 'PATH_INFO'
-
-META_ATTR = 'meta'
+PRIVATE_KEY_SECRET_NAME = 'modular-service-private-key'

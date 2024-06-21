@@ -1,16 +1,20 @@
-from typing import List
+from http import HTTPStatus
 
+from modular_sdk.models.customer import Customer
 from routes.route import Route
 
-from commons import validate_params, build_response, RESPONSE_OK_CODE, \
-    RESPONSE_RESOURCE_NOT_FOUND_CODE
-from commons.constants import GET_METHOD, POST_METHOD, PATCH_METHOD, \
-    NAME_ATTR, DISPLAY_NAME_ATTR, ADMINS_ATTR, OVERRIDE_ATTR
+from commons import NextToken
+from commons.constants import Endpoint, HTTPMethod, Permission
+from commons.lambda_response import ResponseFactory, build_response
 from commons.log_helper import get_logger
-from lambdas.modular_api_handler.processors.abstract_processor import \
-    AbstractCommandProcessor
+from lambdas.modular_api_handler.processors.abstract_processor import (
+    AbstractCommandProcessor,
+)
 from services import SERVICE_PROVIDER
 from services.customer_mutator_service import CustomerMutatorService
+from validators.request import CustomerPatch, CustomerPost, CustomerQuery, BaseModel
+from validators.response import CustomerResponse, CustomersResponse
+from validators.utils import validate_kwargs
 
 _LOG = get_logger(__name__)
 
@@ -22,109 +26,159 @@ class CustomerProcessor(AbstractCommandProcessor):
     @classmethod
     def build(cls) -> 'CustomerProcessor':
         return cls(
-            customer_service=SERVICE_PROVIDER.customer_service()
+            customer_service=SERVICE_PROVIDER.customer_service
         )
 
     @classmethod
-    def routes(cls) -> List[Route]:
-        name = cls.controller_name()
-        return [
-            Route(None, '/customers', controller=name, action='get',
-                  conditions={'method': [GET_METHOD]}),
-            Route(None, '/customers', controller=name, action='post',
-                  conditions={'method': [POST_METHOD]}),
-            Route(None, '/customers', controller=name, action='patch',
-                  conditions={'method': [PATCH_METHOD]}),
-        ]
-
-    def get(self, event):
-        _LOG.debug(f'Describe customer event')
-        name = event.get(NAME_ATTR)
-
-        if name:
-            _LOG.debug(f'Describing customer by name \'{name}\'')
-            customers = [self.customer_service.get(name)]
-        else:
-            _LOG.debug(f'Describing all customers available')
-            customers = self.customer_service.list()
-
-        customers = [item for item in customers if item]
-        if not customers:
-            _LOG.debug(f'No customers found matching given query')
-            return build_response(
-                code=RESPONSE_RESOURCE_NOT_FOUND_CODE,
-                content=f'No customers found matching given query'
+    def routes(cls) -> tuple[Route, ...]:
+        return (
+            cls.route(
+                Endpoint.CUSTOMERS,
+                HTTPMethod.GET,
+                'query',
+                response=(HTTPStatus.OK, CustomersResponse, None),
+                description='Currently each user can have only one customer. '
+                            'So, generally this endpoint will return a list '
+                            'with only one customer (unless you are a system '
+                            'user)',
+                permission=Permission.CUSTOMER_DESCRIBE
+            ),
+            cls.route(
+                Endpoint.CUSTOMERS_NAME,
+                HTTPMethod.GET,
+                'get',
+                response=(HTTPStatus.OK, CustomerResponse, None),
+                permission=Permission.CUSTOMER_DESCRIBE
+            ),
+            cls.route(
+                Endpoint.CUSTOMERS,
+                HTTPMethod.POST,
+                'post',
+                response=(HTTPStatus.OK, CustomerResponse, None),
+                permission=Permission.CUSTOMER_CREATE
+            ),
+            cls.route(
+                Endpoint.CUSTOMERS_NAME,
+                HTTPMethod.PATCH,
+                'patch',
+                response=(HTTPStatus.OK, CustomerResponse, None),
+                permission=Permission.CUSTOMER_UPDATE
+            ),
+            cls.route(
+                Endpoint.CUSTOMERS_NAME_ACTIVATE,
+                HTTPMethod.POST,
+                'activate',
+                summary='Activates the customer',
+                response=(HTTPStatus.OK, CustomerResponse, None),
+                permission=Permission.CUSTOMER_ACTIVATE
+            ),
+            cls.route(
+                Endpoint.CUSTOMERS_NAME_DEACTIVATE,
+                HTTPMethod.POST,
+                'deactivate',
+                summary='Deactivates the customer',
+                response=(HTTPStatus.OK, CustomerResponse, None),
+                permission=Permission.CUSTOMER_DEACTIVATE
             )
-
-        _LOG.debug(f'Extracting customer dto')
-        response = [self.customer_service.get_dto(customer=customer)
-                    for customer in customers]
-        _LOG.debug(f'Response: {response}')
-        return build_response(
-            code=RESPONSE_OK_CODE,
-            content=response
         )
 
-    def post(self, event):
-        _LOG.debug(f'Add customer event: {event}')
-        validate_params(event, (NAME_ATTR, DISPLAY_NAME_ATTR))
+    @validate_kwargs
+    def query(self, event: CustomerQuery):
+        _LOG.debug('Describe customer event')
 
-        name = event.get(NAME_ATTR)
-        display_name = event.get(DISPLAY_NAME_ATTR)
-        admins = event.get(ADMINS_ATTR, [])
+        cursor = self.customer_service.i_get_customer(
+            is_active=event.is_active,
+            limit=event.limit,
+            name=event.customer_id,
+            last_evaluated_key=NextToken.from_input(event.next_token).value,
+        )
+        items = list(cursor)
 
+        return ResponseFactory().items(
+            it=map(self.customer_service.get_dto, items),
+            next_token=NextToken(cursor.last_evaluated_key)
+        ).build()
+
+    def _get_customer(self, name: str,
+                      customer_id: str | None) -> Customer | None:
+        """
+        Note that name and customer_id are the same logical thing. But name
+        is given by user whereas customer_id is retrieved from user's jwt.
+        This method should work the same way _get_tenant, and other similar
+        methods work in other controllers. But since one user currently can
+        have only one customer this method seems strange. I keep it to make
+        things more or less similar and consistent. Maybe some day one user
+        will be able to have multiple customers. Then the usage of this method
+        will be justified
+        :param name:
+        :param customer_id:
+        :return:
+        """
+        if customer_id and name != customer_id:
+            return
+        return self.customer_service.get(name)
+
+    @validate_kwargs
+    def get(self, event: BaseModel, name: str):
+        item = self._get_customer(name, event.customer_id)
+        if not item:
+            raise ResponseFactory(HTTPStatus.NOT_FOUND).default().exc()
+        return build_response(self.customer_service.get_dto(item))
+
+    @validate_kwargs
+    def post(self, event: CustomerPost):
+        name = event.name
         _LOG.debug(f'Creating customer \'{name}\'')
-        customer = self.customer_service.create(
+        existing = self.customer_service.get(name)
+        if existing:
+            raise ResponseFactory(HTTPStatus.CONFLICT).message(
+                f'Customer {name} already exists'
+            ).exc()
+        customer = self.customer_service.build(
             name=name,
-            display_name=display_name,
-            admins=admins
+            display_name=event.display_name,
+            admins=list(event.admins)
         )
 
-        _LOG.debug(f'Saving customer')
+        _LOG.debug('Saving customer')
         self.customer_service.save(customer=customer)
+        return build_response(content=self.customer_service.get_dto(customer))
 
-        _LOG.debug(f'Extracting customer dto')
-        response = self.customer_service.get_dto(customer=customer)
-
-        _LOG.debug(f'Response: {response}')
-        return build_response(
-            code=RESPONSE_OK_CODE,
-            content=response
-        )
-
-    def patch(self, event):
-        _LOG.debug(f'Update customer admins event: {event}')
-        validate_params(event, (NAME_ATTR, ADMINS_ATTR))
-
-        name = event.get(NAME_ATTR)
-        emails = event.get(ADMINS_ATTR)
-        override = event.get(OVERRIDE_ATTR)
-        if not isinstance(override, bool):
-            override = True if override.lower() in ('true', 'y', 'yes') \
-                else False
+    @validate_kwargs
+    def patch(self, event: CustomerPatch, name: str):
 
         _LOG.debug(f'Describing customer with name \'{name}\'')
-        customer = self.customer_service.get(name=name)
+        customer = self._get_customer(name, event.customer_id)
         if not customer:
             _LOG.debug(f'Customer with name {name} is not found')
-            return build_response(
-                code=RESPONSE_RESOURCE_NOT_FOUND_CODE,
-                content=f'Customer with name {name} is not found'
-            )
-
-        _LOG.debug(f'Updating customer \'{name}\'')
+            raise ResponseFactory(HTTPStatus.NOT_FOUND).message(
+                f'Customer with name {name} is not found'
+            ).exc()
         self.customer_service.update(
-            customer=customer, admins=emails, override=override
+            customer=customer,
+            actions=[Customer.admins.set(list(event.admins))]
         )
 
-        _LOG.debug(f'Saving customer')
-        self.customer_service.save(customer)
+        return build_response(self.customer_service.get_dto(customer))
 
-        _LOG.debug(f'Extracting customer dto')
-        response = self.customer_service.get_dto(customer=customer)
-        _LOG.debug(f'Response: {response}')
+    @validate_kwargs
+    def activate(self, event: BaseModel, name: str):
+        customer = self._get_customer(name, event.customer_id)
+        if not customer:
+            _LOG.debug(f'Customer with name {name} is not found')
+            raise ResponseFactory(HTTPStatus.NOT_FOUND).message(
+                f'Customer with name {name} is not found'
+            ).exc()
+        self.customer_service.activate(customer)
+        return build_response(self.customer_service.get_dto(customer))
 
-        return build_response(
-            code=RESPONSE_OK_CODE,
-            content=response
-        )
+    @validate_kwargs
+    def deactivate(self, event: BaseModel, name: str):
+        customer = self._get_customer(name, event.customer_id)
+        if not customer:
+            _LOG.debug(f'Customer with name {name} is not found')
+            raise ResponseFactory(HTTPStatus.NOT_FOUND).message(
+                f'Customer with name {name} is not found'
+            ).exc()
+        self.customer_service.deactivate(customer)
+        return build_response(self.customer_service.get_dto(customer))
