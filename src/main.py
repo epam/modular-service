@@ -487,7 +487,11 @@ def main(args: list[str] | None = None):
             delattr(arguments, dest)
     from dotenv import load_dotenv
     load_dotenv(verbose=True)
-    func(**vars(arguments))
+    try:
+        func(**vars(arguments))
+    except Exception as e:
+        _LOG.error(f'Unexpected exception occurred: {e}')
+        exit(1)  # some connection errors for entrypoint.sh
 
 
 if __name__ == '__main__':

@@ -26,6 +26,7 @@ class ModularVaultSSMClient(VaultSSMClient):
         )
 
     def enable_secrets_engine(self, mount_point=None) -> bool:
+        from hvac.exceptions import InvalidRequest
         try:
             self.client.sys.enable_secrets_engine(
                 backend_type='kv',
@@ -33,7 +34,7 @@ class ModularVaultSSMClient(VaultSSMClient):
                 options={'version': 2}
             )
             return True
-        except Exception:  # hvac.exceptions.InvalidRequest
+        except InvalidRequest:
             return False  # already exists
 
     def is_secrets_engine_enabled(self, mount_point=None) -> bool:
