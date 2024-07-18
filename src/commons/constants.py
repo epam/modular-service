@@ -25,6 +25,7 @@ class Endpoint(str, Enum):
     REFRESH = '/refresh'
     POLICIES = '/policies'
     CUSTOMERS = '/customers'
+    HEALTH_LIVE = '/health/live'
     ROLES_NAME = '/roles/{name}'
     APPLICATIONS = '/applications'
     TENANTS_NAME = '/tenants/{name}'

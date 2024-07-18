@@ -3193,6 +3193,114 @@
             }
           ]
         }
+      },
+      "/users/reset-password": {
+        "policy_statement_singleton": true,
+        "enable_cors": true,
+        "POST": {
+          "enable_proxy": true,
+          "integration_type": "lambda",
+          "lambda_alias": "${lambdas_alias_name}",
+          "authorization_type": "authorizer",
+          "lambda_name": "modular-api-handler",
+          "method_request_models": {
+            "application/json": "UserResetPasswordModel"
+          },
+          "responses": [
+            {
+              "status_code": "204"
+            },
+            {
+              "status_code": "400",
+              "response_models": {
+                "application/json": "ErrorsModel"
+              }
+            },
+            {
+              "status_code": "401",
+              "response_models": {
+                "application/json": "MessageModel"
+              }
+            },
+            {
+              "status_code": "403",
+              "response_models": {
+                "application/json": "MessageModel"
+              }
+            },
+            {
+              "status_code": "500",
+              "response_models": {
+                "application/json": "MessageModel"
+              }
+            },
+            {
+              "status_code": "503",
+              "response_models": {
+                "application/json": "MessageModel"
+              }
+            },
+            {
+              "status_code": "504",
+              "response_models": {
+                "application/json": "MessageModel"
+              }
+            }
+          ]
+        }
+      },
+      "/health/live": {
+        "policy_statement_singleton": true,
+        "enable_cors": true,
+        "GET": {
+          "enable_proxy": true,
+          "integration_type": "lambda",
+          "lambda_alias": "${lambdas_alias_name}",
+          "authorization_type": "NONE",
+          "lambda_name": "modular-api-handler",
+          "method_request_parameters": {},
+          "responses": [
+            {
+              "status_code": "200"
+            },
+            {
+              "status_code": "400",
+              "response_models": {
+                "application/json": "ErrorsModel"
+              }
+            },
+            {
+              "status_code": "401",
+              "response_models": {
+                "application/json": "MessageModel"
+              }
+            },
+            {
+              "status_code": "403",
+              "response_models": {
+                "application/json": "MessageModel"
+              }
+            },
+            {
+              "status_code": "500",
+              "response_models": {
+                "application/json": "MessageModel"
+              }
+            },
+            {
+              "status_code": "503",
+              "response_models": {
+                "application/json": "MessageModel"
+              }
+            },
+            {
+              "status_code": "504",
+              "response_models": {
+                "application/json": "MessageModel"
+              }
+            }
+          ]
+        }
       }
     },
     "models": {
@@ -3302,7 +3410,8 @@
                   "policy:update",
                   "policy:delete",
                   "tenant_setting:set",
-                  "tenant_setting:describe"
+                  "tenant_setting:describe",
+                  "users:reset_password"
                 ],
                 "title": "Permission",
                 "type": "string"
@@ -3366,7 +3475,8 @@
                   "policy:update",
                   "policy:delete",
                   "tenant_setting:set",
-                  "tenant_setting:describe"
+                  "tenant_setting:describe",
+                  "users:reset_password"
                 ],
                 "title": "Permission",
                 "type": "string"
@@ -3413,7 +3523,8 @@
                   "policy:update",
                   "policy:delete",
                   "tenant_setting:set",
-                  "tenant_setting:describe"
+                  "tenant_setting:describe",
+                  "users:reset_password"
                 ],
                 "title": "Permission",
                 "type": "string"
@@ -3460,7 +3571,8 @@
                   "policy:update",
                   "policy:delete",
                   "tenant_setting:set",
-                  "tenant_setting:describe"
+                  "tenant_setting:describe",
+                  "users:reset_password"
                 ],
                 "title": "Permission",
                 "type": "string"
@@ -4202,6 +4314,22 @@
             "refresh_token"
           ],
           "title": "RefreshPostModel",
+          "type": "object"
+        }
+      },
+      "UserResetPasswordModel": {
+        "content_type": "application/json",
+        "schema": {
+          "properties": {
+            "new_password": {
+              "title": "New Password",
+              "type": "string"
+            }
+          },
+          "required": [
+            "new_password"
+          ],
+          "title": "UserResetPasswordModel",
           "type": "object"
         }
       }
