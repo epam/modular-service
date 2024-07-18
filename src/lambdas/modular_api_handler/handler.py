@@ -28,6 +28,7 @@ from lambdas.modular_api_handler.processors.policies_processor import PolicyProc
 from lambdas.modular_api_handler.processors.region_processor import RegionProcessor
 from lambdas.modular_api_handler.processors.role_processor import RoleProcessor
 from lambdas.modular_api_handler.processors.signin_processor import SignInProcessor
+from lambdas.modular_api_handler.processors.health_processor import HealthCheckProcessor
 from lambdas.modular_api_handler.processors.signup_processor import SignUpProcessor
 from lambdas.modular_api_handler.processors.tenant_in_region_processor import (
     TenantRegionProcessor,
@@ -149,7 +150,8 @@ class ModularApiHandler(EventProcessorLambdaHandler):
         ApplicationProcessor,
         ParentProcessor,
         RegionProcessor,
-        TenantSettingsProcessor
+        TenantSettingsProcessor,
+        HealthCheckProcessor
     )
     __slots__ = ('_mapper', '_controllers', 'processors')
 
