@@ -4,7 +4,6 @@ import argparse
 import base64
 from functools import cached_property
 import json
-import logging
 import logging.config
 import multiprocessing
 import os
@@ -15,10 +14,14 @@ import sys
 from typing import Any, Callable, Literal, TYPE_CHECKING
 import urllib.error
 import urllib.request
+import uuid
 
 from commons import dereference_json
 from commons.__version__ import __version__
 from commons.constants import Env, HTTPMethod, PRIVATE_KEY_SECRET_NAME, Permission
+from modular_sdk.commons.constants import Cloud
+from commons.regions import AWS_REGIONS
+
 
 # NOTE, all imports are inside corresponding methods in order to make cli faster
 if TYPE_CHECKING:
@@ -43,6 +46,7 @@ CREATE_INDEXES_ACTION = 'create-indexes'
 DUMP_PERMISSIONS_ACTION = 'dump-permissions'
 CREATE_SYSTEM_USER_ACTION = 'create-system-user'
 UPDATE_DEPLOYMENT_RESOURCES_ACTION = 'update-deployment-resources'
+ACTIVATE_REGIONS_ACTION = 'activate-regions'
 
 SYSTEM_USER = 'system_user'
 
@@ -67,7 +71,6 @@ logging.config.dictConfig({
 _LOG = logging.getLogger(__name__)
 
 
-
 def build_parser() -> argparse.ArgumentParser:
     parser = argparse.ArgumentParser(
         description='Modular service main CLI endpoint'
@@ -84,6 +87,10 @@ def build_parser() -> argparse.ArgumentParser:
     parser_open_api.add_argument(
         '-f', '--filename', type=Path, required=True,
         help='Filename where to write spec'
+    )
+    _ = sub_parsers.add_parser(
+        ACTIVATE_REGIONS_ACTION,
+        help='Activates global regions'
     )
 
     # run
@@ -465,6 +472,28 @@ class UpdateDeploymentResources(ActionHandler):
         _LOG.info(f'{filename} has been updated')
 
 
+class ActivateRegions(ActionHandler):
+    def __call__(self):
+        from services import SP
+        from modular_sdk.models.region import RegionModel
+        rs = SP.region_service
+        for region in AWS_REGIONS:
+            if rs.get_region(region_name=region):
+                continue
+            _LOG.debug(f'Activation {region}')
+            # rs.create is too expensive
+            rs.save(RegionModel(
+                region_id=str(uuid.uuid4()),
+                maestro_name=region,
+                native_name=region,
+                cloud=Cloud.AWS.value,
+                is_active=True
+            ))
+        _LOG.info('Regions were created')
+
+
+
+
 def main(args: list[str] | None = None):
     parser = build_parser()
     arguments = parser.parse_args(args)
@@ -479,7 +508,8 @@ def main(args: list[str] | None = None):
         (CREATE_INDEXES_ACTION,): CreateIndexes(),
         (GENERATE_OPENAPI_ACTION,): GenerateOpenApi(),
         (DUMP_PERMISSIONS_ACTION,): DumpPermissions(),
-        (UPDATE_DEPLOYMENT_RESOURCES_ACTION, ): UpdateDeploymentResources()
+        (UPDATE_DEPLOYMENT_RESOURCES_ACTION, ): UpdateDeploymentResources(),
+        (ACTIVATE_REGIONS_ACTION, ): ActivateRegions()
     }
     func = mapping.get(key) or (lambda **kwargs: _LOG.error('Hello'))
     for dest in ALL_NESTING:

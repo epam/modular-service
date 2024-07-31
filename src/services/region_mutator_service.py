@@ -59,6 +59,7 @@ class RegionMutatorService(RegionService):
                         f'Available options: {CLOUD_PROVIDERS}'
             )
         all_region = self.get_all_regions()
+        # todo rewrite this, why should we scan all regions when creating and not even saving one?
         if region_id:
             for region in all_region:
                 if region.region_id == region_id and \

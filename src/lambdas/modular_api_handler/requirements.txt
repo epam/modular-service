@@ -1,5 +1,5 @@
-pydantic==2.6.1
-typing_extensions==4.9.0
-Routes==2.5.1
-python-dateutil==2.8.2
-modular-sdk==5.1.1  # contains all other requirements that we need
+pydantic~=2.8.2
+typing_extensions~=4.12.2
+Routes~=2.5.1
+python-dateutil>=2.8.2,<3.0
+modular-sdk>=5.1.4,<6.0  # contains all other requirements that we need
