@@ -37,6 +37,7 @@ from lambdas.modular_api_handler.processors.tenant_processor import TenantProces
 from lambdas.modular_api_handler.processors.tenant_settings_processor import (
     TenantSettingsProcessor,
 )
+from lambdas.modular_api_handler.processors.swagger_processor import SwaggerProcessor
 from services.customer_mutator_service import CustomerMutatorService
 from services import SP
 from services.openapi_spec_generator import EndpointInfo
@@ -151,7 +152,8 @@ class ModularApiHandler(EventProcessorLambdaHandler):
         ParentProcessor,
         RegionProcessor,
         TenantSettingsProcessor,
-        HealthCheckProcessor
+        HealthCheckProcessor,
+        SwaggerProcessor
     )
     __slots__ = ('_mapper', '_controllers', 'processors')
 

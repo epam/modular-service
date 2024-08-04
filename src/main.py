@@ -33,7 +33,6 @@ DEFAULT_PORT = 8040
 DEFAULT_NUMBER_OF_WORKERS = (multiprocessing.cpu_count() * 2) + 1
 DEFAULT_ON_PREM_API_LINK = f'http://{DEFAULT_HOST}:{str(DEFAULT_PORT)}/caas'
 DEFAULT_API_GATEWAY_NAME = 'custodian-as-a-service-api'
-DEFAULT_SWAGGER_PREFIX = '/api/doc'
 
 ACTION_DEST = 'action'
 ENV_ACTION_DEST = 'env_action'
@@ -102,14 +101,6 @@ def build_parser() -> argparse.ArgumentParser:
         '-nw', '--workers', type=int, required=False,
         help='Number of gunicorn workers. Must be specified only '
              'if --gunicorn flag is set'
-    )
-    parser_run.add_argument(
-        '-sw', '--swagger', action='store_true', default=False,
-        help='Specify the flag is you want to enable swagger'
-    )
-    parser_run.add_argument(
-        '-swp', '--swagger-prefix', type=str, default=DEFAULT_SWAGGER_PREFIX,
-        help='Swagger path prefix, (default: %(default)s)'
     )
     parser_run.add_argument('--host', default=DEFAULT_HOST, type=str,
                             help='IP address where to run the server')
@@ -191,58 +182,8 @@ class InitVault(ABC):
 
 class Run(ActionHandler):
 
-    def _resolve_urls(self) -> set[str]:
-        """
-        Builds some additional urls for swagger ui
-        :return:
-        """
-        urls = {f'http://127.0.0.1:{self._port}'}
-        try:
-            with urllib.request.urlopen(
-                    'http://169.254.169.254/latest/meta-data/public-ipv4',
-                    timeout=1) as resp:
-                urls.add(f'http://{resp.read().decode()}:{self._port}')
-        except urllib.error.URLError:
-            _LOG.warning('Cannot resolve public-ipv4 from instance metadata')
-        return urls
-
-    def _init_swagger(self, app: 'Bottle', prefix: str, stage: str) -> None:
-        """
-        :param app:
-        :param prefix: prefix for swagger UI
-        :param stage: stage where all endpoints are, the same as API gw
-        :return:
-        """
-        from swagger_ui import api_doc
-        from services.openapi_spec_generator import OpenApiGenerator
-        from lambdas.modular_api_handler.handler import HANDLER
-
-        # from validators import registry
-        url = f'http://{self._host}:{self._port}'
-        urls = self._resolve_urls()
-        urls.add(url)
-        generator = OpenApiGenerator(
-            title='Modular service API',
-            description='Modular service rest API',
-            url=list(urls),
-            stages=stage,
-            version=__version__,
-            endpoints=HANDLER.iter_endpoint()
-        )
-        if not prefix.startswith('/'):
-            prefix = f'/{prefix}'
-        api_doc(
-            app,
-            config=generator.generate(),
-            url_prefix=prefix,
-            title='Modular service'
-        )
-        _LOG.info(f'Serving swagger on {url + prefix}')
-
     def __call__(self, host: str = DEFAULT_HOST, port: int = DEFAULT_PORT,
-                 gunicorn: bool = False, workers: int | None = None,
-                 swagger: bool = False,
-                 swagger_prefix: str = DEFAULT_SWAGGER_PREFIX):
+                 gunicorn: bool = False, workers: int | None = None):
         from onprem.app import OnPremApiBuilder
         self._host = host
         self._port = port
@@ -256,8 +197,6 @@ class Run(ActionHandler):
 
         stage = 'dev'  # todo get from somewhere
         app = OnPremApiBuilder().build(stage)
-        if swagger:
-            self._init_swagger(app, swagger_prefix, stage)
 
         if gunicorn:
             workers = workers or DEFAULT_NUMBER_OF_WORKERS

@@ -3258,7 +3258,113 @@
           "lambda_alias": "${lambdas_alias_name}",
           "authorization_type": "NONE",
           "lambda_name": "modular-api-handler",
-          "method_request_parameters": {},
+          "method_request_parameters": {
+            "method.request.querystring.customer_id": false
+          },
+          "responses": [
+            {
+              "status_code": "200"
+            },
+            {
+              "status_code": "400",
+              "response_models": {
+                "application/json": "ErrorsModel"
+              }
+            },
+            {
+              "status_code": "401",
+              "response_models": {
+                "application/json": "MessageModel"
+              }
+            },
+            {
+              "status_code": "403",
+              "response_models": {
+                "application/json": "MessageModel"
+              }
+            },
+            {
+              "status_code": "500",
+              "response_models": {
+                "application/json": "MessageModel"
+              }
+            },
+            {
+              "status_code": "503",
+              "response_models": {
+                "application/json": "MessageModel"
+              }
+            },
+            {
+              "status_code": "504",
+              "response_models": {
+                "application/json": "MessageModel"
+              }
+            }
+          ]
+        }
+      },
+      "/doc": {
+        "policy_statement_singleton": true,
+        "enable_cors": true,
+        "GET": {
+          "enable_proxy": true,
+          "integration_type": "lambda",
+          "lambda_alias": "${lambdas_alias_name}",
+          "authorization_type": "NONE",
+          "lambda_name": "modular-api-handler",
+          "responses": [
+            {
+              "status_code": "200"
+            },
+            {
+              "status_code": "400",
+              "response_models": {
+                "application/json": "ErrorsModel"
+              }
+            },
+            {
+              "status_code": "401",
+              "response_models": {
+                "application/json": "MessageModel"
+              }
+            },
+            {
+              "status_code": "403",
+              "response_models": {
+                "application/json": "MessageModel"
+              }
+            },
+            {
+              "status_code": "500",
+              "response_models": {
+                "application/json": "MessageModel"
+              }
+            },
+            {
+              "status_code": "503",
+              "response_models": {
+                "application/json": "MessageModel"
+              }
+            },
+            {
+              "status_code": "504",
+              "response_models": {
+                "application/json": "MessageModel"
+              }
+            }
+          ]
+        }
+      },
+      "/doc/swagger.json": {
+        "policy_statement_singleton": true,
+        "enable_cors": true,
+        "GET": {
+          "enable_proxy": true,
+          "integration_type": "lambda",
+          "lambda_alias": "${lambdas_alias_name}",
+          "authorization_type": "NONE",
+          "lambda_name": "modular-api-handler",
           "responses": [
             {
               "status_code": "200"

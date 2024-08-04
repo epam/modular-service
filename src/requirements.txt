@@ -4,6 +4,5 @@ hvac~=2.1.0
 bcrypt~=4.1.2
 cryptography~=42.0.8
 jwcrypto~=1.5.4
-swagger-ui-py~=23.9.23
 python-dotenv~=1.0.1
 gunicorn~=21.2.0
