@@ -7,7 +7,7 @@ service:
 
 image:
   repository: public.ecr.aws/x4s4z8e1/syndicate/modular-service
-  tag: 5.4.0
+  tag: 3.2.0
   pullPolicy: IfNotPresent
 
 
