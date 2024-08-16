@@ -19,7 +19,7 @@ RUN rm -rf $(find /root/.local/lib -name "*.dist-info") && rm -rf $(find /root/.
 
 FROM public.ecr.aws/docker/library/python:3.10-slim AS build-image
 
-RUN apt update && apt install -y wget && apt clean  # for compose health check
+RUN apt-get update && apt-get install -y wget && apt-get clean  # for compose health check
 
 COPY --from=compile-image /root/.local /root/.local
 COPY --from=compile-image /src /src
