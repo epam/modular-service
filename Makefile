@@ -38,6 +38,14 @@ clean:
 	-if [[ -d "$(SYNDICATE_CONFIG_PATH)/logs" ]]; then rm -rf "$(SYNDICATE_CONFIG_PATH)/logs"; fi
 	-if [[ -d "$(SYNDICATE_CONFIG_PATH)/bundles" ]]; then rm -rf "$(SYNDICATE_CONFIG_PATH)/bundles"; fi
 
+
+#make image-arm64
+#make image-amd64
+#make push-arm64
+#make push-amd64
+#make image-manifest
+#make push-manifest
+
 image-arm64:
 	$(DOCKER_EXECUTABLE) build --platform linux/arm64 -t $(SERVER_IMAGE_NAME):$(SERVER_IMAGE_TAG)-arm64 .
 
