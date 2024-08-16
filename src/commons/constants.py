@@ -1,5 +1,6 @@
+import os
 from enum import Enum
-from typing import Iterator
+from typing import Iterator, MutableMapping
 
 from typing_extensions import Self
 
@@ -73,10 +74,46 @@ class Endpoint(str, Enum):
         return
 
 
+_SENTINEL = object()
+
+
 class Env(str, Enum):
     """
     Collection of available environment variables
     """
+
+    default: str | None
+
+    @staticmethod
+    def source() -> MutableMapping:
+        return os.environ
+
+    def __new__(cls, value: str, default: str | None = None):
+        """
+        All environment variables and optionally their default values.
+        Since envs always have string type the default value also should be
+        of string type and then converted to the necessary type in code.
+        There is no default value if not specified (default equal to unset)
+        """
+        obj = str.__new__(cls, value)
+        obj._value_ = value
+
+        obj.default = default
+        return obj
+
+    def get(self, default=_SENTINEL) -> str | None:
+        if default is _SENTINEL:
+            default = self.default
+        if default is not None:
+            default = str(default)
+        return self.source().get(self.value, default)
+
+    def set(self, val: str | None):
+        if val is None:
+            self.source().pop(self.value, None)
+        else:
+            self.source()[self.value] = str(val)
+
     # internal envs
     INVOCATION_REQUEST_ID = '_INVOCATION_REQUEST_ID'
 
@@ -89,9 +126,9 @@ class Env(str, Enum):
     OLD_VAULT_PORT = 'VAULT_SERVICE_SERVICE_PORT'
 
     # external envs
-    AWS_REGION = 'AWS_REGION'
+    AWS_REGION = 'AWS_REGION', 'us-east-1'
     SERVICE_MODE = 'MODULAR_SERVICE_MODE'
-    LOG_LEVEL = 'MODULAR_SERVICE_LOG_LEVEL'
+    LOG_LEVEL = 'MODULAR_SERVICE_LOG_LEVEL', 'INFO'
     COGNITO_USER_POOL_NAME = 'MODULAR_SERVICE_COGNITO_USER_POOL_NAME'
     COGNITO_USER_POOL_ID = 'MODULAR_SERVICE_COGNITO_USER_POOL_ID'
 

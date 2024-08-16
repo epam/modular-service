@@ -1,32 +1,32 @@
 #!/usr/local/bin/python
-from abc import ABC, abstractmethod
 import argparse
 import base64
-from functools import cached_property
 import json
 import logging.config
 import multiprocessing
 import os
-from pathlib import Path
 import secrets
 import string
 import sys
-from typing import Any, Callable, Literal, TYPE_CHECKING
-import urllib.error
-import urllib.request
 import uuid
+from abc import ABC, abstractmethod
+from functools import cached_property
+from pathlib import Path
+from typing import Any, Callable, Literal, TYPE_CHECKING, Generator, cast
+
+import pymongo
+from pymongo.operations import IndexModel
+from modular_sdk.commons.constants import Cloud
 
 from commons import dereference_json
 from commons.__version__ import __version__
-from commons.constants import Env, HTTPMethod, PRIVATE_KEY_SECRET_NAME, Permission
-from modular_sdk.commons.constants import Cloud
+from commons.constants import Env, HTTPMethod, PRIVATE_KEY_SECRET_NAME, \
+    Permission
 from commons.regions import AWS_REGIONS
-
 
 # NOTE, all imports are inside corresponding methods in order to make cli faster
 if TYPE_CHECKING:
     from models import BaseModel
-    from bottle import Bottle
 
 DEFAULT_HOST = '0.0.0.0'
 DEFAULT_PORT = 8040
@@ -244,59 +244,12 @@ class CreateSystemUser(ActionHandler):
 
 
 class CreateIndexes(ActionHandler):
+    main_index_name = 'main'
+    hash_key_order = pymongo.ASCENDING
+    range_key_order = pymongo.DESCENDING
+
     @staticmethod
-    def convert_index(key_schema: dict) -> str | list[tuple]:
-        if len(key_schema) == 1:
-            _LOG.info('Only hash key found for the index')
-            return key_schema[0]['AttributeName']
-        elif len(key_schema) == 2:
-            _LOG.info('Both hash and range keys found for the index')
-            result = [None, None]
-            for key in key_schema:
-                if key['KeyType'] == 'HASH':
-                    _i = 0
-                elif key['KeyType'] == 'RANGE':
-                    _i = 1
-                else:
-                    raise ValueError(f'Unknown key type: {key["KeyType"]}')
-                result[_i] = (key['AttributeName'], -1)  # descending
-            return result
-        else:
-            raise ValueError(f'Unknown key schema: {key_schema}')
-
-    def create_indexes_for_model(self, model: 'BaseModel'):
-        table_name = model.Meta.table_name
-        collection = model.mongodb_handler().mongodb.collection(table_name)
-        collection.drop_indexes()
-
-        hash_key = getattr(model._hash_key_attribute(), 'attr_name', None)
-        range_key = getattr(model._range_key_attribute(), 'attr_name', None)
-        _LOG.info(f'Creating main indexes for \'{table_name}\'')
-        if hash_key and range_key:
-            collection.create_index([(hash_key, 1),
-                                     (range_key, 1)],
-                                    name='main')
-        elif hash_key:
-            collection.create_index(hash_key, name='main')
-        else:
-            _LOG.error(f'Table \'{table_name}\' has no hash_key and range_key')
-
-        indexes = model._get_schema()  # GSIs & LSIs,  # only PynamoDB 5.2.1+
-        gsi = indexes.get('global_secondary_indexes')
-        lsi = indexes.get('local_secondary_indexes')
-        if gsi:
-            _LOG.info(f'Creating global indexes for \'{table_name}\'')
-            for i in gsi:
-                index_name = i['index_name']
-                _LOG.info(f'Processing index \'{index_name}\'')
-                collection.create_index(
-                    self.convert_index(i['key_schema']), name=index_name)
-                _LOG.info(f'Index \'{index_name}\' was created')
-            _LOG.info(f'Global indexes for \'{table_name}\' were created!')
-        if lsi:
-            pass  # write this part if at least one LSI is used
-
-    def __call__(self):
+    def models() -> tuple:
         from models.policy import Policy
         from models.role import Role
         from models.user import User
@@ -307,13 +260,91 @@ class CreateIndexes(ActionHandler):
         from modular_sdk.models.tenant import Tenant
         from modular_sdk.models.tenant_settings import TenantSettings
         from modular_sdk.models.parent import Parent
-        models = (
+        return (
             Policy, Role, User,
             Application, Customer, ModularJob, RegionModel, Tenant,
             TenantSettings, Parent
         )
-        for model in models:
-            self.create_indexes_for_model(model)
+
+    @staticmethod
+    def _get_hash_range(model: 'BaseModel') -> tuple[str, str | None]:
+        h, r = None, None
+        for attr in model.get_attributes().values():
+            if attr.is_hash_key:
+                h = attr.attr_name
+            if attr.is_range_key:
+                r = attr.attr_name
+        return cast(str, h), r
+
+    @staticmethod
+    def _iter_indexes(model: 'BaseModel'
+                      ) -> Generator[tuple[str, str, str | None], None, None]:
+        """
+        Yields tuples: (index name, hash_key, range_key) indexes of the given
+        model. Currently, only global secondary indexes are used so this
+        implementation wasn't tested with local ones. Uses private PynamoDB
+        API because cannot find public methods that can help
+        """
+        for index in model._indexes.values():
+            name = index.Meta.index_name
+            h, r = None, None
+            for attr in index.Meta.attributes.values():
+                if attr.is_hash_key:
+                    h = attr.attr_name
+                if attr.is_range_key:
+                    r = attr.attr_name
+            yield name, cast(str, h), r
+
+    def _iter_all_indexes(self, model: 'BaseModel'
+                          ) -> Generator[tuple[str, str, str | None], None, None]:
+        yield self.main_index_name, *self._get_hash_range(model)
+        yield from self._iter_indexes(model)
+
+    @staticmethod
+    def _exceptional_indexes() -> tuple[str, ...]:
+        return '_id_',
+
+    def ensure_indexes(self, model: 'BaseModel'):
+        table_name = model.Meta.table_name
+        _LOG.info(f'Going to check indexes for {table_name}')
+        collection = model.mongodb_handler().mongodb.collection(table_name)
+        existing = collection.index_information()
+        for name in self._exceptional_indexes():
+            existing.pop(name, None)
+        needed = {}
+        for name, h, r in self._iter_all_indexes(model):
+            needed[name] = [(h, self.hash_key_order)]
+            if r:
+                needed[name].append((r, self.range_key_order))
+        to_create = []
+        to_delete = set()
+        for name, data in existing.items():
+            if name not in needed:
+                to_delete.add(name)
+                continue
+            # name in needed so maybe the index is valid, and we must keep it
+            # or the index has changed, and we need to re-create it
+            if data.get('key', []) != needed[name]:  # not valid
+                to_delete.add(name)
+                to_create.append(IndexModel(
+                    keys=needed[name],
+                    name=name
+                ))
+        for name in to_delete:
+            _LOG.info(f'Going to remove index: {name}')
+            collection.drop_index(name)
+        if to_create:
+            _message = ','.join(
+                json.dumps(i.document,
+                           separators=(',', ':')) for i in to_create
+            )
+            _LOG.info(f'Going to create indexes: {_message}')
+            collection.create_indexes(to_create)
+
+    def __call__(self):
+        _LOG.debug('Going to sync indexes with code')
+        for model in self.models():
+            self.ensure_indexes(model)
 
 
 class GenerateOpenApi(ActionHandler):
@@ -429,8 +460,6 @@ class ActivateRegions(ActionHandler):
                 is_active=True
             ))
         _LOG.info('Regions were created')
-
-
 
 
 def main(args: list[str] | None = None):
