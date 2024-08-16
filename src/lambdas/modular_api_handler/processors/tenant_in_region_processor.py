@@ -70,6 +70,7 @@ class TenantRegionProcessor(AbstractCommandProcessor):
 
     @validate_kwargs
     def get(self, event: BaseModel, name: str):
+        name = name.upper()
 
         _LOG.debug(f'Describing tenant by name \'{name}\'')
         tenant = self._get_tenant(name, event.customer_id)
@@ -85,6 +86,7 @@ class TenantRegionProcessor(AbstractCommandProcessor):
 
     @validate_kwargs
     def post(self, event: TenantRegionPost, name: str):
+        name = name.upper()
 
         tenant = self._get_tenant(name, event.customer_id)
         if not tenant:
@@ -115,6 +117,7 @@ class TenantRegionProcessor(AbstractCommandProcessor):
 
     @validate_kwargs
     def delete(self, event: TenantRegionDelete, name: str):
+        name = name.upper()
 
         _LOG.debug(f'Describing tenant by name \'{name}\'')
         tenant = self._get_tenant(name, event.customer_id)

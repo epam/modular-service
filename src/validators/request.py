@@ -1,7 +1,7 @@
 import base64
 import binascii
 from datetime import datetime, timezone
-from typing_extensions import Self, TypedDict
+from typing_extensions import Self, TypedDict, Annotated
 import uuid
 from commons.constants import Permission
 
@@ -19,6 +19,7 @@ from pydantic import (
     Field,
     field_validator,
     model_validator,
+    StringConstraints,
 )
 from pydantic.json_schema import SkipJsonSchema
 
@@ -167,7 +168,6 @@ class UserResetPasswordModel(BaseModel):
         return v
 
 
-
 class SignUpPost(BaseModel):
     username: str
     password: str
@@ -193,7 +193,7 @@ class TenantQuery(BasePaginationModel):
 
 
 class TenantPost(BaseModel):
-    name: str
+    name: Annotated[str, StringConstraints(strip_whitespace=True, to_upper=True)]
     display_name: str
     cloud: Cloud
     account_id: str
