@@ -73,7 +73,6 @@ def login(ctx: ContextObj, username: str, password: str, **kwargs):
 @click.option('--customer_display_name', '-dn', type=str, required=True,
               help='Customer display name')
 @click.option('--customer_admin', '-ca', multiple=True, type=str,
-              required=True,
               help='List of admin emails attached to customer.')
 @cli_response(check_access_token=False)
 def signup(ctx: ContextObj, username, password, customer_name,
