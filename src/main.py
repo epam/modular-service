@@ -204,6 +204,9 @@ class Run(ActionHandler):
             options = {
                 'bind': f'{host}:{port}',
                 'workers': workers,
+                'timeout': 60,
+                'max_requests': 512,
+                'max_requests_jitter': 64
             }
             CustodianGunicornApplication(app, options).run()
         else:
