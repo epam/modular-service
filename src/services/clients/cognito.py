@@ -102,8 +102,6 @@ class UserWrapper:
             'username': self.username,
             'customer': self.customer,
             'role': self.role,
-            'latest_login': utc_iso(
-                self.latest_login) if self.latest_login else None,
             'created_at': utc_iso(self.created_at) if self.created_at else None
         }
 
