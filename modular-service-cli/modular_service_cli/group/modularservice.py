@@ -89,6 +89,15 @@ def signup(ctx: ContextObj, username, password, customer_name,
     )
 
 
+@modularservice.command(cls=ViewCommand, name='whoami')
+@cli_response(attributes_order=('username', 'customer', 'role', 'latest_login'))
+def whoami(ctx: ContextObj, customer_id: str):
+    """
+    Returns information about the current user
+    """
+    return ctx.api_client.whoami()
+
+
 @modularservice.command(cls=ViewCommand, name='cleanup')
 @cli_response(check_access_token=False, check_api_link=False)
 def cleanup(ctx: ContextObj, **kwargs):

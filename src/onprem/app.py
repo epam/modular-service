@@ -1,15 +1,17 @@
+from http import HTTPStatus
 import inspect
 import json
 import re
-from http import HTTPStatus
 from typing import Callable
 
 from bottle import Bottle, HTTPResponse, request
 
 from commons import RequestContext
-from commons.lambda_response import ApplicationException, LambdaResponse, \
-    ResponseFactory
-from commons.constants import HTTPMethod, Endpoint
+from commons.lambda_response import (
+    ApplicationException,
+    LambdaResponse,
+    ResponseFactory,
+)
 from commons.log_helper import get_logger
 from lambdas.modular_api_handler.handler import HANDLER
 from services import SERVICE_PROVIDER
@@ -58,7 +60,7 @@ class AuthPlugin:
                 return self._to_bottle_resp(resp)
 
             try:
-                decoded = SERVICE_PROVIDER.cognito.decode_token(token)
+                decoded = SERVICE_PROVIDER.onprem_users_client.decode_token(token)
             except ApplicationException as e:
                 return self._to_bottle_resp(e.response)
 
@@ -82,7 +84,7 @@ class OnPremApiBuilder:
                               separators=(',', ':'))
 
         @app.error(500)
-        def not_found(error):
+        def internal(error):
             return json.dumps(
                 {'message': HTTPStatus.INTERNAL_SERVER_ERROR.phrase},
                 separators=(',', ':')

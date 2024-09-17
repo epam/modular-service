@@ -228,14 +228,15 @@ class CreateSystemUser(ActionHandler):
 
     def __call__(self):
         from services import SP
-        if SP.user_service.client.is_user_exists(SYSTEM_USER):
+        cl = SP.users_client
+        if cl.does_user_exist(SYSTEM_USER):
             _LOG.info('System user already exists')
             return
-        password = os.getenv(Env.SYSTEM_USER_PASSWORD)
+        password = Env.SYSTEM_USER_PASSWORD.get()
         from_env = bool(password)
         if not from_env:
             password = self.gen_password()
-        SP.user_service.save(
+        cl.signup_user(
             username=SYSTEM_USER,
             password=password,
             is_system=True

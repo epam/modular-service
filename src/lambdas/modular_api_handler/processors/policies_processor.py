@@ -15,7 +15,6 @@ from lambdas.modular_api_handler.processors.abstract_processor import (
     AbstractCommandProcessor,
 )
 from services import SERVICE_PROVIDER
-from services.user_service import CognitoUserService
 from services.rbac_service import RBACService
 from validators.request import PolicyPost, PolicyPatch, BaseModel, BasePaginationModel
 from validators.utils import validate_kwargs
@@ -25,15 +24,12 @@ _LOG = get_logger(__name__)
 
 
 class PolicyProcessor(AbstractCommandProcessor):
-    def __init__(self, user_service: CognitoUserService,
-                 rbac_service: RBACService):
-        self.user_service = user_service
+    def __init__(self, rbac_service: RBACService):
         self.rbac_service = rbac_service
 
     @classmethod
     def build(cls) -> 'PolicyProcessor':
         return cls(
-            user_service=SERVICE_PROVIDER.user_service,
             rbac_service=SERVICE_PROVIDER.rbac_service
         )
 

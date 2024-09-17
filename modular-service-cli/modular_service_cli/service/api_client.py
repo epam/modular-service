@@ -536,9 +536,52 @@ class ModularServiceApiClient:
             data=sifted(kwargs)
         )
 
+    def get_user(self, username: str):
+        return self.make_request(
+            path=Endpoint.USERS_USERNAME,
+            path_params={'username': username},
+            method=HTTPMethod.GET,
+        )
+
+    def update_user(self, username: str, **kwargs):
+        return self.make_request(
+            path=Endpoint.USERS_USERNAME,
+            path_params={'username': username},
+            method=HTTPMethod.PATCH,
+            data=sifted(kwargs)
+        )
+
+    def delete_user(self, username: str, **kwargs):
+        return self.make_request(
+            path=Endpoint.USERS_USERNAME,
+            path_params={'username': username},
+            method=HTTPMethod.DELETE,
+            query=sifted(kwargs)
+        )
+
+    def query_user(self, **kwargs):
+        return self.make_request(
+            path=Endpoint.USERS,
+            method=HTTPMethod.GET,
+            query=sifted(kwargs)
+        )
+
+    def create_user(self, **kwargs):
+        return self.make_request(
+            path=Endpoint.USERS,
+            method=HTTPMethod.POST,
+            data=sifted(kwargs)
+        )
+
     def reset_password(self, **kwargs):
         return self.make_request(
             path=Endpoint.USERS_RESET_PASSWORD,
             method=HTTPMethod.POST,
             data=sifted(kwargs)
+        )
+
+    def whoami(self):
+        return self.make_request(
+            path=Endpoint.USERS_WHOAMI,
+            method=HTTPMethod.GET
         )
