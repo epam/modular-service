@@ -27,12 +27,11 @@ from lambdas.modular_api_handler.processors.parent_processor import ParentProces
 from lambdas.modular_api_handler.processors.policies_processor import PolicyProcessor
 from lambdas.modular_api_handler.processors.region_processor import RegionProcessor
 from lambdas.modular_api_handler.processors.role_processor import RoleProcessor
-from lambdas.modular_api_handler.processors.signin_processor import SignInProcessor
 from lambdas.modular_api_handler.processors.health_processor import HealthCheckProcessor
-from lambdas.modular_api_handler.processors.signup_processor import SignUpProcessor
 from lambdas.modular_api_handler.processors.tenant_in_region_processor import (
     TenantRegionProcessor,
 )
+from lambdas.modular_api_handler.processors.users_processor import UsersProcessor
 from lambdas.modular_api_handler.processors.tenant_processor import TenantProcessor
 from lambdas.modular_api_handler.processors.tenant_settings_processor import (
     TenantSettingsProcessor,
@@ -69,6 +68,13 @@ class RestrictCustomerEventProcessor(AbstractEventProcessor):
         (Endpoint.REGIONS, HTTPMethod.GET),
         (Endpoint.REGIONS, HTTPMethod.POST),
         (Endpoint.REGIONS, HTTPMethod.DELETE),
+
+        (Endpoint.USERS_WHOAMI, HTTPMethod.GET),
+        (Endpoint.USERS_RESET_PASSWORD, HTTPMethod.POST),
+        (Endpoint.USERS, HTTPMethod.GET),
+        (Endpoint.USERS_USERNAME, HTTPMethod.PATCH),
+        (Endpoint.USERS_USERNAME, HTTPMethod.DELETE),
+        (Endpoint.USERS_USERNAME, HTTPMethod.GET),
     }
 
     def __init__(self, customer_service: CustomerMutatorService):
@@ -141,8 +147,6 @@ class CheckPermissionEventProcessor(AbstractEventProcessor):
 
 class ModularApiHandler(EventProcessorLambdaHandler):
     controller_classes = (
-        SignUpProcessor,
-        SignInProcessor,
         PolicyProcessor,
         RoleProcessor,
         CustomerProcessor,
@@ -153,7 +157,8 @@ class ModularApiHandler(EventProcessorLambdaHandler):
         RegionProcessor,
         TenantSettingsProcessor,
         HealthCheckProcessor,
-        SwaggerProcessor
+        SwaggerProcessor,
+        UsersProcessor
     )
     __slots__ = ('_mapper', '_controllers', 'processors')
 

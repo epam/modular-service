@@ -19,6 +19,7 @@ class HTTPMethod(str, Enum):
 class Endpoint(str, Enum):
     DOC = '/doc'
     ROLES = '/roles'
+    USERS = '/users'
     SIGNUP = '/signup'
     SIGNIN = '/signin'
     TENANTS = '/tenants'
@@ -29,10 +30,12 @@ class Endpoint(str, Enum):
     CUSTOMERS = '/customers'
     HEALTH_LIVE = '/health/live'
     ROLES_NAME = '/roles/{name}'
+    USERS_WHOAMI = '/users/whoami'
     APPLICATIONS = '/applications'
     TENANTS_NAME = '/tenants/{name}'
     REGIONS_NAME = '/regions/{name}'  # maestro name
     POLICIES_NAME = '/policies/{name}'
+    USERS_USERNAME = '/users/{username}'
     CUSTOMERS_NAME = '/customers/{name}'
     APPLICATIONS_ID = '/applications/{id}'
     DOC_SWAGGER_JSON = '/doc/swagger.json'
@@ -136,7 +139,7 @@ class Env(str, Enum):
     VAULT_TOKEN = 'MODULAR_SERVICE_VAULT_TOKEN'
 
     MONGO_URI = 'MODULAR_SERVICE_MONGO_URI'
-    MONGO_DATABASE = 'MODULAR_SERVICE_MONGO_DATABASE'
+    MONGO_DATABASE = 'MODULAR_SERVICE_MONGO_DATABASE', 'modular_service'
 
     EXTERNAL_SSM = 'MODULAR_SERVICE_USE_EXTERNAL_SSM'
 
@@ -196,6 +199,11 @@ class Permission(str, Enum):
     TENANT_SETTING_SET = 'tenant_setting:set'
     TENANT_SETTING_DESCRIBE = 'tenant_setting:describe'
 
+    USERS_DESCRIBE = 'users:describe'
+    USERS_CREATE = 'users:create'
+    USERS_UPDATE = 'users:update'
+    USERS_DELETE = 'users:delete'
+    USERS_GET_CALLER = 'users:get_caller'
     USERS_RESET_PASSWORD = 'users:reset_password'
 
     def __str__(self):
@@ -237,3 +245,11 @@ PARENT_ID_ATTR = 'parent_id'
 # standard for wsgi applications
 REQUEST_METHOD_WSGI_ENV = 'REQUEST_METHOD'
 PRIVATE_KEY_SECRET_NAME = 'modular-service-private-key'
+
+# cognito
+COGNITO_USERNAME = 'cognito:username'
+COGNITO_SUB = 'sub'
+CUSTOM_ROLE_ATTR = 'custom:modular_role'
+CUSTOM_IS_SYSTEM = 'custom:is_system'
+CUSTOM_CUSTOMER_ATTR = 'custom:customer'
+CUSTOM_LATEST_LOGIN_ATTR = 'custom:latest_login'

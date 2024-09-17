@@ -38,6 +38,25 @@ class BaseModel(BaseModelPydantic):
     )
 
 
+def validate_password(password: str) -> list[str]:
+    errors = []
+    upper = any(char.isupper() for char in password)
+    lower = any(char.islower() for char in password)
+    numeric = any(char.isdigit() for char in password)
+    symbol = any(not char.isalnum() for char in password)
+    if not upper:
+        errors.append('must have uppercase characters')
+    if not numeric:
+        errors.append('must have numeric characters')
+    if not lower:
+        errors.append('must have lowercase characters')
+    if not symbol:
+        errors.append('must have at least one symbol')
+    if len(password) < 8:
+        errors.append('valid min length for password: 8')
+    return errors
+
+
 class BasePaginationModel(BaseModel):
     limit: int = Field(50, le=50)
     next_token: str = Field(None)
@@ -153,19 +172,56 @@ class RefreshPostModel(BaseModel):
     refresh_token: str
 
 
+class UserPatchModel(BaseModel):
+    """
+    System admin endpoint
+    """
+    role_name: str = Field(None)
+    password: str = Field(None)
+
+    @model_validator(mode='after')
+    def at_least_one(self) -> Self:
+        if not any((self.role_name, self.password)):
+            raise ValueError('provide at least one attribute to update')
+        return self
+
+    @field_validator('password')
+    @classmethod
+    def _(cls, password: str) -> str:
+        if errors := validate_password(password):
+            raise ValueError(', '.join(errors))
+        return password
+
+
+class UserPostModel(BaseModel):
+    username: str
+    role_name: str
+    password: str
+
+    @field_validator('username', mode='after')
+    @classmethod
+    def check_reserved(cls, username: str) -> str:
+        if username in ('whoami', 'reset-password'):
+            raise ValueError('Such username cannot be used.')
+        return username
+
+    @field_validator('password')
+    @classmethod
+    def _(cls, password: str) -> str:
+        if errors := validate_password(password):
+            raise ValueError(', '.join(errors))
+        return password
+
+
 class UserResetPasswordModel(BaseModel):
     new_password: str
 
     @field_validator('new_password')
     @classmethod
-    def _(cls, v: str) -> str:
-        if len(v) < 8:
-            raise ValueError('password must be at least 8 characters long')
-        if not any([char.isupper() for char in v]):
-            raise ValueError('password must contain uppercase characters')
-        if not any([char.isdigit() for char in v]):
-            raise ValueError('password must contain numeric characters')
-        return v
+    def _(cls, password: str) -> str:
+        if errors := validate_password(password):
+            raise ValueError(', '.join(errors))
+        return password
 
 
 class SignUpPost(BaseModel):
@@ -177,14 +233,10 @@ class SignUpPost(BaseModel):
 
     @field_validator('password')
     @classmethod
-    def _(cls, v: str) -> str:
-        if len(v) < 8:
-            raise ValueError('password must be at least 8 characters long')
-        if not any([char.isupper() for char in v]):
-            raise ValueError('password must contain uppercase characters')
-        if not any([char.isdigit() for char in v]):
-            raise ValueError('password must contain numeric characters')
-        return v
+    def _(cls, password: str) -> str:
+        if errors := validate_password(password):
+            raise ValueError(', '.join(errors))
+        return password
 
 
 class TenantQuery(BasePaginationModel):
@@ -337,3 +389,6 @@ class TenantSettingQuery(BasePaginationModel):
 class TenantSettingPut(BaseModel):
     key: str
     value: dict | list | str | int | float | None
+
+
+

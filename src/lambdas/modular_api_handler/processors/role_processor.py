@@ -12,7 +12,6 @@ from lambdas.modular_api_handler.processors.abstract_processor import (
 )
 from services import SERVICE_PROVIDER
 from services.rbac_service import RBACService
-from services.user_service import CognitoUserService
 from validators.request import BaseModel, BasePaginationModel, RolePatch, RolePost
 from validators.response import MessageModel, RoleResponse, RolesResponse
 from validators.utils import validate_kwargs
@@ -21,15 +20,12 @@ _LOG = get_logger(__name__)
 
 
 class RoleProcessor(AbstractCommandProcessor):
-    def __init__(self, user_service: CognitoUserService,
-                 rbac_service: RBACService):
-        self.user_service = user_service
+    def __init__(self, rbac_service: RBACService):
         self.rbac_service = rbac_service
 
     @classmethod
     def build(cls) -> 'RoleProcessor':
         return cls(
-            user_service=SERVICE_PROVIDER.user_service,
             rbac_service=SERVICE_PROVIDER.rbac_service
         )
 

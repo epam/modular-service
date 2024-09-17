@@ -99,6 +99,13 @@ class TenantSetting(TypedDict):
     value: dict | list | str | int | float | None
 
 
+class User(TypedDict):
+    username: str
+    customer: str | None
+    role: str | None
+    created_at: datetime | None
+
+
 # responses
 class CustomersResponse(BaseModel):
     items: list[Customer]
@@ -167,6 +174,15 @@ class TenantSettingsResponse(BaseModel):
 
 class TenantSettingResponse(BaseModel):
     data: TenantSetting
+
+
+class UserResponse(BaseModel):
+    data: User
+
+
+class UsersResponse(BaseModel):
+    items: list[User]
+    next_token: str | None
 
 
 class MessageModel(BaseModel):
