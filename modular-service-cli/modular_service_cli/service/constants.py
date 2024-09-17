@@ -15,6 +15,7 @@ class HTTPMethod(str, Enum):
 
 class Endpoint(str, Enum):
     ROLES = '/roles'
+    USERS = '/users'
     SIGNUP = '/signup'
     SIGNIN = '/signin'
     TENANTS = '/tenants'
@@ -24,12 +25,15 @@ class Endpoint(str, Enum):
     POLICIES = '/policies'
     CUSTOMERS = '/customers'
     ROLES_NAME = '/roles/{name}'
+    USERS_WHOAMI = '/users/whoami'
     APPLICATIONS = '/applications'
     TENANTS_NAME = '/tenants/{name}'
     REGIONS_NAME = '/regions/{name}'  # maestro name
     POLICIES_NAME = '/policies/{name}'
+    USERS_USERNAME = '/users/{username}'
     CUSTOMERS_NAME = '/customers/{name}'
     APPLICATIONS_ID = '/applications/{id}'
+    DOC_SWAGGER_JSON = '/doc/swagger.json'
     USERS_RESET_PASSWORD = '/users/reset-password'
     TENANTS_NAME_REGIONS = '/tenants/{name}/regions'
     APPLICATIONS_AWS_ROLE = '/applications/aws-role'
