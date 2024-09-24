@@ -21,3 +21,9 @@ mongoService: mongo
 mongoPort: 27017
 vaultService: vault
 vaultPort: 8200
+
+
+modularSdk:
+  serviceMode: docker
+  awsRegion:
+  assumeRoleArn:

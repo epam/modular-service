@@ -66,7 +66,13 @@ spec:
                   name: {{ include "modular-service.fullname" . }}
                   key: db-name
             - name: modular_service_mode
-              value: docker
+              value: {{ default "docker" .Values.modularSdk.serviceMode }}
+            {{- if ne (default "docker" .Values.modularSdk.serviceMode) "docker" }}
+            - name: modular_assume_role_arn
+              value: {{ .Values.modularSdk.assumeRoleArn }}
+            - name: MODULAR_AWS_REGION
+              value: {{ .Values.modularSdk.awsRegion }}
+            {{- end }}
             - name: MODULAR_SERVICE_SYSTEM_USER_PASSWORD
               valueFrom:
                 secretKeyRef:

@@ -120,14 +120,6 @@ class Env(str, Enum):
     # internal envs
     INVOCATION_REQUEST_ID = '_INVOCATION_REQUEST_ID'
 
-    # deprecated envs, but still can be used, but should NOT be used
-    OLD_SERVICE_MODE = 'service_mode'
-    OLD_COGNITO_USER_POOL_NAME = 'cognito_user_pool_name'
-    OLD_COGNITO_USER_POOL_ID = 'user_pool_id'
-    OLD_VAULT_TOKEN = 'VAULT_TOKEN'
-    OLD_VAULT_URL = 'VAULT_URL'
-    OLD_VAULT_PORT = 'VAULT_SERVICE_SERVICE_PORT'
-
     # external envs
     AWS_REGION = 'AWS_REGION', 'us-east-1'
     SERVICE_MODE = 'MODULAR_SERVICE_MODE'

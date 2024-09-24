@@ -257,6 +257,10 @@ class CreateIndexes(ActionHandler):
         from models.policy import Policy
         from models.role import Role
         from models.user import User
+        return Policy, Role, User
+
+    @staticmethod
+    def modular_sdk_models() -> tuple:
         from modular_sdk.models.application import Application
         from modular_sdk.models.customer import Customer
         from modular_sdk.models.job import Job as ModularJob
@@ -265,7 +269,6 @@ class CreateIndexes(ActionHandler):
         from modular_sdk.models.tenant_settings import TenantSettings
         from modular_sdk.models.parent import Parent
         return (
-            Policy, Role, User,
             Application, Customer, ModularJob, RegionModel, Tenant,
             TenantSettings, Parent
         )
@@ -352,8 +355,14 @@ class CreateIndexes(ActionHandler):
             collection.create_indexes(to_create)
 
     def __call__(self):
+        from services import SP
         _LOG.debug('Going to sync indexes with code')
-        for model in self.models():
+        models = []
+        if SP.environment_service.is_docker():
+            models.extend(self.models())
+        if SP.modular.environment_service().is_docker():
+            models.extend(self.modular_sdk_models())
+        for model in models:
             self.ensure_indexes(model)
 
 
@@ -456,6 +465,11 @@ class ActivateRegions(ActionHandler):
     def __call__(self):
         from services import SP
         from modular_sdk.models.region import RegionModel
+        if not SP.modular.environment_service().is_docker():
+            _LOG.warning('Regions won`t be activated because modular sdk '
+                         'is saas mode')
+            # todo this is probably a kludge
+            return
         rs = SP.region_service
         for region in AWS_REGIONS:
             if rs.get_region(region_name=region):
