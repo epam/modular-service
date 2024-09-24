@@ -128,12 +128,14 @@ class PolicyPatch(BaseModel):
 
 class RolePost(BaseModel):
     name: str
-    expiration: datetime
+    expiration: datetime = Field(None)
     policies: set[str]
 
     @field_validator('expiration')
     @classmethod
-    def _(cls, expiration: datetime) -> datetime:
+    def _(cls, expiration: datetime | None) -> datetime | None:
+        if not expiration:
+            return expiration
         expiration.astimezone(timezone.utc)
         if expiration < datetime.now(tz=timezone.utc):
             raise ValueError('Expiration date has already passed')

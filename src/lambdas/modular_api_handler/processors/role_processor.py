@@ -106,7 +106,8 @@ class RoleProcessor(AbstractCommandProcessor):
         role = self.rbac_service.build_role(
             customer=event.customer_id,
             name=event.name,
-            policies=list(event.policies)
+            policies=list(event.policies),
+            expiration=event.expiration
         )
         _LOG.debug('Saving role')
         self.rbac_service.save(role)

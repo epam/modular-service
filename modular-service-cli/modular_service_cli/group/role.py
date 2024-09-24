@@ -41,7 +41,7 @@ def describe(ctx: ContextObj, name: str, limit: int, next_token: str,
 @click.option('--name', '-n', type=str, required=True, help='Role name')
 @click.option('--policies', '-p', multiple=True, required=True,
               help='List of policies to attach to the role')
-@click.option('--expiration', '-e', type=str, required=True,
+@click.option('--expiration', '-e', type=str,
               help='Expiration date, ISO 8601. '
                    'Example: 2024-03-05T11:10:52.482Z')
 @cli_response(attributes_order=attributes_order)
@@ -50,10 +50,11 @@ def add(ctx: ContextObj, name: str, policies: tuple[str], expiration: str,
     """
     Creates the Role entity with the given name
     """
-    try:
-        isoparse(expiration)
-    except ValueError:
-        return ApiResponse.build('Could not parse value from --expiration')
+    if expiration:
+        try:
+            isoparse(expiration)
+        except ValueError:
+            return ApiResponse.build('Could not parse value from --expiration')
     return ctx.api_client.create_role(
         name=name,
         expiration=expiration,
