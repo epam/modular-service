@@ -9,6 +9,7 @@ SYNDICATE_CONFIG_PATH ?= .syndicate-config-main
 
 SERVER_IMAGE_NAME := public.ecr.aws/x4s4z8e1/syndicate/modular-service
 SERVER_IMAGE_TAG ?= $(shell python -c "from src.commons.__version__ import __version__; print(__version__)")
+ADDITIONAL_BUILD_PARAMS ?=
 
 
 check-syndicate:
@@ -47,10 +48,10 @@ clean:
 #make push-manifest
 
 image-arm64:
-	$(DOCKER_EXECUTABLE) build --platform linux/arm64 -t $(SERVER_IMAGE_NAME):$(SERVER_IMAGE_TAG)-arm64 .
+	$(DOCKER_EXECUTABLE) build $(ADDITIONAL_BUILD_PARAMS) --platform linux/arm64 -t $(SERVER_IMAGE_NAME):$(SERVER_IMAGE_TAG)-arm64 .
 
 image-amd64:
-	$(DOCKER_EXECUTABLE) build --platform linux/amd64 -t $(SERVER_IMAGE_NAME):$(SERVER_IMAGE_TAG)-amd64 .
+	$(DOCKER_EXECUTABLE) build $(ADDITIONAL_BUILD_PARAMS) --platform linux/amd64 -t $(SERVER_IMAGE_NAME):$(SERVER_IMAGE_TAG)-amd64 .
 
 
 image-manifest:
