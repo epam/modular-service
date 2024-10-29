@@ -9,7 +9,7 @@ SYNDICATE_CONFIG_PATH ?= .syndicate-config-main
 
 SERVER_IMAGE_NAME := public.ecr.aws/x4s4z8e1/syndicate/modular-service
 SERVER_IMAGE_TAG ?= $(shell python -c "from src.commons.__version__ import __version__; print(__version__)")
-ADDITIONAL_BUILD_PARAMS ?= ""
+ADDITIONAL_BUILD_PARAMS ?=
 
 
 check-syndicate:
