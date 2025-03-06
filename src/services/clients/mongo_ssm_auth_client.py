@@ -2,11 +2,10 @@ import json
 import secrets
 from datetime import timedelta
 from http import HTTPStatus
-from typing import TYPE_CHECKING, cast
+from typing import TYPE_CHECKING
 
 import bcrypt
 from jwcrypto import jwt
-from pymongo import MongoClient
 from pynamodb.pagination import ResultIterator
 
 from commons.constants import Env, PRIVATE_KEY_SECRET_NAME, COGNITO_SUB, \
@@ -15,7 +14,7 @@ from commons.constants import Env, PRIVATE_KEY_SECRET_NAME, COGNITO_SUB, \
 from commons.lambda_response import ResponseFactory
 from commons.log_helper import get_logger
 from commons.time_helper import utc_datetime, utc_iso
-from models import MONGO_CLIENT
+from models import MongoClientSingleton
 from models.user import User
 from services.clients.cognito import UsersIterator, UserWrapper, \
     BaseAuthClient, AuthenticationResult
@@ -53,7 +52,7 @@ class MongoAndSSMAuthClient(BaseAuthClient):
     def __init__(self, ssm_client: 'AbstractSSMClient'):
         self._ssm = ssm_client
         self._jwt_client = None
-        self._refresh_col = cast(MongoClient, MONGO_CLIENT).get_database(
+        self._refresh_col = MongoClientSingleton.get_instance().get_database(
             Env.MONGO_DATABASE.get()
         ).get_collection('ModularRefreshTokenChains')
 
@@ -141,7 +140,7 @@ class MongoAndSSMAuthClient(BaseAuthClient):
         return self.jwt_client.sign(
             claims={
                 COGNITO_USERNAME: user.user_id,
-                COGNITO_SUB: str(user.mongo_id),
+                COGNITO_SUB: str(user.__mongo_id__),
                 CUSTOM_CUSTOMER_ATTR: user.customer,
                 CUSTOM_ROLE_ATTR: user.role,
                 CUSTOM_LATEST_LOGIN_ATTR: user.latest_login,
