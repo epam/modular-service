@@ -1,13 +1,14 @@
-from modular_sdk.models.base_meta import BaseMeta
 from commons.time_helper import utc_datetime
+from commons.constants import Env
 from pynamodb.attributes import UnicodeAttribute, ListAttribute
 
 from models import BaseSafeUpdateModel
 
 
 class Role(BaseSafeUpdateModel):
-    class Meta(BaseMeta):
+    class Meta:
         table_name = 'ModularServiceRoles'
+        region = Env.AWS_REGION.get()
 
     customer = UnicodeAttribute(hash_key=True)
     name = UnicodeAttribute(range_key=True)

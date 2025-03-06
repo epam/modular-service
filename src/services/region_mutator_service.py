@@ -1,10 +1,10 @@
 from typing import Optional
+from http import HTTPStatus
 
 from bson import ObjectId
 
 from commons.log_helper import get_logger
-from modular_sdk.commons import ModularException, RESPONSE_CONFLICT_CODE, \
-    RESPONSE_BAD_REQUEST_CODE, RESPONSE_RESOURCE_NOT_FOUND_CODE
+from modular_sdk.commons import ModularException
 from modular_sdk.commons.constants import CLOUD_PROVIDERS
 from modular_sdk.models.region import RegionModel, RegionAttr
 from modular_sdk.models.tenant import Tenant
@@ -31,13 +31,13 @@ class RegionMutatorService(RegionService):
         by_native_name = self.get_region_by_native_name(native_name, cloud)
         if by_native_name:
             raise ModularException(
-                code=RESPONSE_CONFLICT_CODE,
+                code=HTTPStatus.CONFLICT.value,
                 content=f'Region {native_name} already exists in db'
             )
         by_maestro_name = self.get_region(maestro_name)
         if by_maestro_name:
             raise ModularException(
-                code=RESPONSE_CONFLICT_CODE,
+                code=HTTPStatus.CONFLICT.value,
                 content=f'Region {maestro_name} already exists in db'
             )
         return RegionModel(
@@ -54,7 +54,7 @@ class RegionMutatorService(RegionService):
             _LOG.error(f'Unsupported cloud specified: \'{cloud}\'. '
                        f'Available options: {CLOUD_PROVIDERS}')
             raise ModularException(
-                code=RESPONSE_BAD_REQUEST_CODE,
+                code=HTTPStatus.BAD_REQUEST.value,
                 content=f'Unsupported cloud specified: \'{cloud}\'. '
                         f'Available options: {CLOUD_PROVIDERS}'
             )
@@ -67,7 +67,7 @@ class RegionMutatorService(RegionService):
                     _LOG.error(f'The region id {region_id} is already used by '
                                f'the {region.maestro_name} region.')
                     raise ModularException(
-                        code=RESPONSE_BAD_REQUEST_CODE,
+                        code=HTTPStatus.BAD_REQUEST.value,
                         content=f'The region id {region_id} is already used by'
                                 f' the {region.maestro_name} region.')
         all_region_in_cloud = [region for region in all_region
@@ -78,7 +78,7 @@ class RegionMutatorService(RegionService):
                 _LOG.error(f'The native name {native_name} is already '
                            f'used by the {region.maestro_name} region.')
                 raise ModularException(
-                    code=RESPONSE_BAD_REQUEST_CODE,
+                    code=HTTPStatus.BAD_REQUEST.value,
                     content=f'The native name {native_name} is already '
                             f'used by the {region.maestro_name} region.')
         return RegionModel(
@@ -100,7 +100,7 @@ class RegionMutatorService(RegionService):
                         activated_tenants.append(tenant.name)
         if activated_tenants:
             raise ModularException(
-                code=RESPONSE_BAD_REQUEST_CODE,
+                code=HTTPStatus.BAD_REQUEST.value,
                 content=f'There are activated tenants '
                         f'{activated_tenants} in region {region.maestro_name}')
         region.delete()
@@ -116,7 +116,7 @@ class RegionMutatorService(RegionService):
                 tenant.regions.append(region)
             else:
                 raise ModularException(
-                    code=RESPONSE_BAD_REQUEST_CODE,
+                    code=HTTPStatus.BAD_REQUEST.value,
                     content=f'Region {region.maestro_name} is already '
                             f'activated'
                 )
@@ -128,7 +128,7 @@ class RegionMutatorService(RegionService):
         if not tenant.regions:
             _LOG.error(f'Tenant \'{tenant.name}\' does not have any regions')
             raise ModularException(
-                code=RESPONSE_RESOURCE_NOT_FOUND_CODE,
+                code=HTTPStatus.NOT_FOUND.value,
                 content=f'Tenant \'{tenant.name}\' does not have any regions'
             )
         target_region = None
@@ -140,7 +140,7 @@ class RegionMutatorService(RegionService):
             _LOG.error(f'Region \'{region.maestro_name}\' does not exist in '
                        f'\'{tenant.name}\' tenant.')
             raise ModularException(
-                code=RESPONSE_RESOURCE_NOT_FOUND_CODE,
+                code=HTTPStatus.NOT_FOUND.value,
                 content=f'Region \'{region.maestro_name}\' does not exist in '
                         f'\'{tenant.name}\' tenant.'
             )
@@ -149,7 +149,7 @@ class RegionMutatorService(RegionService):
             _LOG.warning(f'Region \'{region.maestro_name}\' is already '
                          f'deactivated for tenant \'{tenant.name}\'.')
             raise ModularException(
-                code=RESPONSE_BAD_REQUEST_CODE,
+                code=HTTPStatus.BAD_REQUEST.value,
                 content=f'Region \'{region.maestro_name}\' is already '
                         f'deactivated for tenant \'{tenant.name}\'.'
             )
