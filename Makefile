@@ -10,6 +10,7 @@ SYNDICATE_CONFIG_PATH ?= .syndicate-config-main
 SERVER_IMAGE_NAME := public.ecr.aws/x4s4z8e1/syndicate/modular-service
 SERVER_IMAGE_TAG ?= $(shell python -c "from src.commons.__version__ import __version__; print(__version__)")
 
+HELM_REPO_NAME := syndicate
 
 check-syndicate:
 	@if [[ -z "$(SYNDICATE_EXECUTABLE_PATH)" ]]; then echo "No syndicate executable found"; exit 1; fi
@@ -74,3 +75,8 @@ push-manifest:
 cli-dist:
 	python -m build --sdist modular-service-cli/
 
+
+push-helm-chart:
+	helm package --dependency-update deployment/helm/modular-service
+	helm s3 push modular-service-$(SERVER_IMAGE_TAG).tgz $(HELM_REPO_NAME) --relative
+	-rm modular-service-$(SERVER_IMAGE_TAG).tgz
