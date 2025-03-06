@@ -10,6 +10,7 @@ from modular_sdk.models.pynamodb_extension.base_safe_update_model import (
 from modular_sdk.models.pynamodb_extension.pynamodb_to_pymongo_adapter import (
     PynamoDBToPyMongoAdapter,
 )
+from commons.constants import Env
 
 from services import SP
 
@@ -35,6 +36,8 @@ class ModularServiceMongoDBHandlerMixin(ABCMongoDBHandlerMixin):
         if not cls._mongodb:
             cls._mongodb = ADAPTER
         return cls._mongodb
+
+    is_docker = Env.SERVICE_MODE.get() == 'docker'
 
 
 class BaseModel(ModularServiceMongoDBHandlerMixin, RawBaseModel):

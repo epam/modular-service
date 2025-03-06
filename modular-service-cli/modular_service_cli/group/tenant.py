@@ -60,13 +60,12 @@ def describe(ctx: ContextObj, tenant_name, limit, next_token, cloud,
               help='Tenant account ID')
 @click.option('--read_only', '-ro', is_flag=True, 
               help='Mark tenant as read only')
-@click.option('--primary_contacts', type=str, multiple=True, required=True,
+@click.option('--primary_contacts', type=str, multiple=True,
               help='Main contacts')
-@click.option('--secondary_contacts', type=str, multiple=True, required=True,
+@click.option('--secondary_contacts', type=str, multiple=True,
               help='Secondaty contacts')
-@click.option('--tenant_manager_contacts', type=str, multiple=True, 
-              required=True)
-@click.option('--default_owner', type=str, required=True)
+@click.option('--tenant_manager_contacts', type=str, multiple=True)
+@click.option('--default_owner', type=str)
 @cli_response(attributes_order=attributes_order)
 def create(ctx: ContextObj, name, display_name, cloud, account_id, read_only,
            primary_contacts, secondary_contacts, tenant_manager_contacts, 

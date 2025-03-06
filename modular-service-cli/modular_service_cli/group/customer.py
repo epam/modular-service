@@ -44,7 +44,7 @@ def describe(ctx: ContextObj, name, limit, next_token, is_active,
               help='Customer name')
 @click.option('--display_name', '-dn', type=str, required=True,
               help='Customer display name')
-@click.option('--admin', '-a', multiple=True, type=str, required=True,
+@click.option('--admin', '-a', multiple=True, type=str,
               help='List of admin emails attached to customer.')
 @cli_response(attributes_order=attributes_order)
 def add(ctx: ContextObj, name, display_name, admin, customer_id):

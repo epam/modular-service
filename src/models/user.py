@@ -14,3 +14,4 @@ class User(BaseSafeUpdateModel):
     role = UnicodeAttribute(null=True)  # null if system user
     is_system = BooleanAttribute(default=False)
     latest_login = UnicodeAttribute(null=True)
+    created_at = UnicodeAttribute(null=True)

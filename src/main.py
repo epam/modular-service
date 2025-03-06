@@ -1,36 +1,38 @@
 #!/usr/local/bin/python
-from abc import ABC, abstractmethod
 import argparse
 import base64
-from functools import cached_property
 import json
-import logging
 import logging.config
 import multiprocessing
 import os
-from pathlib import Path
 import secrets
 import string
 import sys
-from typing import Any, Callable, Literal, TYPE_CHECKING
-import urllib.error
-import urllib.request
+import uuid
+from abc import ABC, abstractmethod
+from functools import cached_property
+from pathlib import Path
+from typing import Any, Callable, Literal, TYPE_CHECKING, Generator, cast
+
+import pymongo
+from pymongo.operations import IndexModel
+from modular_sdk.commons.constants import Cloud
 
 from commons import dereference_json
 from commons.__version__ import __version__
-from commons.constants import Env, HTTPMethod, PRIVATE_KEY_SECRET_NAME, Permission
+from commons.constants import Env, HTTPMethod, PRIVATE_KEY_SECRET_NAME, \
+    Permission
+from commons.regions import AWS_REGIONS
 
 # NOTE, all imports are inside corresponding methods in order to make cli faster
 if TYPE_CHECKING:
     from models import BaseModel
-    from bottle import Bottle
 
 DEFAULT_HOST = '0.0.0.0'
 DEFAULT_PORT = 8040
 DEFAULT_NUMBER_OF_WORKERS = (multiprocessing.cpu_count() * 2) + 1
 DEFAULT_ON_PREM_API_LINK = f'http://{DEFAULT_HOST}:{str(DEFAULT_PORT)}/caas'
 DEFAULT_API_GATEWAY_NAME = 'custodian-as-a-service-api'
-DEFAULT_SWAGGER_PREFIX = '/api/doc'
 
 ACTION_DEST = 'action'
 ENV_ACTION_DEST = 'env_action'
@@ -43,6 +45,7 @@ CREATE_INDEXES_ACTION = 'create-indexes'
 DUMP_PERMISSIONS_ACTION = 'dump-permissions'
 CREATE_SYSTEM_USER_ACTION = 'create-system-user'
 UPDATE_DEPLOYMENT_RESOURCES_ACTION = 'update-deployment-resources'
+ACTIVATE_REGIONS_ACTION = 'activate-regions'
 
 SYSTEM_USER = 'system_user'
 
@@ -67,7 +70,6 @@ logging.config.dictConfig({
 _LOG = logging.getLogger(__name__)
 
 
-
 def build_parser() -> argparse.ArgumentParser:
     parser = argparse.ArgumentParser(
         description='Modular service main CLI endpoint'
@@ -85,6 +87,10 @@ def build_parser() -> argparse.ArgumentParser:
         '-f', '--filename', type=Path, required=True,
         help='Filename where to write spec'
     )
+    _ = sub_parsers.add_parser(
+        ACTIVATE_REGIONS_ACTION,
+        help='Activates global regions'
+    )
 
     # run
     parser_run = sub_parsers.add_parser(RUN_ACTION, help='Run on-prem server')
@@ -95,14 +101,6 @@ def build_parser() -> argparse.ArgumentParser:
         '-nw', '--workers', type=int, required=False,
         help='Number of gunicorn workers. Must be specified only '
              'if --gunicorn flag is set'
-    )
-    parser_run.add_argument(
-        '-sw', '--swagger', action='store_true', default=False,
-        help='Specify the flag is you want to enable swagger'
-    )
-    parser_run.add_argument(
-        '-swp', '--swagger-prefix', type=str, default=DEFAULT_SWAGGER_PREFIX,
-        help='Swagger path prefix, (default: %(default)s)'
     )
     parser_run.add_argument('--host', default=DEFAULT_HOST, type=str,
                             help='IP address where to run the server')
@@ -184,58 +182,8 @@ class InitVault(ABC):
 
 class Run(ActionHandler):
 
-    def _resolve_urls(self) -> set[str]:
-        """
-        Builds some additional urls for swagger ui
-        :return:
-        """
-        urls = {f'http://127.0.0.1:{self._port}'}
-        try:
-            with urllib.request.urlopen(
-                    'http://169.254.169.254/latest/meta-data/public-ipv4',
-                    timeout=1) as resp:
-                urls.add(f'http://{resp.read().decode()}:{self._port}')
-        except urllib.error.URLError:
-            _LOG.warning('Cannot resolve public-ipv4 from instance metadata')
-        return urls
-
-    def _init_swagger(self, app: 'Bottle', prefix: str, stage: str) -> None:
-        """
-        :param app:
-        :param prefix: prefix for swagger UI
-        :param stage: stage where all endpoints are, the same as API gw
-        :return:
-        """
-        from swagger_ui import api_doc
-        from services.openapi_spec_generator import OpenApiGenerator
-        from lambdas.modular_api_handler.handler import HANDLER
-
-        # from validators import registry
-        url = f'http://{self._host}:{self._port}'
-        urls = self._resolve_urls()
-        urls.add(url)
-        generator = OpenApiGenerator(
-            title='Modular service API',
-            description='Modular service rest API',
-            url=list(urls),
-            stages=stage,
-            version=__version__,
-            endpoints=HANDLER.iter_endpoint()
-        )
-        if not prefix.startswith('/'):
-            prefix = f'/{prefix}'
-        api_doc(
-            app,
-            config=generator.generate(),
-            url_prefix=prefix,
-            title='Modular service'
-        )
-        _LOG.info(f'Serving swagger on {url + prefix}')
-
     def __call__(self, host: str = DEFAULT_HOST, port: int = DEFAULT_PORT,
-                 gunicorn: bool = False, workers: int | None = None,
-                 swagger: bool = False,
-                 swagger_prefix: str = DEFAULT_SWAGGER_PREFIX):
+                 gunicorn: bool = False, workers: int | None = None):
         from onprem.app import OnPremApiBuilder
         self._host = host
         self._port = port
@@ -249,8 +197,6 @@ class Run(ActionHandler):
 
         stage = 'dev'  # todo get from somewhere
         app = OnPremApiBuilder().build(stage)
-        if swagger:
-            self._init_swagger(app, swagger_prefix, stage)
 
         if gunicorn:
             workers = workers or DEFAULT_NUMBER_OF_WORKERS
@@ -258,6 +204,9 @@ class Run(ActionHandler):
             options = {
                 'bind': f'{host}:{port}',
                 'workers': workers,
+                'timeout': 60,
+                'max_requests': 512,
+                'max_requests_jitter': 64
             }
             CustodianGunicornApplication(app, options).run()
         else:
@@ -279,14 +228,15 @@ class CreateSystemUser(ActionHandler):
 
     def __call__(self):
         from services import SP
-        if SP.user_service.client.is_user_exists(SYSTEM_USER):
+        cl = SP.users_client
+        if cl.does_user_exist(SYSTEM_USER):
             _LOG.info('System user already exists')
             return
-        password = os.getenv(Env.SYSTEM_USER_PASSWORD)
+        password = Env.SYSTEM_USER_PASSWORD.get()
         from_env = bool(password)
         if not from_env:
             password = self.gen_password()
-        SP.user_service.save(
+        cl.signup_user(
             username=SYSTEM_USER,
             password=password,
             is_system=True
@@ -298,62 +248,19 @@ class CreateSystemUser(ActionHandler):
 
 
 class CreateIndexes(ActionHandler):
+    main_index_name = 'main'
+    hash_key_order = pymongo.ASCENDING
+    range_key_order = pymongo.DESCENDING
+
     @staticmethod
-    def convert_index(key_schema: dict) -> str | list[tuple]:
-        if len(key_schema) == 1:
-            _LOG.info('Only hash key found for the index')
-            return key_schema[0]['AttributeName']
-        elif len(key_schema) == 2:
-            _LOG.info('Both hash and range keys found for the index')
-            result = [None, None]
-            for key in key_schema:
-                if key['KeyType'] == 'HASH':
-                    _i = 0
-                elif key['KeyType'] == 'RANGE':
-                    _i = 1
-                else:
-                    raise ValueError(f'Unknown key type: {key["KeyType"]}')
-                result[_i] = (key['AttributeName'], -1)  # descending
-            return result
-        else:
-            raise ValueError(f'Unknown key schema: {key_schema}')
-
-    def create_indexes_for_model(self, model: 'BaseModel'):
-        table_name = model.Meta.table_name
-        collection = model.mongodb_handler().mongodb.collection(table_name)
-        collection.drop_indexes()
-
-        hash_key = getattr(model._hash_key_attribute(), 'attr_name', None)
-        range_key = getattr(model._range_key_attribute(), 'attr_name', None)
-        _LOG.info(f'Creating main indexes for \'{table_name}\'')
-        if hash_key and range_key:
-            collection.create_index([(hash_key, 1),
-                                     (range_key, 1)],
-                                    name='main')
-        elif hash_key:
-            collection.create_index(hash_key, name='main')
-        else:
-            _LOG.error(f'Table \'{table_name}\' has no hash_key and range_key')
-
-        indexes = model._get_schema()  # GSIs & LSIs,  # only PynamoDB 5.2.1+
-        gsi = indexes.get('global_secondary_indexes')
-        lsi = indexes.get('local_secondary_indexes')
-        if gsi:
-            _LOG.info(f'Creating global indexes for \'{table_name}\'')
-            for i in gsi:
-                index_name = i['index_name']
-                _LOG.info(f'Processing index \'{index_name}\'')
-                collection.create_index(
-                    self.convert_index(i['key_schema']), name=index_name)
-                _LOG.info(f'Index \'{index_name}\' was created')
-            _LOG.info(f'Global indexes for \'{table_name}\' were created!')
-        if lsi:
-            pass  # write this part if at least one LSI is used
-
-    def __call__(self):
+    def models() -> tuple:
         from models.policy import Policy
         from models.role import Role
         from models.user import User
+        return Policy, Role, User
+
+    @staticmethod
+    def modular_sdk_models() -> tuple:
         from modular_sdk.models.application import Application
         from modular_sdk.models.customer import Customer
         from modular_sdk.models.job import Job as ModularJob
@@ -361,13 +268,102 @@ class CreateIndexes(ActionHandler):
         from modular_sdk.models.tenant import Tenant
         from modular_sdk.models.tenant_settings import TenantSettings
         from modular_sdk.models.parent import Parent
-        models = (
-            Policy, Role, User,
+        return (
             Application, Customer, ModularJob, RegionModel, Tenant,
             TenantSettings, Parent
         )
+
+    @staticmethod
+    def _get_hash_range(model: 'BaseModel') -> tuple[str, str | None]:
+        h, r = None, None
+        for attr in model.get_attributes().values():
+            if attr.is_hash_key:
+                h = attr.attr_name
+            if attr.is_range_key:
+                r = attr.attr_name
+        return cast(str, h), r
+
+    @staticmethod
+    def _iter_indexes(model: 'BaseModel'
+                      ) -> Generator[tuple[str, str, str | None], None, None]:
+        """
+        Yields tuples: (index name, hash_key, range_key) indexes of the given
+        model. Currently, only global secondary indexes are used so this
+        implementation wasn't tested with local ones. Uses private PynamoDB
+        API because cannot find public methods that can help
+        """
+        for index in model._indexes.values():
+            name = index.Meta.index_name
+            h, r = None, None
+            for attr in index.Meta.attributes.values():
+                if attr.is_hash_key:
+                    h = attr.attr_name
+                if attr.is_range_key:
+                    r = attr.attr_name
+            yield name, cast(str, h), r
+
+    def _iter_all_indexes(self, model: 'BaseModel'
+                          ) -> Generator[tuple[str, str, str | None], None, None]:
+        yield self.main_index_name, *self._get_hash_range(model)
+        yield from self._iter_indexes(model)
+
+    @staticmethod
+    def _exceptional_indexes() -> tuple[str, ...]:
+        return '_id_',
+
+    def ensure_indexes(self, model: 'BaseModel'):
+        table_name = model.Meta.table_name
+        _LOG.info(f'Going to check indexes for {table_name}')
+        collection = model.mongodb_handler().mongodb.collection(table_name)
+        existing = collection.index_information()
+        for name in self._exceptional_indexes():
+            existing.pop(name, None)
+        needed = {}
+        for name, h, r in self._iter_all_indexes(model):
+            needed[name] = [(h, self.hash_key_order)]
+            if r:
+                needed[name].append((r, self.range_key_order))
+        to_create = []
+        to_delete = set()
+        for name, data in existing.items():
+            if name not in needed:
+                to_delete.add(name)
+                continue
+            # name in needed so maybe the index is valid, and we must keep it
+            # or the index has changed, and we need to re-create it
+            if data.get('key', []) != needed[name]:  # not valid
+                to_delete.add(name)
+                to_create.append(IndexModel(
+                    keys=needed[name],
+                    name=name
+                ))
+            needed.pop(name)
+        for name, keys in needed.items():  # all that left must be created
+            to_create.append(IndexModel(
+                keys=keys,
+                name=name
+            ))
+        for name in to_delete:
+            _LOG.info(f'Going to remove index: {name}')
+            collection.drop_index(name)
+        if to_create:
+            _message = ','.join(
+                json.dumps(i.document,
+                           separators=(',', ':')) for i in to_create
+            )
+            _LOG.info(f'Going to create indexes: {_message}')
+            collection.create_indexes(to_create)
+
+    def __call__(self):
+        from services import SP
+        _LOG.debug('Going to sync indexes with code')
+        models = []
+        if SP.environment_service.is_docker():
+            models.extend(self.models())
+        if SP.modular.environment_service().is_docker():
+            models.extend(self.modular_sdk_models())
         for model in models:
-            self.create_indexes_for_model(model)
+            self.ensure_indexes(model)
 
 
 class GenerateOpenApi(ActionHandler):
@@ -465,6 +461,31 @@ class UpdateDeploymentResources(ActionHandler):
         _LOG.info(f'{filename} has been updated')
 
 
+class ActivateRegions(ActionHandler):
+    def __call__(self):
+        from services import SP
+        from modular_sdk.models.region import RegionModel
+        if not SP.modular.environment_service().is_docker():
+            _LOG.warning('Regions won`t be activated because modular sdk '
+                         'is saas mode')
+            # todo this is probably a kludge
+            return
+        rs = SP.region_service
+        for region in AWS_REGIONS:
+            if rs.get_region(region_name=region):
+                continue
+            _LOG.debug(f'Activation {region}')
+            # rs.create is too expensive
+            rs.save(RegionModel(
+                region_id=str(uuid.uuid4()),
+                maestro_name=region,
+                native_name=region,
+                cloud=Cloud.AWS.value,
+                is_active=True
+            ))
+        _LOG.info('Regions were created')
+
+
 def main(args: list[str] | None = None):
     parser = build_parser()
     arguments = parser.parse_args(args)
@@ -479,7 +500,8 @@ def main(args: list[str] | None = None):
         (CREATE_INDEXES_ACTION,): CreateIndexes(),
         (GENERATE_OPENAPI_ACTION,): GenerateOpenApi(),
         (DUMP_PERMISSIONS_ACTION,): DumpPermissions(),
-        (UPDATE_DEPLOYMENT_RESOURCES_ACTION, ): UpdateDeploymentResources()
+        (UPDATE_DEPLOYMENT_RESOURCES_ACTION, ): UpdateDeploymentResources(),
+        (ACTIVATE_REGIONS_ACTION, ): ActivateRegions()
     }
     func = mapping.get(key) or (lambda **kwargs: _LOG.error('Hello'))
     for dest in ALL_NESTING:
@@ -487,7 +509,11 @@ def main(args: list[str] | None = None):
             delattr(arguments, dest)
     from dotenv import load_dotenv
     load_dotenv(verbose=True)
-    func(**vars(arguments))
+    try:
+        func(**vars(arguments))
+    except Exception as e:
+        _LOG.error(f'Unexpected exception occurred: {e}')
+        exit(1)  # some connection errors for entrypoint.sh
 
 
 if __name__ == '__main__':

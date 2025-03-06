@@ -47,6 +47,7 @@ class ProcessedEvent(TypedDict):
     body: dict  # maybe better str in order not to bind to json
     query: dict
     path_params: dict
+    headers: dict
 
 
 class ApiGatewayEventProcessor(AbstractEventProcessor):
@@ -75,7 +76,8 @@ class ApiGatewayEventProcessor(AbstractEventProcessor):
                                        'custom:is_system')) or False,
             'body': body,
             'query': dict(event.get('queryStringParameters') or {}),
-            'path_params': dict(event.get('pathParameters') or {})
+            'path_params': dict(event.get('pathParameters') or {}),
+            'headers': event['headers']
         }
 
 

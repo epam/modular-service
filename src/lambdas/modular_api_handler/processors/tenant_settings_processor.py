@@ -61,6 +61,7 @@ class TenantSettingsProcessor(AbstractCommandProcessor):
 
     @validate_kwargs
     def query(self, event: TenantSettingQuery, name: str):
+        name = name.upper()
         tenant = self._get_tenant(name, event.customer_id)
         if not tenant:
             raise ResponseFactory(HTTPStatus.NOT_FOUND).message(
@@ -81,6 +82,7 @@ class TenantSettingsProcessor(AbstractCommandProcessor):
 
     @validate_kwargs
     def put(self, event: TenantSettingPut, name: str):
+        name = name.upper()
         tenant = self._get_tenant(name, event.customer_id)
         if not tenant:
             raise ResponseFactory(HTTPStatus.NOT_FOUND).message(

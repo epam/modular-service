@@ -115,6 +115,7 @@ class TenantProcessor(AbstractCommandProcessor):
 
     @validate_kwargs
     def get(self, event: BaseModel, name: str):
+        name = name.upper()
         tenant = self._get_tenant(name, event.customer_id)
         if not tenant:
             raise ResponseFactory(HTTPStatus.NOT_FOUND).default().exc()
@@ -164,6 +165,7 @@ class TenantProcessor(AbstractCommandProcessor):
 
     @validate_kwargs
     def activate(self, event: BaseModel, name: str):
+        name = name.upper()
         tenant = self._get_tenant(name, event.customer_id)
         if not tenant:
             raise ResponseFactory(HTTPStatus.NOT_FOUND).default().exc()
@@ -172,6 +174,7 @@ class TenantProcessor(AbstractCommandProcessor):
 
     @validate_kwargs
     def deactivate(self, event: BaseModel, name: str):
+        name = name.upper()
         tenant = self._get_tenant(name, event.customer_id)
         if not tenant:
             raise ResponseFactory(HTTPStatus.NOT_FOUND).default().exc()
@@ -180,6 +183,7 @@ class TenantProcessor(AbstractCommandProcessor):
 
     @validate_kwargs
     def delete(self, event: BaseModel, name: str):
+        name = name.upper()
         tenant = self._get_tenant(name, event.customer_id)
 
         if not tenant:

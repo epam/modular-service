@@ -15,16 +15,13 @@ class EnvironmentService:
                 or self._env.get('AWS_DEFAULT_REGION') or 'us-east-1')
 
     def is_docker(self) -> bool:
-        return (self._env.get(Env.SERVICE_MODE) == 'docker'
-                or self._env.get(Env.OLD_SERVICE_MODE) == 'docker')
+        return self._env.get(Env.SERVICE_MODE) == 'docker'
 
     def user_pool_name(self) -> str | None:
-        return (self._env.get(Env.COGNITO_USER_POOL_NAME)
-                or self._env.get(Env.OLD_COGNITO_USER_POOL_NAME))
+        return self._env.get(Env.COGNITO_USER_POOL_NAME)
 
     def user_pool_id(self) -> str | None:
-        return (self._env.get(Env.COGNITO_USER_POOL_ID)
-                or self._env.get(Env.OLD_COGNITO_USER_POOL_ID))
+        return self._env.get(Env.COGNITO_USER_POOL_ID)
 
     def _ensure_env(self, name: Env) -> str:
         val = self._env.get(name)

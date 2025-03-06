@@ -1,5 +1,6 @@
 import json
 import os
+import sys
 import urllib.error
 from abc import ABC, abstractmethod
 from datetime import timezone
@@ -76,6 +77,14 @@ class cli_response:  # noqa
         self._attributes_order = attributes_order
         self._check_api_link = check_api_link
         self._check_access_token = check_access_token
+
+    @staticmethod
+    def to_exit_code(code: HTTPStatus | None) -> int:
+        if not code:
+            return 1
+        if 200 <= code < 400:
+            return 0
+        return 1
 
     @staticmethod
     def update_context(ctx: click.Context):
@@ -198,6 +207,7 @@ class cli_response:  # noqa
                 _LOG.info('Returning json view')
                 data = JsonResponseProcessor().format(resp)
                 click.echo(json.dumps(data, indent=2))
+            sys.exit(self.to_exit_code(resp.code))
 
         return wrapper
 

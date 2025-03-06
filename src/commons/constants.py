@@ -1,5 +1,6 @@
+import os
 from enum import Enum
-from typing import Iterator
+from typing import Iterator, MutableMapping
 
 from typing_extensions import Self
 
@@ -16,7 +17,9 @@ class HTTPMethod(str, Enum):
 
 
 class Endpoint(str, Enum):
+    DOC = '/doc'
     ROLES = '/roles'
+    USERS = '/users'
     SIGNUP = '/signup'
     SIGNIN = '/signin'
     TENANTS = '/tenants'
@@ -25,13 +28,17 @@ class Endpoint(str, Enum):
     REFRESH = '/refresh'
     POLICIES = '/policies'
     CUSTOMERS = '/customers'
+    HEALTH_LIVE = '/health/live'
     ROLES_NAME = '/roles/{name}'
+    USERS_WHOAMI = '/users/whoami'
     APPLICATIONS = '/applications'
     TENANTS_NAME = '/tenants/{name}'
     REGIONS_NAME = '/regions/{name}'  # maestro name
     POLICIES_NAME = '/policies/{name}'
+    USERS_USERNAME = '/users/{username}'
     CUSTOMERS_NAME = '/customers/{name}'
     APPLICATIONS_ID = '/applications/{id}'
+    DOC_SWAGGER_JSON = '/doc/swagger.json'
     USERS_RESET_PASSWORD = '/users/reset-password'
     TENANTS_NAME_REGIONS = '/tenants/{name}/regions'
     APPLICATIONS_AWS_ROLE = '/applications/aws-role'
@@ -70,25 +77,53 @@ class Endpoint(str, Enum):
         return
 
 
+_SENTINEL = object()
+
+
 class Env(str, Enum):
     """
     Collection of available environment variables
     """
+
+    default: str | None
+
+    @staticmethod
+    def source() -> MutableMapping:
+        return os.environ
+
+    def __new__(cls, value: str, default: str | None = None):
+        """
+        All environment variables and optionally their default values.
+        Since envs always have string type the default value also should be
+        of string type and then converted to the necessary type in code.
+        There is no default value if not specified (default equal to unset)
+        """
+        obj = str.__new__(cls, value)
+        obj._value_ = value
+
+        obj.default = default
+        return obj
+
+    def get(self, default=_SENTINEL) -> str | None:
+        if default is _SENTINEL:
+            default = self.default
+        if default is not None:
+            default = str(default)
+        return self.source().get(self.value, default)
+
+    def set(self, val: str | None):
+        if val is None:
+            self.source().pop(self.value, None)
+        else:
+            self.source()[self.value] = str(val)
+
     # internal envs
     INVOCATION_REQUEST_ID = '_INVOCATION_REQUEST_ID'
 
-    # deprecated envs, but still can be used, but should NOT be used
-    OLD_SERVICE_MODE = 'service_mode'
-    OLD_COGNITO_USER_POOL_NAME = 'cognito_user_pool_name'
-    OLD_COGNITO_USER_POOL_ID = 'user_pool_id'
-    OLD_VAULT_TOKEN = 'VAULT_TOKEN'
-    OLD_VAULT_URL = 'VAULT_URL'
-    OLD_VAULT_PORT = 'VAULT_SERVICE_SERVICE_PORT'
-
     # external envs
-    AWS_REGION = 'AWS_REGION'
+    AWS_REGION = 'AWS_REGION', 'us-east-1'
     SERVICE_MODE = 'MODULAR_SERVICE_MODE'
-    LOG_LEVEL = 'MODULAR_SERVICE_LOG_LEVEL'
+    LOG_LEVEL = 'MODULAR_SERVICE_LOG_LEVEL', 'INFO'
     COGNITO_USER_POOL_NAME = 'MODULAR_SERVICE_COGNITO_USER_POOL_NAME'
     COGNITO_USER_POOL_ID = 'MODULAR_SERVICE_COGNITO_USER_POOL_ID'
 
@@ -96,7 +131,7 @@ class Env(str, Enum):
     VAULT_TOKEN = 'MODULAR_SERVICE_VAULT_TOKEN'
 
     MONGO_URI = 'MODULAR_SERVICE_MONGO_URI'
-    MONGO_DATABASE = 'MODULAR_SERVICE_MONGO_DATABASE'
+    MONGO_DATABASE = 'MODULAR_SERVICE_MONGO_DATABASE', 'modular_service'
 
     EXTERNAL_SSM = 'MODULAR_SERVICE_USE_EXTERNAL_SSM'
 
@@ -156,6 +191,11 @@ class Permission(str, Enum):
     TENANT_SETTING_SET = 'tenant_setting:set'
     TENANT_SETTING_DESCRIBE = 'tenant_setting:describe'
 
+    USERS_DESCRIBE = 'users:describe'
+    USERS_CREATE = 'users:create'
+    USERS_UPDATE = 'users:update'
+    USERS_DELETE = 'users:delete'
+    USERS_GET_CALLER = 'users:get_caller'
     USERS_RESET_PASSWORD = 'users:reset_password'
 
     def __str__(self):
@@ -197,3 +237,11 @@ PARENT_ID_ATTR = 'parent_id'
 # standard for wsgi applications
 REQUEST_METHOD_WSGI_ENV = 'REQUEST_METHOD'
 PRIVATE_KEY_SECRET_NAME = 'modular-service-private-key'
+
+# cognito
+COGNITO_USERNAME = 'cognito:username'
+COGNITO_SUB = 'sub'
+CUSTOM_ROLE_ATTR = 'custom:modular_role'
+CUSTOM_IS_SYSTEM = 'custom:is_system'
+CUSTOM_CUSTOMER_ATTR = 'custom:customer'
+CUSTOM_LATEST_LOGIN_ATTR = 'custom:latest_login'

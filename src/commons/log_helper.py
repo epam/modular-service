@@ -1,30 +1,54 @@
 import json
 import logging
-import os
+import logging.config
+from datetime import datetime, timezone
 from typing import TypeVar
+
 from commons.constants import Env
 
-LOG_FORMAT = '%(asctime)s - %(levelname)s - %(name)s - %(message)s'
-
-logger = logging.getLogger('modular-service-api')
-logger.propagate = False
-console_handler = logging.StreamHandler()
-console_handler.setFormatter(logging.Formatter(LOG_FORMAT))
-logger.addHandler(console_handler)
-
-log_level = os.getenv(Env.LOG_LEVEL) or 'DEBUG'
-try:
-    logger.setLevel(log_level)
-except ValueError:  # not valid log level name
-    logger.setLevel(logging.INFO)
-logging.captureWarnings(True)
+LOG_FORMAT = '%(asctime)s %(levelname)s %(name)s.%(funcName)s:%(lineno)d %(message)s'
+# there is no root module so just make up this ephemeral module
+ROOT_MODULE = 'modular-service'
 
 
-def get_logger(log_name, level=log_level):
-    module_logger = logger.getChild(log_name)
+class CustomFormatter(logging.Formatter):
+    def formatTime(self, record, datefmt=None):
+        if datefmt is not None:
+            return super().formatTime(record, datefmt)
+        return datetime.fromtimestamp(record.created, timezone.utc).isoformat()
+
+
+logging.captureWarnings(capture=True)
+logging.config.dictConfig({
+    'version': 1,
+    'disable_existing_loggers': False,
+    'formatters': {
+        'console_formatter': {
+            'format': LOG_FORMAT,
+            '()': CustomFormatter
+        }
+    },
+    'handlers': {
+        'console_handler': {
+            'class': 'logging.StreamHandler',
+            'formatter': 'console_formatter'
+        }
+    },
+    'loggers': {
+        ROOT_MODULE: {
+            'level': Env.LOG_LEVEL.get(),
+            'handlers': ['console_handler'],
+            'propagate': False
+        },
+    }
+})
+
+
+def get_logger(name: str, level: str | None = None, /):
+    log = logging.getLogger(ROOT_MODULE).getChild(name)
     if level:
-        module_logger.setLevel(level)
-    return module_logger
+        log.setLevel(level)
+    return log
 
 
 SECRET_KEYS = {

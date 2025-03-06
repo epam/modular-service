@@ -1,66 +1,112 @@
 services:
   wsgi:
     build: .
-    image: modular-service:latest
+    image: public.ecr.aws/x4s4z8e1/syndicate/modular-service:5.4.0
     container_name: modular-service
     ports:
       - "8040:8040"
     environment:
       MODULAR_SERVICE_VAULT_ENDPOINT: http://vault:8200
-      MODULAR_SERVICE_VAULT_TOKEN: ${MY_VAULT_TOKEN:-test}
-      MODULAR_SERVICE_MONGO_URI: mongodb://mongouser:mongopassword@mongo:27017/
-      MODULAR_SERVICE_MONGO_DATABASE: custodian_as_a_service
+      MODULAR_SERVICE_VAULT_TOKEN: ${MODULAR_SERVICE_VAULT_TOKEN:-token}
+      MODULAR_SERVICE_MONGO_URI: "mongodb://${MODULAR_SERVICE_MONGO_USERNAME:-mongouser}:${MODULAR_SERVICE_MONGO_PASSWORD:-mongopassword}@mongo:27017/"
+      MODULAR_SERVICE_MONGO_DATABASE: modular-service
       modular_service_mode: docker
-      modular_mongo_db_name: custodian_as_a_service
-      modular_mongo_user: mongouser
-      modular_mongo_password: mongopassword
+      modular_mongo_db_name: modular-service
+      modular_mongo_user: "${MODULAR_SERVICE_MONGO_USERNAME:-mongouser}"
+      modular_mongo_password: "${MODULAR_SERVICE_MONGO_PASSWORD:-mongopassword}"
       modular_mongo_url: mongo:27017
-      VAULT_TOKEN: ${MY_VAULT_TOKEN:-test}
+      VAULT_TOKEN: ${MODULAR_SERVICE_VAULT_TOKEN:-token}
       VAULT_URL: vault
       VAULT_SERVICE_SERVICE_PORT: 8200
     depends_on:
       - mongo
-      - vault-init
+      - vault
     restart: always
   mongo:
-    image: mongo:latest
+    image: mongo:5.0.28
     container_name: mongo
+    healthcheck:
+      test: echo 'db.runCommand("ping").ok' | mongosh localhost:27017/test --quiet
+      interval: 20s
+      timeout: 5s
+      retries: 3
+      start_period: 30s
+    #      start_interval: 5s  # in case this setting is supported it should become healthy must faster
     volumes:
       - mongo-data:/data/db
     environment:
-      MONGO_INITDB_ROOT_USERNAME: mongouser
-      MONGO_INITDB_ROOT_PASSWORD: mongopassword
-#    ports:
-#      - "27017:27017"
+      MONGO_INITDB_ROOT_USERNAME: "${MODULAR_SERVICE_MONGO_USERNAME:-mongouser}"
+      MONGO_INITDB_ROOT_PASSWORD: "${MODULAR_SERVICE_MONGO_PASSWORD:-mongopassword}"
+    ports:
+      - "27017:27017"
     restart: always
   vault:
-    image: vault:1.13.3
+    image: hashicorp/vault:1.17.2
     container_name: vault
     ports:
-      - 8200:8200
+      - "8200:8200"
     volumes:
-      - ./deployment/compose/config.hcl:/vault/config/config.hcl
       - vault-data:/vault/file/
+    configs:
+      - source: vault_config
+        target: /vault/config/config.hcl
+      - source: vault_init
+        target: /usr/local/bin/vault-init.sh
+        mode: 0551
     environment:
-      - VAULT_ADDR=http://127.0.0.1:8200
+      VAULT_ADDR: http://127.0.0.1:8200
+      MY_VAULT_TOKEN: "${MODULAR_SERVICE_VAULT_TOKEN:-token}"
     cap_add:
       - IPC_LOCK
-    command: server
+    entrypoint: /usr/local/bin/vault-init.sh
     restart: always
-  vault-init:
-    image: vault:1.13.3
-    container_name: vault-init
-    environment:
-      - VAULT_ADDR=http://vault:8200
-      - MY_VAULT_TOKEN=${MY_VAULT_TOKEN:-test}
-    volumes:
-      - ./vault-root-token:/vault/file/vault-root-token
-      - ./deployment/compose/vault-init.sh:/usr/local/bin/vault-init.sh
-      - vault-data:/vault/file/
-    command: /usr/local/bin/vault-init.sh
-    restart: on-failure
-    depends_on:
-      - vault
+    healthcheck:
+      test: [ "CMD", "wget", "--spider", "--proxy", "off", "http://127.0.0.1:8200/v1/sys/health?standbyok=true"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+      start_period: 20s
+  #      start_interval: 5s  # in case this setting is supported it should become healthy must faster
 volumes:
   vault-data:
   mongo-data:
+configs:
+  vault_config:
+    content: |
+      ui = true
+      listener "tcp" {
+        address     = "0.0.0.0:8200"
+        tls_disable = 1
+      }
+      storage "file" {
+        path = "/vault/file"
+      }
+      api_addr = "http://127.0.0.1:8200"
+      disable_mlock = "true"
+  vault_init:
+    content: |
+      #!/usr/bin/env sh
+      set -e
+      unseal () {
+        vault operator unseal $(grep 'Key 1:' /vault/file/keys | awk '{print $$NF}')
+        vault operator unseal $(grep 'Key 2:' /vault/file/keys | awk '{print $$NF}')
+        vault operator unseal $(grep 'Key 3:' /vault/file/keys | awk '{print $$NF}')
+      }
+      init () { vault operator init > /vault/file/keys; }
+      log_in () {
+        export ROOT_TOKEN=$(grep 'Initial Root Token:' /vault/file/keys | awk '{print $$NF}')
+        vault login "$$ROOT_TOKEN"
+      }
+      create_token () { vault token create -id "$$MY_VAULT_TOKEN"; }
+      vault server -config=/vault/config/config.hcl &
+      sleep 1
+      if [ -s /vault/file/keys ]; then
+        unseal
+      else
+        init
+        unseal
+        log_in
+        create_token
+      fi
+      vault status > /vault/file/status
+      wait

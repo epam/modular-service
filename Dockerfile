@@ -19,8 +19,11 @@ RUN rm -rf $(find /root/.local/lib -name "*.dist-info") && rm -rf $(find /root/.
 
 FROM public.ecr.aws/docker/library/python:3.10-slim AS build-image
 
+RUN apt-get update && apt-get install -y wget && apt-get clean  # for compose health check
+
 COPY --from=compile-image /root/.local /root/.local
 COPY --from=compile-image /src /src
+
 
 ENV AWS_REGION=us-east-1 \
     MODULAR_SERVICE_MODE=docker \

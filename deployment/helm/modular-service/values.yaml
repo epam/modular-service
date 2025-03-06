@@ -1,0 +1,34 @@
+databaseName: custodian_as_a_service
+
+service:
+  type: ClusterIP
+  port: 8040
+  nodePort: 32104
+
+image:
+  repository: public.ecr.aws/x4s4z8e1/syndicate/modular-service
+  tag: 3.2.0
+  pullPolicy: Always
+
+
+replicas: 1
+strategy:
+  type: RollingUpdate
+  maxUnavailable: 0
+  maxSurge: 100%
+
+mongoService: mongo
+mongoPort: 27017
+vaultService: vault
+vaultPort: 8200
+
+
+modularSdk:
+  serviceMode: docker
+  awsRegion:
+  assumeRoleArn:
+
+
+httpProxy: ''
+httpsProxy: ''
+noProxy: 'localhost,127.0.0.1,169.254.169.254,mongo,vault,minio'
