@@ -1,4 +1,5 @@
 databaseName: custodian_as_a_service
+mongoUri:
 
 service:
   type: ClusterIP
@@ -27,7 +28,11 @@ modularSdk:
   serviceMode: docker
   awsRegion:
   assumeRoleArn:
+  mongoUri:
+  databaseName: custodian_as_a_service
+  logLevel: WARNING
 
+logLevel: INFO
 
 httpProxy: ''
 httpsProxy: ''
