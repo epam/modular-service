@@ -322,20 +322,25 @@ class CreateIndexes(ActionHandler):
     def __call__(self):
         _LOG.debug('Going to sync indexes with code')
         from models import BaseModel
+        from modular_sdk.models.pynamongo.models import ModularBaseModel
         from services import SP
 
-        models = []
         if Env.is_docker():
-            models.extend(self.models())
+            creator = IndexesCreator(
+                db=BaseModel.mongo_adapter().mongo_database,
+                main_index_name='main',
+                ignore_indexes=('_id_',),
+            )
+            for model in self.models():
+                creator.sync(model)
         if SP.modular.environment_service().is_docker():
-            models.extend(self.modular_sdk_models())
-        creator = IndexesCreator(
-            db=BaseModel.mongo_adapter().mongo_database,
-            main_index_name='main',
-            ignore_indexes=('_id_',),
-        )
-        for model in models:
-            creator.sync(model)
+            creator = IndexesCreator(
+                db=ModularBaseModel.mongo_adapter().mongo_database,
+                main_index_name='main',
+                ignore_indexes=('_id_',),
+            )
+            for model in self.modular_sdk_models():
+                creator.sync(model)
 
 
 class GenerateOpenApi(ActionHandler):

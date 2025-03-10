@@ -10,7 +10,7 @@ start_server() {
   python main.py create-indexes
 
   log "Creating a system user"
-  python main.py create-indexes
+  python main.py create-system-user
 
   log "Initializing vault"
   python main.py init-vault

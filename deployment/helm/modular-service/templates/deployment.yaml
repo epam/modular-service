@@ -98,7 +98,7 @@ spec:
                   name: vault-secret
                   key: token
             - name: MODULAR_SERVICE_MONGO_URI
-            {{- if .Value.mongoUri }}
+            {{- if .Values.mongoUri }}
               value: "{{ .Values.mongoUri }}"
             {{- else }}
               value: "mongodb://$(MODULAR_SDK_MONGO_USER):$(MODULAR_SDK_MONGO_PASSWORD)@{{ .Values.mongoService }}:{{ .Values.mongoPort }}/"
