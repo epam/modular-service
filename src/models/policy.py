@@ -11,4 +11,4 @@ class Policy(BaseSafeUpdateModel):
 
     customer = UnicodeAttribute(hash_key=True)
     name = UnicodeAttribute(range_key=True)
-    permissions = ListAttribute(default=list)
+    permissions = ListAttribute(default=list, of=UnicodeAttribute)

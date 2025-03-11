@@ -13,7 +13,7 @@ class Role(BaseSafeUpdateModel):
     customer = UnicodeAttribute(hash_key=True)
     name = UnicodeAttribute(range_key=True)
     expiration = UnicodeAttribute(null=True)  # ISO8601, valid to date
-    policies = ListAttribute(default=list)
+    policies = ListAttribute(default=list, of=UnicodeAttribute)
 
     @property
     def has_expired(self) -> bool:
