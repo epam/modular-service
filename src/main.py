@@ -14,9 +14,6 @@ from functools import cached_property
 from pathlib import Path
 from typing import Any, Callable, Literal
 
-from dotenv import load_dotenv
-
-load_dotenv(verbose=True)  # noqa
 from modular_sdk.commons.constants import Cloud
 from modular_sdk.models.pynamongo.indexes_creator import IndexesCreator
 
@@ -171,8 +168,9 @@ class InitVault(ABC):
             )
             exit(1)
         ssm = SP.ssm
-        if ssm.enable_secrets_engine():
-            _LOG.info('Vault engine was enabled')
+        if not ssm.is_secrets_engine_enabled():
+            _LOG.info('Enabling secrets engine')
+            ssm.enable_secrets_engine()
         else:
             _LOG.info('Vault engine has been already enabled')
         if ssm.get_parameter(PRIVATE_KEY_SECRET_NAME):

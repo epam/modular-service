@@ -4,8 +4,24 @@ description = "Service that allows to manage common modular entities"
 readme = "README.md"
 requires-python = ">=3.10"
 license = {file = "LICENSE"}
-dependencies = []
+version = "3.3.0"
+dependencies = [
+    "modular-sdk @ git+https://github.com/epam/modular-sdk@9b3023d759a85cb5a8e71fb47f07b606ea70f73c",
+    "pydantic~=2.8.2",
+    "python-dateutil>=2.9.0.post0",
+    "routes~=2.5.1",
+    "typing-extensions~=4.12.2",
+]
 
+[dependency-groups]
+onprem = [
+    "bcrypt~=4.1.2",
+    "bottle~=0.12.25",
+    "cryptography==43.0.3",
+    "gunicorn~=21.2.0",
+    "hvac~=2.1.0",
+    "jwcrypto~=1.5.6",
+]
 
 [tool.pyright]
 pythonVersion = "3.10"

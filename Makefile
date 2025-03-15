@@ -2,6 +2,7 @@
 .DEFAULT_GOAL := test
 
 DOCKER_EXECUTABLE := podman
+DOCKERFILE_NAME := Dockerfile
 CLI_VENV_NAME := cli_venv
 
 SYNDICATE_EXECUTABLE_PATH ?= $(shell which syndicate)
@@ -48,10 +49,10 @@ clean:
 #make push-manifest
 
 image-arm64:
-	$(DOCKER_EXECUTABLE) build --platform linux/arm64 -t $(SERVER_IMAGE_NAME):$(SERVER_IMAGE_TAG)-arm64 .
+	$(DOCKER_EXECUTABLE) build --platform linux/arm64 -t $(SERVER_IMAGE_NAME):$(SERVER_IMAGE_TAG)-arm64 -f $(DOCKERFILE_NAME) .
 
 image-amd64:
-	$(DOCKER_EXECUTABLE) build --platform linux/amd64 -t $(SERVER_IMAGE_NAME):$(SERVER_IMAGE_TAG)-amd64 .
+	$(DOCKER_EXECUTABLE) build --platform linux/amd64 -t $(SERVER_IMAGE_NAME):$(SERVER_IMAGE_TAG)-amd64 -f $(DOCKERFILE_NAME) .
 
 
 image-manifest:

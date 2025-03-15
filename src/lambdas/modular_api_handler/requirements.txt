@@ -1,5 +1,5 @@
+modular-sdk @ git+https://github.com/epam/modular-sdk@9b3023d759a85cb5a8e71fb47f07b606ea70f73c
 pydantic~=2.8.2
-typing_extensions~=4.12.2
-Routes~=2.5.1
-python-dateutil>=2.8.2,<3.0
-modular-sdk==7.0.0-alpha  # contains all other requirements that we need
+python-dateutil>=2.9.0.post0
+routes~=2.5.1
+typing-extensions~=4.12.2

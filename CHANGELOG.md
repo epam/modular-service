@@ -8,6 +8,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [3.3.0] - 2025-03-06
 - updated modular-sdk to 7.0.0
 - added helm command to Makefile
+- removed python-dotenv
 
 ## [3.2.0] - 2024-07-31
 - added endpoint for health check
