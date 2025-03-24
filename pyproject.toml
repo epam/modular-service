@@ -6,7 +6,7 @@ requires-python = ">=3.10"
 license = {file = "LICENSE"}
 version = "3.3.0"
 dependencies = [
-    "modular-sdk @ git+https://github.com/epam/modular-sdk@9b3023d759a85cb5a8e71fb47f07b606ea70f73c",
+    "modular-sdk @ git+https://github.com/epam/modular-sdk@afd3de743dab6023426a0758276649ba68dd56db",
     "pydantic~=2.8.2",
     "python-dateutil>=2.9.0.post0",
     "routes~=2.5.1",

@@ -14,6 +14,7 @@ from functools import cached_property
 from pathlib import Path
 from typing import Any, Callable, Literal
 
+import pymongo
 from modular_sdk.commons.constants import Cloud
 from modular_sdk.models.pynamongo.indexes_creator import IndexesCreator
 
@@ -319,26 +320,24 @@ class CreateIndexes(ActionHandler):
 
     def __call__(self):
         _LOG.debug('Going to sync indexes with code')
-        from models import BaseModel
+        from models import PynamoDBToPymongoAdapterSingleton
         from modular_sdk.models.pynamongo.models import ModularBaseModel
         from services import SP
 
         if Env.is_docker():
-            creator = IndexesCreator(
-                db=BaseModel.mongo_adapter().mongo_database,
-                main_index_name='main',
-                ignore_indexes=('_id_',),
-            )
+            creator = IndexesCreator(db=PynamoDBToPymongoAdapterSingleton.get_instance().mongo_database)
             for model in self.models():
+                _LOG.info(f'Going to sync indexes for {model.Meta.table_name}')
                 creator.sync(model)
         if SP.modular.environment_service().is_docker():
-            creator = IndexesCreator(
-                db=ModularBaseModel.mongo_adapter().mongo_database,
-                main_index_name='main',
-                ignore_indexes=('_id_',),
-            )
+            creator = IndexesCreator(db=ModularBaseModel.mongo_adapter().mongo_database)
             for model in self.modular_sdk_models():
-                creator.sync(model)
+                _LOG.info(f'Going to ensure indexes for {model.Meta.table_name}')
+                creator.ensure(
+                    model,
+                    hash_key_order=pymongo.ASCENDING,
+                    range_key_order=pymongo.ASCENDING
+                )
 
 
 class GenerateOpenApi(ActionHandler):
