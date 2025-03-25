@@ -25,12 +25,19 @@ vaultPort: 8200
 
 
 modularSdk:
+  logLevel: WARNING
+
   serviceMode: docker
-  awsRegion:
-  assumeRoleArn:
+  dbBackend: ''
+  secretsBackend: ''
+
+  # for "mongo" dbBackend
   mongoUri:
   databaseName: custodian_as_a_service
-  logLevel: WARNING
+
+  # for "dynamo" dbBackend
+  awsRegion:
+  assumeRoleArn:
 
 logLevel: INFO
 

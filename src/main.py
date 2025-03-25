@@ -15,7 +15,7 @@ from pathlib import Path
 from typing import Any, Callable, Literal
 
 import pymongo
-from modular_sdk.commons.constants import Cloud
+from modular_sdk.commons.constants import Cloud, Env as ModularSDKEnv, DBBackend
 from modular_sdk.models.pynamongo.indexes_creator import IndexesCreator
 
 from commons import dereference_json
@@ -322,14 +322,13 @@ class CreateIndexes(ActionHandler):
         _LOG.debug('Going to sync indexes with code')
         from models import PynamoDBToPymongoAdapterSingleton
         from modular_sdk.models.pynamongo.models import ModularBaseModel
-        from services import SP
 
         if Env.is_docker():
             creator = IndexesCreator(db=PynamoDBToPymongoAdapterSingleton.get_instance().mongo_database)
             for model in self.models():
                 _LOG.info(f'Going to sync indexes for {model.Meta.table_name}')
                 creator.sync(model)
-        if SP.modular.environment_service().is_docker():
+        if ModularSDKEnv.DB_BACKEND.get() == DBBackend.MONGO:
             creator = IndexesCreator(db=ModularBaseModel.mongo_adapter().mongo_database)
             for model in self.modular_sdk_models():
                 _LOG.info(f'Going to ensure indexes for {model.Meta.table_name}')
@@ -453,12 +452,19 @@ class ActivateRegions(ActionHandler):
 
         from services import SP
 
-        if not SP.modular.environment_service().is_docker():
+        if ModularSDKEnv.DB_BACKEND.get() == DBBackend.DYNAMO:
             _LOG.warning(
                 'Regions won`t be activated because modular sdk '
                 'is saas mode'
             )
-            # todo this is probably a kludge
+            # TODO: this is probably a kludge
+            return
+        if '+srv' in ModularSDKEnv.MONGO_URI.get('mongo://') or ModularSDKEnv.MONGO_SRV.get():
+            _LOG.warning(
+                'Regions won`t be activated because modular sdk is using '
+                'external Mongo cluster'
+            )
+            # TODO: this is definitely a kludge
             return
         rs = SP.region_service
         for region in AWS_REGIONS:
