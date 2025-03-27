@@ -332,12 +332,18 @@ class CreateIndexes(ActionHandler):
             creator = IndexesCreator(db=ModularBaseModel.mongo_adapter().mongo_database)
             for model in self.modular_sdk_models():
                 _LOG.info(f'Going to ensure indexes for {model.Meta.table_name}')
-                creator.ensure(
-                    model,
-                    primary_index_unique=False,
-                    hash_key_order=pymongo.ASCENDING,
-                    range_key_order=pymongo.ASCENDING
-                )
+                try:
+                    creator.ensure(
+                        model,
+                        primary_index_unique=False,
+                        hash_key_order=pymongo.ASCENDING,
+                        range_key_order=pymongo.ASCENDING
+                    )
+                except Exception:
+                    _LOG.warning(
+                        f'Could not ensure indexes for model {model.Meta.table_name}',
+                        exc_info=True
+                    )
 
 
 class GenerateOpenApi(ActionHandler):
