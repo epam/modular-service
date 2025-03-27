@@ -1,4 +1,4 @@
-modular-sdk @ git+https://github.com/epam/modular-sdk@afd3de743dab6023426a0758276649ba68dd56db
+modular-sdk @ git+https://github.com/epam/modular-sdk@9e2f15821a50cf79d88fc08777e0247683def3ff
 pydantic~=2.8.2
 python-dateutil>=2.9.0.post0
 routes~=2.5.1

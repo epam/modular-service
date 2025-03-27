@@ -320,7 +320,7 @@ wheels = [
 [[package]]
 name = "modular-sdk"
 version = "7.0.0a1"
-source = { git = "https://github.com/epam/modular-sdk?rev=2904a0d9532817b960ef076a5fe240c7ef50d359#2904a0d9532817b960ef076a5fe240c7ef50d359" }
+source = { git = "https://github.com/epam/modular-sdk?rev=9e2f15821a50cf79d88fc08777e0247683def3ff#9e2f15821a50cf79d88fc08777e0247683def3ff" }
 dependencies = [
     { name = "boto3" },
     { name = "botocore" },
@@ -355,7 +355,7 @@ onprem = [
 
 [package.metadata]
 requires-dist = [
-    { name = "modular-sdk", git = "https://github.com/epam/modular-sdk?rev=2904a0d9532817b960ef076a5fe240c7ef50d359" },
+    { name = "modular-sdk", git = "https://github.com/epam/modular-sdk?rev=9e2f15821a50cf79d88fc08777e0247683def3ff" },
     { name = "pydantic", specifier = "~=2.8.2" },
     { name = "python-dateutil", specifier = ">=2.9.0.post0" },
     { name = "routes", specifier = "~=2.5.1" },

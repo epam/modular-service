@@ -334,6 +334,7 @@ class CreateIndexes(ActionHandler):
                 _LOG.info(f'Going to ensure indexes for {model.Meta.table_name}')
                 creator.ensure(
                     model,
+                    primary_index_unique=False,
                     hash_key_order=pymongo.ASCENDING,
                     range_key_order=pymongo.ASCENDING
                 )
