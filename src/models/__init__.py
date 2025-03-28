@@ -1,53 +1,49 @@
-from modular_sdk.connections.mongodb_connection import MongoDBConnection
-from modular_sdk.models.pynamodb_extension.base_model import (
-    ABCMongoDBHandlerMixin,
-    RawBaseGSI,
-    RawBaseModel,
-)
-from modular_sdk.models.pynamodb_extension.base_safe_update_model import (
-    BaseSafeUpdateModel as ModularSafeUpdateModel,
-)
-from modular_sdk.models.pynamodb_extension.pynamodb_to_pymongo_adapter import (
-    PynamoDBToPyMongoAdapter,
-)
+import pymongo
+from modular_sdk.models.pynamongo.adapter import PynamoDBToPymongoAdapter
+from modular_sdk.models.pynamongo.models import Model, SafeUpdateModel
+
 from commons.constants import Env
 
-from services import SP
 
+class MongoClientSingleton:
+    _instance = None
 
-ADAPTER = None
-MONGO_CLIENT = None
-
-
-_env = SP.environment_service
-if _env.is_docker():
-    ADAPTER = PynamoDBToPyMongoAdapter(
-        mongodb_connection=MongoDBConnection(
-            mongo_uri=_env.mongo_uri(),
-            default_db_name=_env.mongo_database()
-        )
-    )
-    MONGO_CLIENT = ADAPTER.mongodb.client
-
-
-class ModularServiceMongoDBHandlerMixin(ABCMongoDBHandlerMixin):
     @classmethod
-    def mongodb_handler(cls):
-        if not cls._mongodb:
-            cls._mongodb = ADAPTER
-        return cls._mongodb
-
-    is_docker = Env.SERVICE_MODE.get() == 'docker'
+    def get_instance(cls) -> pymongo.MongoClient:
+        if cls._instance is None:
+            cls._instance = pymongo.MongoClient(Env.MONGO_URI.get())
+        return cls._instance
 
 
-class BaseModel(ModularServiceMongoDBHandlerMixin, RawBaseModel):
-    pass
+class PynamoDBToPymongoAdapterSingleton:
+    _instance = None
+
+    @classmethod
+    def get_instance(cls) -> PynamoDBToPymongoAdapter:
+        if cls._instance is None:
+            cls._instance = PynamoDBToPymongoAdapter(
+                db=MongoClientSingleton.get_instance().get_database(
+                    Env.MONGO_DATABASE.get()
+                )
+            )
+        return cls._instance
 
 
-class BaseGSI(ModularServiceMongoDBHandlerMixin, RawBaseGSI):
-    pass
+class BaseModel(Model):
+    @classmethod
+    def is_mongo_model(cls) -> bool:
+        return Env.is_docker()
+
+    @classmethod
+    def mongo_adapter(cls) -> PynamoDBToPymongoAdapter:
+        return PynamoDBToPymongoAdapterSingleton.get_instance()
 
 
-class BaseSafeUpdateModel(ModularServiceMongoDBHandlerMixin,
-                          ModularSafeUpdateModel):
-    pass
+class BaseSafeUpdateModel(SafeUpdateModel):
+    @classmethod
+    def is_mongo_model(cls) -> bool:
+        return Env.is_docker()
+
+    @classmethod
+    def mongo_adapter(cls) -> PynamoDBToPymongoAdapter:
+        return PynamoDBToPymongoAdapterSingleton.get_instance()
