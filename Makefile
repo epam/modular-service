@@ -19,13 +19,12 @@ check-syndicate:
 
 
 test:
-	pytest tests/
+	pytest
 
 
 install:
-	@if [[ -z "$(VIRTUAL_ENV)" ]]; then echo "Creating python virtual env"; python -m venv venv; fi
-	venv/bin/pip install -r src/requirements.txt
-	@echo "Execute:\nsource ./venv/bin/activate"
+	@if ! command -v uv >/dev/null 2>&1; then echo "Please, install uv"; exit 1; fi
+	uv sync --all-groups --all-extras
 
 
 install-cli:
