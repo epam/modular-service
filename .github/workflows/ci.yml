@@ -1,14 +1,10 @@
 name: ci-for-tests
-
 on:
   pull_request:
     branches: [ "main", "develop" ]
-
 jobs:
   tests:
     name: Run Python tests
-    needs: check_modified_files
-    if: ${{ needs.check_modified_files.outputs.src_files_changes_found == 'true' }}
     runs-on: ubuntu-latest
     strategy:
       matrix:
