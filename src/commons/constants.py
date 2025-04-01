@@ -122,7 +122,7 @@ class Env(str, Enum):
 
     # external envs
     AWS_REGION = 'AWS_REGION', 'us-east-1'
-    SERVICE_MODE = 'MODULAR_SERVICE_MODE'
+    SERVICE_MODE = 'MODULAR_SERVICE_MODE', 'saas'
     LOG_LEVEL = 'MODULAR_SERVICE_LOG_LEVEL', 'INFO'
     COGNITO_USER_POOL_NAME = 'MODULAR_SERVICE_COGNITO_USER_POOL_NAME'
     COGNITO_USER_POOL_ID = 'MODULAR_SERVICE_COGNITO_USER_POOL_ID'
@@ -142,6 +142,10 @@ class Env(str, Enum):
 
     def __repr__(self):
         return self.value
+
+    @classmethod
+    def is_docker(cls) -> bool:
+        return cls.SERVICE_MODE.get() == 'docker'
 
 
 class Permission(str, Enum):

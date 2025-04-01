@@ -1,6 +1,6 @@
 from commons.log_helper import get_logger
-from modular_sdk.commons import ModularException, RESPONSE_RESOURCE_NOT_FOUND_CODE, \
-    RESPONSE_BAD_REQUEST_CODE
+from http import HTTPStatus
+from modular_sdk.commons import ModularException
 from modular_sdk.commons.constants import ALL_PARENT_TYPES
 from modular_sdk.models.parent import Parent
 from modular_sdk.services.application_service import ApplicationService
@@ -32,7 +32,7 @@ class ParentMutatorService(ParentService):
                 _LOG.error(f'Application with specified id '
                            f'\'{application_id}\' does not exist.')
                 raise ModularException(
-                    code=RESPONSE_RESOURCE_NOT_FOUND_CODE,
+                    code=HTTPStatus.NOT_FOUND.value,
                     content=f'Application with specified id '
                             f'\'{application_id}\' does not exist.'
                 )
@@ -43,7 +43,7 @@ class ParentMutatorService(ParentService):
                 _LOG.error(f'Invalid parent type specified \'{parent_type}\'. '
                            f'Available options: {ALL_PARENT_TYPES}')
                 raise ModularException(
-                    code=RESPONSE_BAD_REQUEST_CODE,
+                    code=HTTPStatus.BAD_REQUEST,
                     content=f'Invalid parent type specified \'{parent_type}\'. '
                             f'Available options: {ALL_PARENT_TYPES}'
                 )
