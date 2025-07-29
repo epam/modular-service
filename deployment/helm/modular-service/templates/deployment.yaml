@@ -121,3 +121,5 @@ spec:
               value: {{ .Values.httpProxy }}
             - name: NO_PROXY
               value: {{ .Values.noProxy }}
+            - name: MODULAR_SERVICE_GUNICORN_WORKERS
+              value: {{ .Values.workers | quote }}
