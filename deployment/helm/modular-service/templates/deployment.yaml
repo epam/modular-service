@@ -35,6 +35,11 @@ spec:
         - name: modular-service
           image: "{{ .Values.image.repository }}:{{ default .Chart.AppVersion .Values.image.tag }}"
           imagePullPolicy: {{ .Values.image.pullPolicy }}
+          resources:
+            limits:
+              memory: "512Mi"
+            requests:
+              memory: "256Mi"
           livenessProbe:
             httpGet:
               path: '/dev/health/live'
