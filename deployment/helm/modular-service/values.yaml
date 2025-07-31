@@ -1,5 +1,8 @@
 databaseName: custodian_as_a_service
 mongoUri:
+workers: 2
+memoryLimit: 512Mi
+memoryRequest: 128Mi
 
 service:
   type: ClusterIP
@@ -8,13 +11,13 @@ service:
 
 image:
   repository: public.ecr.aws/x4s4z8e1/syndicate/modular-service
-  tag: 3.3.0
+  tag: 3.3.1
   pullPolicy: Always
 
 
 replicas: 1
 strategy:
-  type: RollingUpdate
+  type: Recreate
   maxUnavailable: 0
   maxSurge: 100%
 

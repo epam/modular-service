@@ -35,6 +35,11 @@ spec:
         - name: modular-service
           image: "{{ .Values.image.repository }}:{{ default .Chart.AppVersion .Values.image.tag }}"
           imagePullPolicy: {{ .Values.image.pullPolicy }}
+          resources:
+            limits:
+              memory: "{{ .Values.memoryLimit }}"
+            requests:
+              memory: "{{ .Values.memoryRequest }}"
           livenessProbe:
             httpGet:
               path: '/dev/health/live'
@@ -121,3 +126,5 @@ spec:
               value: {{ .Values.httpProxy }}
             - name: NO_PROXY
               value: {{ .Values.noProxy }}
+            - name: MODULAR_SERVICE_GUNICORN_WORKERS
+              value: {{ .Values.workers | quote }}

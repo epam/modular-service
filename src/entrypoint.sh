@@ -2,7 +2,6 @@
 
 set -e
 
-
 log() { echo "[INFO] $(date) $1" >&2; }
 
 start_server() {
@@ -19,7 +18,7 @@ start_server() {
   python main.py activate-regions
 
   log "Starting Gunicorn server"
-  exec python main.py run --gunicorn
+  exec gunicorn
 }
 
 start_server

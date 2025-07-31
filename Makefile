@@ -2,7 +2,7 @@
 .DEFAULT_GOAL := test
 
 DOCKER_EXECUTABLE := podman
-DOCKERFILE_NAME := Dockerfile
+DOCKERFILE_NAME := Dockerfile-uv
 CLI_VENV_NAME := cli_venv
 
 SYNDICATE_EXECUTABLE_PATH ?= $(shell which syndicate)
