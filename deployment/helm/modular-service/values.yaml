@@ -1,4 +1,5 @@
 databaseName: custodian_as_a_service
+mongoUri:
 
 service:
   type: ClusterIP
@@ -7,7 +8,7 @@ service:
 
 image:
   repository: public.ecr.aws/x4s4z8e1/syndicate/modular-service
-  tag: 3.2.0
+  tag: 3.3.0
   pullPolicy: Always
 
 
@@ -24,10 +25,21 @@ vaultPort: 8200
 
 
 modularSdk:
+  logLevel: WARNING
+
   serviceMode: docker
+  dbBackend: ''
+  secretsBackend: ''
+
+  # for "mongo" dbBackend
+  mongoUri:
+  databaseName: custodian_as_a_service
+
+  # for "dynamo" dbBackend
   awsRegion:
   assumeRoleArn:
 
+logLevel: INFO
 
 httpProxy: ''
 httpsProxy: ''

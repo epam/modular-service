@@ -2,6 +2,7 @@
 .DEFAULT_GOAL := test
 
 DOCKER_EXECUTABLE := podman
+DOCKERFILE_NAME := Dockerfile
 CLI_VENV_NAME := cli_venv
 
 SYNDICATE_EXECUTABLE_PATH ?= $(shell which syndicate)
@@ -11,6 +12,7 @@ SERVER_IMAGE_NAME := public.ecr.aws/x4s4z8e1/syndicate/modular-service
 SERVER_IMAGE_TAG ?= $(shell python -c "from src.commons.__version__ import __version__; print(__version__)")
 ADDITIONAL_BUILD_PARAMS ?=
 
+HELM_REPO_NAME := syndicate
 
 check-syndicate:
 	@if [[ -z "$(SYNDICATE_EXECUTABLE_PATH)" ]]; then echo "No syndicate executable found"; exit 1; fi
@@ -18,13 +20,12 @@ check-syndicate:
 
 
 test:
-	pytest tests/
+	pytest
 
 
 install:
-	@if [[ -z "$(VIRTUAL_ENV)" ]]; then echo "Creating python virtual env"; python -m venv venv; fi
-	venv/bin/pip install -r src/requirements.txt
-	@echo "Execute:\nsource ./venv/bin/activate"
+	@if ! command -v uv >/dev/null 2>&1; then echo "Please, install uv"; exit 1; fi
+	uv sync --all-groups --all-extras
 
 
 install-cli:
@@ -48,10 +49,10 @@ clean:
 #make push-manifest
 
 image-arm64:
-	$(DOCKER_EXECUTABLE) build $(ADDITIONAL_BUILD_PARAMS) --platform linux/arm64 -t $(SERVER_IMAGE_NAME):$(SERVER_IMAGE_TAG)-arm64 .
+	$(DOCKER_EXECUTABLE) build $(ADDITIONAL_BUILD_PARAMS) --platform linux/arm64 -t $(SERVER_IMAGE_NAME):$(SERVER_IMAGE_TAG)-arm64 -f $(DOCKERFILE_NAME) .
 
 image-amd64:
-	$(DOCKER_EXECUTABLE) build $(ADDITIONAL_BUILD_PARAMS) --platform linux/amd64 -t $(SERVER_IMAGE_NAME):$(SERVER_IMAGE_TAG)-amd64 .
+	$(DOCKER_EXECUTABLE) build $(ADDITIONAL_BUILD_PARAMS) --platform linux/amd64 -t $(SERVER_IMAGE_NAME):$(SERVER_IMAGE_TAG)-amd64 -f $(DOCKERFILE_NAME) .
 
 
 image-manifest:
@@ -75,3 +76,8 @@ push-manifest:
 cli-dist:
 	python -m build --sdist modular-service-cli/
 
+
+push-helm-chart:
+	helm package --dependency-update deployment/helm/modular-service
+	helm s3 push modular-service-$(SERVER_IMAGE_TAG).tgz $(HELM_REPO_NAME) --relative
+	-rm modular-service-$(SERVER_IMAGE_TAG).tgz

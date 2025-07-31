@@ -8,6 +8,7 @@ from commons.constants import Permission
 from commons.time_helper import utc_iso
 from models.policy import Policy
 from models.role import Role
+from modular_sdk.models.pynamongo.convertors import instance_as_dict
 
 
 class RBACService:
@@ -40,7 +41,7 @@ class RBACService:
 
     @staticmethod
     def get_dto(item: Role | Policy) -> dict:
-        return item.get_json()
+        return instance_as_dict(item)
 
     @staticmethod
     def get_role(customer: str, name: str) -> Role | None:

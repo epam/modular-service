@@ -2,8 +2,6 @@ import os
 from functools import cached_property
 from typing import TYPE_CHECKING
 
-from modular_sdk.modular import Modular
-
 from commons import SingletonMeta
 
 if TYPE_CHECKING:
@@ -16,11 +14,14 @@ if TYPE_CHECKING:
     from services.tenant_mutator_service import TenantMutatorService
     from services.clients.cognito import CognitoClient, BaseAuthClient
     from services.clients.mongo_ssm_auth_client import MongoAndSSMAuthClient
+    from modular_sdk.modular import Modular
+
 
 
 class ServiceProvider(metaclass=SingletonMeta):
     @cached_property
-    def modular(self) -> Modular:
+    def modular(self) -> 'Modular':
+        from modular_sdk.modular import Modular
         return Modular()
 
     # clients

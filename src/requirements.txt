@@ -1,8 +1,7 @@
 -r lambdas/modular_api_handler/requirements.txt
-bottle~=0.12.25
-hvac~=2.1.0
 bcrypt~=4.1.2
-cryptography~=42.0.8
-jwcrypto~=1.5.4
-python-dotenv~=1.0.1
+bottle~=0.12.25
+cryptography==43.0.3
 gunicorn~=21.2.0
+hvac~=2.1.0
+jwcrypto~=1.5.6

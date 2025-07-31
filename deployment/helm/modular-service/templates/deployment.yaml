@@ -50,36 +50,54 @@ spec:
               name: http
               protocol: TCP
           env:
-            - name: modular_mongo_user
+            - name: MODULAR_SDK_MONGO_USER
               valueFrom:
                 secretKeyRef:
                   name: mongo-secret
                   key: username
-            - name: modular_mongo_password
+            - name: MODULAR_SDK_MONGO_PASSWORD
               valueFrom:
                 secretKeyRef:
                   name: mongo-secret
                   key: password
-            - name: modular_mongo_url
-              value: "{{ .Values.mongoService }}:{{ .Values.mongoPort }}"
-            - name: modular_mongo_db_name
-              valueFrom:
-                configMapKeyRef:
-                  name: {{ include "modular-service.fullname" . }}
-                  key: db-name
-            - name: modular_service_mode
+            - name: MODULAR_SDK_MONGO_URI
+            {{- if .Values.modularSdk.mongoUri }}
+              value: "{{ .Values.modularSdk.mongoUri }}"
+            {{- else }}
+              value: "mongodb://$(MODULAR_SDK_MONGO_USER):$(MODULAR_SDK_MONGO_PASSWORD)@{{ .Values.mongoService }}:{{ .Values.mongoPort }}/"
+            {{- end }}
+            - name: MODULAR_SDK_MONGO_DB_NAME
+              value: "{{ .Values.modularSdk.databaseName }}"
+            - name: MODULAR_SDK_SERVICE_MODE
               value: {{ default "docker" .Values.modularSdk.serviceMode }}
+            {{- if .Values.modularSdk.dbBackend }}
+            - name: MODULAR_SDK_DB_BACKEND
+              value: "{{ .Values.modularSdk.dbBackend }}"
+            {{- end }}
+            {{- if .Values.modularSdk.secretsBackend }}
+            - name: MODULAR_SDK_SECRETS_BACKEND
+              value: "{{ .Values.modularSdk.secretsBackend }}"
+            {{- end }}
             {{- if ne (default "docker" .Values.modularSdk.serviceMode) "docker" }}
-            - name: modular_assume_role_arn
+            - name: MODULAR_SDK_ASSUME_ROLE_ARN
               value: {{ .Values.modularSdk.assumeRoleArn }}
-            - name: MODULAR_AWS_REGION
+            - name: MODULAR_SDK_ASSUME_ROLE_REGION
               value: {{ .Values.modularSdk.awsRegion }}
             {{- end }}
+            - name: MODULAR_SDK_LOG_LEVEL
+              value: {{ .Values.modularSdk.logLevel }}
             - name: MODULAR_SERVICE_SYSTEM_USER_PASSWORD
               valueFrom:
                 secretKeyRef:
                   name: modular-service-secret
                   key: system-password
+            - name: MODULAR_SDK_VAULT_URL
+              value: "http://{{ .Values.vaultService }}:{{ .Values.vaultPort }}"
+            - name: MODULAR_SDK_VAULT_TOKEN
+              valueFrom:
+                secretKeyRef:
+                  name: vault-secret
+                  key: token
             - name: MODULAR_SERVICE_VAULT_ENDPOINT
               value: "http://{{ .Values.vaultService }}:{{ .Values.vaultPort }}"
             - name: MODULAR_SERVICE_VAULT_TOKEN
@@ -88,18 +106,15 @@ spec:
                   name: vault-secret
                   key: token
             - name: MODULAR_SERVICE_MONGO_URI
-              value: "mongodb://$(modular_mongo_user):$(modular_mongo_password)@$(modular_mongo_url)/"
+            {{- if .Values.mongoUri }}
+              value: "{{ .Values.mongoUri }}"
+            {{- else }}
+              value: "mongodb://$(MODULAR_SDK_MONGO_USER):$(MODULAR_SDK_MONGO_PASSWORD)@{{ .Values.mongoService }}:{{ .Values.mongoPort }}/"
+            {{- end }}
             - name: MODULAR_SERVICE_MONGO_DATABASE
-              valueFrom:
-                configMapKeyRef:
-                  name: {{ include "modular-service.fullname" . }}
-                  key: db-name
-            - name: VAULT_TOKEN
-              value: "$(MODULAR_SERVICE_VAULT_TOKEN)"
-            - name: VAULT_URL
-              value: {{ .Values.vaultService }}
-            - name: VAULT_SERVICE_SERVICE_PORT
-              value: "{{ .Values.vaultPort }}"
+              value: "{{ .Values.databaseName }}"
+            - name: MODULAR_SERVICE_LOG_LEVEL
+              value: {{ .Values.logLevel }}
             - name: HTTP_PROXY
               value: {{ .Values.httpProxy }}
             - name: HTTPS_PROXY
