@@ -1,6 +1,8 @@
 databaseName: custodian_as_a_service
 mongoUri:
 workers: 2
+memoryLimit: 512Mi
+memoryRequest: 128Mi
 
 service:
   type: ClusterIP
@@ -15,7 +17,7 @@ image:
 
 replicas: 1
 strategy:
-  type: RollingUpdate
+  type: Recreate
   maxUnavailable: 0
   maxSurge: 100%
 

@@ -37,9 +37,9 @@ spec:
           imagePullPolicy: {{ .Values.image.pullPolicy }}
           resources:
             limits:
-              memory: "512Mi"
+              memory: "{{ .Values.memoryLimit }}"
             requests:
-              memory: "256Mi"
+              memory: "{{ .Values.memoryRequest }}"
           livenessProbe:
             httpGet:
               path: '/dev/health/live'
