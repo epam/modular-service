@@ -14,8 +14,9 @@ start_server() {
   log "Initializing vault"
   python main.py init-vault
 
-  log "Activating regions"
-  python main.py activate-regions
+#  log "Activating regions"
+#  python main.py activate-regions
+   log "Skipped activating regions"
 
   log "Starting Gunicorn server"
   exec gunicorn
