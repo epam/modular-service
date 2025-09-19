@@ -178,3 +178,7 @@ class OnPremApiBuilder:
             status=response['statusCode'],
             headers=response['headers']
         )
+
+
+def make_app():
+    return OnPremApiBuilder().build('dev')

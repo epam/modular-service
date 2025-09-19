@@ -2,7 +2,7 @@
 .DEFAULT_GOAL := test
 
 DOCKER_EXECUTABLE := podman
-DOCKERFILE_NAME := Dockerfile
+DOCKERFILE_NAME := Dockerfile-uv
 CLI_VENV_NAME := cli_venv
 
 SYNDICATE_EXECUTABLE_PATH ?= $(shell which syndicate)
@@ -10,6 +10,7 @@ SYNDICATE_CONFIG_PATH ?= .syndicate-config-main
 
 SERVER_IMAGE_NAME := public.ecr.aws/x4s4z8e1/syndicate/modular-service
 SERVER_IMAGE_TAG ?= $(shell python -c "from src.commons.__version__ import __version__; print(__version__)")
+ADDITIONAL_BUILD_PARAMS ?=
 
 HELM_REPO_NAME := syndicate
 
@@ -48,10 +49,10 @@ clean:
 #make push-manifest
 
 image-arm64:
-	$(DOCKER_EXECUTABLE) build --platform linux/arm64 -t $(SERVER_IMAGE_NAME):$(SERVER_IMAGE_TAG)-arm64 -f $(DOCKERFILE_NAME) .
+	$(DOCKER_EXECUTABLE) build $(ADDITIONAL_BUILD_PARAMS) --platform linux/arm64 -t $(SERVER_IMAGE_NAME):$(SERVER_IMAGE_TAG)-arm64 -f $(DOCKERFILE_NAME) .
 
 image-amd64:
-	$(DOCKER_EXECUTABLE) build --platform linux/amd64 -t $(SERVER_IMAGE_NAME):$(SERVER_IMAGE_TAG)-amd64 -f $(DOCKERFILE_NAME) .
+	$(DOCKER_EXECUTABLE) build $(ADDITIONAL_BUILD_PARAMS) --platform linux/amd64 -t $(SERVER_IMAGE_NAME):$(SERVER_IMAGE_TAG)-amd64 -f $(DOCKERFILE_NAME) .
 
 
 image-manifest:

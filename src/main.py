@@ -3,8 +3,6 @@ import argparse
 import base64
 import json
 import logging.config
-import multiprocessing
-import os
 import secrets
 import string
 import sys
@@ -32,9 +30,6 @@ from commons.regions import AWS_REGIONS
 
 DEFAULT_HOST = '0.0.0.0'
 DEFAULT_PORT = 8040
-DEFAULT_NUMBER_OF_WORKERS = (multiprocessing.cpu_count() * 2) + 1
-DEFAULT_ON_PREM_API_LINK = f'http://{DEFAULT_HOST}:{str(DEFAULT_PORT)}/caas'
-DEFAULT_API_GATEWAY_NAME = 'custodian-as-a-service-api'
 
 ACTION_DEST = 'action'
 ENV_ACTION_DEST = 'env_action'
@@ -102,21 +97,6 @@ def build_parser() -> argparse.ArgumentParser:
 
     # run
     parser_run = sub_parsers.add_parser(RUN_ACTION, help='Run on-prem server')
-    parser_run.add_argument(
-        '-g',
-        '--gunicorn',
-        action='store_true',
-        default=False,
-        help='Specify the flag is you want to run the server via Gunicorn',
-    )
-    parser_run.add_argument(
-        '-nw',
-        '--workers',
-        type=int,
-        required=False,
-        help='Number of gunicorn workers. Must be specified only '
-        'if --gunicorn flag is set',
-    )
     parser_run.add_argument(
         '--host',
         default=DEFAULT_HOST,
@@ -211,8 +191,6 @@ class Run(ActionHandler):
         self,
         host: str = DEFAULT_HOST,
         port: int = DEFAULT_PORT,
-        gunicorn: bool = False,
-        workers: int | None = None,
     ):
         from onprem.app import OnPremApiBuilder
 
@@ -221,30 +199,8 @@ class Run(ActionHandler):
 
         setup_logging()
 
-        if not gunicorn and workers:
-            _LOG.warning(
-                '--workers is ignored because you are not running Gunicorn'
-            )
-
-        os.environ[Env.SERVICE_MODE] = 'docker'
-
-        stage = 'dev'  # todo get from somewhere
-        app = OnPremApiBuilder().build(stage)
-
-        if gunicorn:
-            workers = workers or DEFAULT_NUMBER_OF_WORKERS
-            from onprem.app_gunicorn import CustodianGunicornApplication
-
-            options = {
-                'bind': f'{host}:{port}',
-                'workers': workers,
-                'timeout': 60,
-                'max_requests': 512,
-                'max_requests_jitter': 64,
-            }
-            CustodianGunicornApplication(app, options).run()
-        else:
-            app.run(host=host, port=port)
+        app = OnPremApiBuilder().build('dev')
+        app.run(host=host, port=port)
 
 
 class CreateSystemUser(ActionHandler):
