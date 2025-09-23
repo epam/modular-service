@@ -445,7 +445,7 @@ class ActivateRegions(ActionHandler):
                     )
                 )
             except DuplicateKeyError:
-                _LOG.info(f'Region {region} is already active')
+                _LOG.debug(f'Region {region} is already active')
         _LOG.info('Regions were created')
 
 
