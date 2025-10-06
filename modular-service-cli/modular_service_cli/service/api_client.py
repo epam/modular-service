@@ -467,7 +467,7 @@ class ModularServiceApiClient:
             path=Endpoint.TENANTS_NAME_SETTINGS,
             method=HTTPMethod.PUT,
             path_params={'name': name},
-            query=sifted(kwargs)
+            data=sifted(kwargs)
         )
 
     def get_application(self, id, **kwargs):
