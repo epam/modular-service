@@ -4,7 +4,7 @@ description = "Service that allows to manage common modular entities"
 readme = "README.md"
 requires-python = ">=3.10"
 license = {file = "LICENSE"}
-version = "3.3.0"
+version = "3.3.2"
 dependencies = [
     "modular-sdk~=7.1.0",
     "pydantic~=2.8.2",

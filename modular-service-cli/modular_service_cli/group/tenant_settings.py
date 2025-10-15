@@ -20,7 +20,7 @@ def settings():
 
 
 @settings.command(cls=ViewCommand, name='describe')
-@click.option('--tenant_name', '-name', type=str, required=True,
+@click.option('--tenant_name', '-tn', type=str, required=True,
               help='Tenant name to describe.')
 @build_limit_option()
 @build_next_token_option()
@@ -49,7 +49,7 @@ def describe(ctx: ContextObj, tenant_name, limit, next_token, key,
 @click.option('--value', '-v', type=str, required=True,
               help='Path to a JSON file that contains setting value')
 @cli_response(attributes_order=attributes_order)
-def put(ctx: ContextObj, tenant_name, key, value):
+def put(ctx: ContextObj, tenant_name, key, value, customer_id):
     """
     Set tenant setting
     """
@@ -65,5 +65,6 @@ def put(ctx: ContextObj, tenant_name, key, value):
     return ctx.api_client.put_tenant_settings(
         name=tenant_name,
         key=key,
-        value=data
+        value=data,
+        customer_id=customer_id
     )

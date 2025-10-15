@@ -13,6 +13,7 @@ from pathlib import Path
 from typing import Any, Callable, Literal
 
 import pymongo
+from pymongo.errors import DuplicateKeyError
 from modular_sdk.commons.constants import Cloud, Env as ModularSDKEnv, DBBackend
 from modular_sdk.models.pynamongo.indexes_creator import IndexesCreator
 
@@ -431,19 +432,20 @@ class ActivateRegions(ActionHandler):
             return
         rs = SP.region_service
         for region in AWS_REGIONS:
-            if rs.get_region(region_name=region):
-                continue
             _LOG.debug(f'Activation {region}')
-            # rs.create is too expensive
-            rs.save(
-                RegionModel(
-                    region_id=str(uuid.uuid4()),
-                    maestro_name=region,
-                    native_name=region,
-                    cloud=Cloud.AWS.value,
-                    is_active=True,
+            try:
+                # rs.create is too expensive
+                rs.save(
+                    RegionModel(
+                        region_id=str(uuid.uuid4()),
+                        maestro_name=region,
+                        native_name=region,
+                        cloud=Cloud.AWS.value,
+                        is_active=True,
+                    )
                 )
-            )
+            except DuplicateKeyError:
+                _LOG.debug(f'Region {region} is already active')
         _LOG.info('Regions were created')
 
 
