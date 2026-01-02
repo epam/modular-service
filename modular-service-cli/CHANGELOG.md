@@ -4,6 +4,9 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [3.3.0] - 2026-01-02
+- update `click` version to 8.3.0
+
 ## [3.2.1] - 2025-10-06
 - fix issue with the command `tenant settings put`
 - change the alias of the parameter `--tenant_name` from `-name` to `-tn` in the command `tenant settings describe`
