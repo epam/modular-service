@@ -4,7 +4,7 @@ import json
 import re
 from typing import Callable
 
-from bottle import Bottle, HTTPResponse, request
+from bottle import Bottle, HTTPResponse, request, response
 
 from commons import RequestContext
 from commons.lambda_response import (
@@ -76,20 +76,6 @@ class AuthPlugin:
 class OnPremApiBuilder:
     dynamic_resource_regex = re.compile(r'([^{/]+)(?=})')
 
-    @staticmethod
-    def _register_errors(app: Bottle) -> None:
-        @app.error(404)
-        def not_found(error):
-            return json.dumps({'message': HTTPStatus.NOT_FOUND.phrase},
-                              separators=(',', ':'))
-
-        @app.error(500)
-        def internal(error):
-            return json.dumps(
-                {'message': HTTPStatus.INTERNAL_SERVER_ERROR.phrase},
-                separators=(',', ':')
-            )
-
     def build(self, prefix: str = 'dev') -> Bottle:
         """
         Builds on-prem bottle application that includes:
@@ -104,7 +90,8 @@ class OnPremApiBuilder:
         :type prefix: str
         """
         app = Bottle()
-        self._register_errors(app)
+        prefix = prefix.strip('/')
+        self._register_errors(app, prefix)
 
         prefix_app = Bottle()
         plugin = AuthPlugin()
@@ -119,8 +106,29 @@ class OnPremApiBuilder:
                 params.update(apply=(plugin, ))
             prefix_app.route(**params)
 
-        app.mount(prefix.strip('/'), prefix_app)
+        app.mount(prefix, prefix_app)
         return app
+
+    @staticmethod
+    def _register_errors(app: Bottle, prefix: str) -> None:
+        @app.error(404)
+        def not_found(error):
+            response.content_type = 'application/json'
+            message = (
+                f'{request.method} {request.path} route not found. '
+                f'All routes are served under /{prefix}/ path prefix. '
+                f'Please verify that your API link configuration '
+                f'includes it'
+            )
+            return json.dumps({'message': message}, separators=(',', ':'))
+
+        @app.error(500)
+        def internal(error):
+            response.content_type = 'application/json'
+            return json.dumps(
+                {'message': HTTPStatus.INTERNAL_SERVER_ERROR.phrase},
+                separators=(',', ':')
+            )
 
     @classmethod
     def to_bottle_route(cls, resource: str) -> str:
@@ -171,12 +179,12 @@ class OnPremApiBuilder:
         else:
             event['body'] = request.body.read().decode()
             event['isBase64Encoded'] = False
-        response = HANDLER.lambda_handler(event, RequestContext())
+        resp = HANDLER.lambda_handler(event, RequestContext())
 
         return HTTPResponse(
-            body=response['body'],
-            status=response['statusCode'],
-            headers=response['headers']
+            body=resp['body'],
+            status=resp['statusCode'],
+            headers=resp['headers']
         )
 
 
