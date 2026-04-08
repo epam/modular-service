@@ -6,7 +6,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [3.3.0] - 2026-04-03
 - Update libraries:
-  - `modular-cli-sdk` from 3.0.0 to 3.1.2
+  - `modular-cli-sdk` from 3.0.0 to 3.1.4
   - `click` from 7.1.2 to 8.3.0
 
 ## [3.2.1] - 2025-10-06
