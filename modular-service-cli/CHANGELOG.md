@@ -8,6 +8,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Update libraries:
   - `modular-cli-sdk` from 3.0.0 to 3.1.4
   - `click` from 7.1.2 to 8.3.0
+- Replaced deprecated `distutils.version.LooseVersion` with `packaging.version.Version` to support Python 3.12
 
 ## [3.2.1] - 2025-10-06
 - fix issue with the command `tenant settings put`
