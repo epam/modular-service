@@ -11,7 +11,7 @@ def check_version_compatibility(api_version):
     cli_version = Version(__version__)
     api_version = Version(api_version)
     if cli_version > api_version:
-        print(f'Consider that you modularadmin version {cli_version} is '
+        print(f'Consider that your modularadmin version {cli_version} is '
               f'higher than the API version {api_version}')
         return
     if cli_version.major < api_version.major:  # Major
