@@ -21,9 +21,17 @@ def application():
     """Manages Application Entity"""
 
 
+def build_secret_prefix_option():
+    return click.option(
+        '--secret_prefix', '-sp', type=str,
+        help='Optional prefix for the secret name in SSM/Vault '
+             '(e.g. "sre" produces sre/modular-service/app/{id})'
+    )
+
+
 @application.command(cls=ViewCommand, name='describe')
 @click.option('--application_id', '-aid', type=str,
-              help='Application id to describe.')
+              help='Application id to describe')
 @build_limit_option()
 @build_next_token_option()
 @click.option('--type', '-t',
@@ -33,11 +41,11 @@ def application():
 def describe(ctx: ContextObj, application_id, limit, next_token, type,
              customer_id):
     """
-    Describes Application.
+    Describes Application
     """
     if application_id:
-        return ctx.api_client.get_application(application_id,
-                                              customer_id=customer_id)
+        return ctx.api_client \
+            .get_application(application_id, customer_id=customer_id)
     return ctx.api_client.query_application(
         customer_id=customer_id,
         limit=limit,
@@ -50,9 +58,9 @@ def describe(ctx: ContextObj, application_id, limit, next_token, type,
 @click.option('--role_name', '-rn', type=str, required=True,
               help='AWS Role name')
 @click.option('--account_id', '-aid', type=str, required=True,
-              help='AWS Account id.')
+              help='AWS Account id')
 @click.option('--description', '-d', type=str, required=True,
-              help='Application description.')
+              help='Application description')
 @cli_response(attributes_order=attributes_order)
 def create_aws_role(ctx: ContextObj, role_name, account_id, description,
                     customer_id):
@@ -77,7 +85,8 @@ def create_aws_role(ctx: ContextObj, role_name, account_id, description,
 @click.option('--default_region', '-dr', type=str, default='us-east-1',
               help='AWS region to use by default')
 @click.option('--description', '-d', type=str, required=True,
-              help='Application description.')
+              help='Application description')
+@build_secret_prefix_option()
 @cli_response(attributes_order=attributes_order)
 def create_aws_credentials(ctx: ContextObj, **kwargs):
     """
@@ -94,7 +103,8 @@ def create_aws_credentials(ctx: ContextObj, **kwargs):
 @click.option('--api_key', '-ak', type=str, required=True,
               help='AZURE api key')
 @click.option('--description', '-d', type=str, required=True,
-              help='Application description.')
+              help='Application description')
+@build_secret_prefix_option()
 @cli_response(attributes_order=attributes_order)
 def create_azure_credentials(ctx: ContextObj, **kwargs):
     """
@@ -113,7 +123,8 @@ def create_azure_credentials(ctx: ContextObj, **kwargs):
 @click.option('--password', '-p', type=str, required=False,
               help='Password from the certificate')
 @click.option('--description', '-d', type=str, required=True,
-              help='Application description.')
+              help='Application description')
+@build_secret_prefix_option()
 @cli_response(attributes_order=attributes_order)
 def create_azure_certificate(ctx: ContextObj, **kwargs):
     """
@@ -126,10 +137,11 @@ def create_azure_certificate(ctx: ContextObj, **kwargs):
 @click.option('--path', '-p', type=str, required=True,
               help='Path to JSON file with GCP service account creds')
 @click.option('--description', '-d', type=str, required=True,
-              help='Application description.')
+              help='Application description')
+@build_secret_prefix_option()
 @cli_response(attributes_order=attributes_order)
 def create_gcp_service_account(ctx: ContextObj, path, description,
-                               customer_id):
+                               customer_id, secret_prefix):
     """
     Creates Application with type GCP_SERVICE_ACCOUNT
     """
@@ -145,7 +157,8 @@ def create_gcp_service_account(ctx: ContextObj, path, description,
     return ctx.api_client.create_application_gcp_service_account(
         description=description,
         customer_id=customer_id,
-        credentials=data
+        credentials=data,
+        secret_prefix=secret_prefix,
     )
 
 
@@ -153,28 +166,28 @@ def create_gcp_service_account(ctx: ContextObj, path, description,
 @click.option('--application_id', '-aid', type=str, required=True,
               help='Application id to update')
 @click.option('--description', '-d', type=str, required=True,
-              help='Application description.')
+              help='Application description')
 @cli_response(attributes_order=attributes_order)
 def update(ctx: ContextObj, application_id, description, customer_id):
     """
-    Updates Application.
+    Updates Application
     """
     return ctx.api_client.patch_application(
         id=application_id,
         description=description,
-        customer_id=customer_id
+        customer_id=customer_id,
     )
 
 
 @application.command(cls=ViewCommand, name='delete')
 @click.option('--application_id', '-aid', type=str, required=True,
-              help='Application id to describe.')
+              help='Application id to describe')
 @cli_response()
 def deactivate(ctx: ContextObj, application_id, customer_id):
     """
-    Deactivates Application.
+    Deactivates Application
     """
     return ctx.api_client.delete_application(
         id=application_id,
-        customer_id=customer_id
+        customer_id=customer_id,
     )

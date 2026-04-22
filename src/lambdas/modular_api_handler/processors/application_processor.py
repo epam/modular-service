@@ -37,17 +37,24 @@ from validators.request import (
     ApplicationQuery,
     BaseModel,
 )
-from validators.response import ApplicationResponse, ApplicationsResponse, MessageModel
+from validators.response import (
+    ApplicationResponse,
+    ApplicationsResponse,
+    MessageModel,
+)
 from validators.utils import validate_kwargs
 
 _LOG = get_logger(__name__)
 
 
 class ApplicationProcessor(AbstractCommandProcessor):
-    def __init__(self, application_service: ApplicationService,
-                 customer_service: CustomerMutatorService,
-                 parent_service: ParentMutatorService,
-                 ssm_client: AbstractSSMClient):
+    def __init__(
+            self,
+            application_service: ApplicationService,
+            customer_service: CustomerMutatorService,
+            parent_service: ParentMutatorService,
+            ssm_client: AbstractSSMClient,
+    ) -> None:
         self.application_service = application_service
         self.customer_service = customer_service
         self.parent_service = parent_service
@@ -139,6 +146,40 @@ class ApplicationProcessor(AbstractCommandProcessor):
             ssm_client=SERVICE_PROVIDER.ssm
         )
 
+    def _build_secret_name(
+            self,
+            application_id: str,
+            prefix: str | None = None,
+    ) -> str:
+        """
+        Builds secret name for application.
+
+        No prefix:           modular-service/app/{application_id}
+        prefix='sre':        sre/modular-service/app/{application_id}
+        prefix='sre/custom': sre/custom/modular-service/app/{application_id}
+        """
+        base = f'modular-service/app/{application_id}'
+        if prefix:
+            prefix = prefix.strip('/.')
+            base = f'{prefix}/{base}'
+        return self.ssm.safe_name(name=base, date=False)
+
+    def _create_secret(
+            self,
+            app: Application,
+            value: dict,
+            prefix: str | None = None,
+    ) -> None:
+        """Creates secret and sets app.secret. Raises on failure."""
+        secret_name = self._build_secret_name(app.application_id, prefix)
+        stored = self.ssm.put_parameter(name=secret_name, value=value)
+        if not stored:
+            raise ResponseFactory(HTTPStatus.INTERNAL_SERVER_ERROR).message(
+                f'Failed to store secret for application '
+                f'{app.application_id}'
+            ).exc()
+        app.secret = stored
+
     @validate_kwargs
     def post_aws_role(self, event: ApplicationPostAWSRole,
                       _pe: ProcessedEvent):
@@ -164,8 +205,11 @@ class ApplicationProcessor(AbstractCommandProcessor):
         )
 
     @validate_kwargs
-    def post_aws_credentials(self, event: ApplicationPostAWSCredentials,
-                             _pe: ProcessedEvent):
+    def post_aws_credentials(
+            self,
+            event: ApplicationPostAWSCredentials,
+            _pe: ProcessedEvent,
+    ):
         meta = AWSCredentialsApplicationMeta(accountNumber=event.account_id)
         secret = AWSCredentialsApplicationSecret(
             accessKeyId=event.access_key_id,
@@ -181,13 +225,10 @@ class ApplicationProcessor(AbstractCommandProcessor):
             meta=meta.dict(),
             created_by=_pe['cognito_user_id'],
         )
-        secret_name = self.ssm.safe_name(
-            name=f'modular-service.app.{app.application_id}',
-            date=False
-        )
-        app.secret = self.ssm.put_parameter(
-            name=secret_name,
-            value=secret.dict()
+        self._create_secret(
+            app=app,
+            value=secret.dict(),
+            prefix=event.secret_prefix,
         )
         _LOG.debug('Saving application')
         self.application_service.save(app)
@@ -197,8 +238,11 @@ class ApplicationProcessor(AbstractCommandProcessor):
         )
 
     @validate_kwargs
-    def post_azure_credentials(self, event: ApplicationPostAZURECredentials,
-                               _pe: ProcessedEvent):
+    def post_azure_credentials(
+            self,
+            event: ApplicationPostAZURECredentials,
+            _pe: ProcessedEvent,
+    ):
         meta = AZURECredentialsApplicationMeta(
             clientId=event.client_id,
             tenantId=event.tenant_id
@@ -216,13 +260,10 @@ class ApplicationProcessor(AbstractCommandProcessor):
             meta=meta.dict(),
             created_by=_pe['cognito_user_id'],
         )
-        secret_name = self.ssm.safe_name(
-            name=f'modular-service.app.{app.application_id}',
-            date=False
-        )
-        app.secret = self.ssm.put_parameter(
-            name=secret_name,
-            value=secret.dict()
+        self._create_secret(
+            app=app,
+            value=secret.dict(),
+            prefix=event.secret_prefix,
         )
         _LOG.debug('Saving application')
         self.application_service.save(app)
@@ -232,8 +273,11 @@ class ApplicationProcessor(AbstractCommandProcessor):
         )
 
     @validate_kwargs
-    def post_azure_certificate(self, event: ApplicationPostAZURECertificate,
-                               _pe: ProcessedEvent):
+    def post_azure_certificate(
+            self,
+            event: ApplicationPostAZURECertificate,
+            _pe: ProcessedEvent,
+    ):
         meta = AZURECertificateApplicationMeta(
             clientId=event.client_id,
             tenantId=event.tenant_id
@@ -250,13 +294,10 @@ class ApplicationProcessor(AbstractCommandProcessor):
             meta=meta.dict(),
             created_by=_pe['cognito_user_id'],
         )
-        secret_name = self.ssm.safe_name(
-            name=f'modular-service.app.{app.application_id}',
-            date=False
-        )
-        app.secret = self.ssm.put_parameter(
-            name=secret_name,
-            value=secret.dict()
+        self._create_secret(
+            app=app,
+            value=secret.dict(),
+            prefix=event.secret_prefix,
         )
         _LOG.debug('Saving application')
         self.application_service.save(app)
@@ -266,8 +307,11 @@ class ApplicationProcessor(AbstractCommandProcessor):
         )
 
     @validate_kwargs
-    def post_gcp_service_account(self, event: ApplicationPostGCPServiceAccount,
-                                 _pe: ProcessedEvent):
+    def post_gcp_service_account(
+            self,
+            event: ApplicationPostGCPServiceAccount,
+            _pe: ProcessedEvent,
+    ):
         meta = GCPServiceAccountApplicationMeta(
             adminProjectId=event.credentials['project_id']
         )
@@ -279,13 +323,10 @@ class ApplicationProcessor(AbstractCommandProcessor):
             meta=meta.dict(),
             created_by=_pe['cognito_user_id'],
         )
-        secret_name = self.ssm.safe_name(
-            name=f'modular-service.app.{app.application_id}',
-            date=False
-        )
-        app.secret = self.ssm.put_parameter(
-            name=secret_name,
-            value=event.credentials
+        self._create_secret(
+            app=app,
+            value=dict(event.credentials),
+            prefix=event.secret_prefix,
         )
         _LOG.debug('Saving application')
         self.application_service.save(app)

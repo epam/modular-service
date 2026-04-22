@@ -23,6 +23,13 @@ from pydantic import (
 )
 from pydantic.json_schema import SkipJsonSchema
 
+_ALLOWED_PREFIX_CHARS = frozenset(
+    'abcdefghijklmnopqrstuvwxyz'
+    'ABCDEFGHIJKLMNOPQRSTUVWXYZ'
+    '0123456789'
+    '/_.-'
+)
+
 
 class BaseModel(BaseModelPydantic):
     model_config = ConfigDict(
@@ -55,6 +62,24 @@ def validate_password(password: str) -> list[str]:
     if len(password) < 8:
         errors.append('valid min length for password: 8')
     return errors
+
+
+def _validate_secret_prefix(v: str | None) -> str | None:
+    """Validates and normalizes secret_prefix value."""
+    if v is None:
+        return None
+    v = v.strip('/.')
+    if not v:
+        return None
+    if not v[0].isalnum():
+        raise ValueError('secret_prefix must start with a letter or digit')
+    bad = set(v) - _ALLOWED_PREFIX_CHARS
+    if bad:
+        raise ValueError(
+            f'secret_prefix contains invalid characters: '
+            f'{", ".join(sorted(bad))}'
+        )
+    return v
 
 
 class BasePaginationModel(BaseModel):
@@ -319,6 +344,11 @@ class ApplicationPostAWSCredentials(BaseModel):
     session_token: str = Field(None)
     default_region: str = 'us-east-1'
     account_id: SkipJsonSchema[str] = Field(None)  # derived from creds
+    secret_prefix: str | None = None
+
+    @field_validator('secret_prefix', mode='before')
+    def check_secret_prefix(cls, v: str | None) -> str | None:
+        return _validate_secret_prefix(v)
 
     @model_validator(mode='after')
     def _(self) -> Self:
@@ -343,6 +373,11 @@ class ApplicationPostAZURECredentials(BaseModel):
     client_id: str
     tenant_id: str
     api_key: str
+    secret_prefix: str | None = None
+
+    @field_validator('secret_prefix', mode='before')
+    def check_secret_prefix(cls, v: str | None) -> str | None:
+        return _validate_secret_prefix(v)
 
 
 class ApplicationPostAZURECertificate(BaseModel):
@@ -351,6 +386,11 @@ class ApplicationPostAZURECertificate(BaseModel):
     tenant_id: str
     certificate: str = Field(description='Base64 encoded certificate')
     password: str = Field(None, description='Password from the certificate')
+    secret_prefix: str | None = None
+
+    @field_validator('secret_prefix', mode='before')
+    def check_secret_prefix(cls, v: str | None) -> str | None:
+        return _validate_secret_prefix(v)
 
     @model_validator(mode='after')
     def _(self) -> Self:
@@ -377,6 +417,11 @@ class GOOGLECredentialsRaw1(TypedDict):
 class ApplicationPostGCPServiceAccount(BaseModel):
     description: str
     credentials: GOOGLECredentialsRaw1
+    secret_prefix: str | None = None
+
+    @field_validator('secret_prefix', mode='before')
+    def check_secret_prefix(cls, v: str | None) -> str | None:
+        return _validate_secret_prefix(v)
 
 
 class TenantSettingQuery(BasePaginationModel):
@@ -390,7 +435,4 @@ class TenantSettingQuery(BasePaginationModel):
 
 class TenantSettingPut(BaseModel):
     key: str
-    value: dict | list | str | int | float | None
-
-
-
+    value: dict | list | str | int | float | None = None

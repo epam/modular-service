@@ -4,6 +4,22 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [3.3.3] - 2026-03-18
+- Improve 404 error response to include the requested path and an API prefix hint
+- Change `Applications.secret` naming from dot- to slash-separated format:
+  (old: `modular-service.app.97efdf06-bad1-4b37-861f-8261db257241`; new: `modular-service/app/97ef...`)
+- Add custom prefix support for `Applications.secret`:
+  (old: `modular-service.app.97efdf06-bad1-4b37-861f-8261db257241`; new: `sre/modular-service/app/97ef...`)
+- Update libraries:
+  - `modular-sdk` from `~=7.1.0` to `~=7.1.10`
+  - `bottle` from `~=0.12.25` to `~=0.13.4`
+  - `gunicorn` from `~=21.2.0` to `~=23.0.0`
+  - `pytest` from `>=8.3.5` to `>=9.0.2`
+  - `pytest-cov` from `>=6.0.0` to `>=7.0.0`
+  - `pytest-xdist` from `>=3.6.1` to `>=3.8.0`
+- Update `uv.lock`
+- Replace deprecated `distutils.version.LooseVersion` with `packaging.version.Version` to support Python 3.12
+
 ## [3.3.2] - 2025-09-23
 - fixed issue related to the command `activate-regions`
 
