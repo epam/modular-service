@@ -1,7 +1,7 @@
 -r lambdas/modular_api_handler/requirements.txt
-bcrypt~=4.1.2
-bottle~=0.12.25
-cryptography==43.0.3
-gunicorn~=21.2.0
+bcrypt>=4,<6
+bottle>=0.13,<1
+cryptography>=43,<50
+gunicorn>=21,<30
 hvac~=2.1.0
-jwcrypto~=1.5.6
+jwcrypto>=1.5.6,<2
