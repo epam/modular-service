@@ -6,9 +6,9 @@ requires-python = ">=3.14,<4"
 license = {file = "LICENSE"}
 version = "3.3.3"
 dependencies = [
-    "modular-sdk @ git+https://github.com/epam/modular-sdk@feature/python_314#egg=modular-sdk==7.1.12",
+    "modular-sdk>=8,<9",
     "pydantic>=2.8,<3",
-    "python-dateutil>=2.9,<3.0",
+    "python-dateutil>=2.9,<3",
     "routes~=2.5.1",
     "typing-extensions>=4.12,<5",
 ]
