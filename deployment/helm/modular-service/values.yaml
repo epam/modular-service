@@ -11,7 +11,7 @@ service:
 
 image:
   repository: public.ecr.aws/x4s4z8e1/syndicate/modular-service
-  tag: 3.3.3
+  tag: 3.4.0
   pullPolicy: Always
 
 
