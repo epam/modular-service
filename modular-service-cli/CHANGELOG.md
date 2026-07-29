@@ -4,6 +4,20 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [3.4.0] - 2026-07-29
+- Add Python 3.14 support (upper bound `<4` added to `requires-python`)
+- Update `modular-cli-sdk` from 3.1.5 to 4.0.0
+- Relax dependency version constraints to ranges instead of pinned versions:
+  - `click==8.3.0` -> `>=8.3,<9`
+  - `tabulate==0.9.0` -> `>=0.9,<1`
+  - `python-dateutil==2.9.0.post0` -> `>=2.9,<3`
+
+## [3.3.0] - 2026-04-03
+- Update libraries:
+  - `modular-cli-sdk` from 3.0.0 to 3.1.4
+  - `click` from 7.1.2 to 8.3.0
+- Replaced deprecated `distutils.version.LooseVersion` with `packaging.version.Version` to support Python 3.12
+
 ## [3.2.1] - 2025-10-06
 - fix issue with the command `tenant settings put`
 - change the alias of the parameter `--tenant_name` from `-name` to `-tn` in the command `tenant settings describe`

@@ -1,4 +1,4 @@
-FROM public.ecr.aws/docker/library/python:3.10-slim as compile-image
+FROM public.ecr.aws/docker/library/python:3.14-slim as compile-image
 
 ARG MODULAR_SERVICE_PATH=.
 
@@ -17,7 +17,7 @@ COPY $MODULAR_SERVICE_PATH/src/main.py $MODULAR_SERVICE_PATH/src/entrypoint.sh /
 # can be removed
 RUN rm -rf $(find /root/.local/lib -name "*.dist-info") && rm -rf $(find /root/.local/lib/ -name "__pycache__")
 
-FROM public.ecr.aws/docker/library/python:3.10-slim AS build-image
+FROM public.ecr.aws/docker/library/python:3.14-slim AS build-image
 
 RUN apt-get update && apt-get install -y wget && apt-get clean  # for compose health check
 

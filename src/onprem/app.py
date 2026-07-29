@@ -119,7 +119,7 @@ class OnPremApiBuilder:
                 params.update(apply=(plugin, ))
             prefix_app.route(**params)
 
-        app.mount(prefix.strip('/'), prefix_app)
+        app.mount('/' + prefix.strip('/'), prefix_app)
         return app
 
     @classmethod
