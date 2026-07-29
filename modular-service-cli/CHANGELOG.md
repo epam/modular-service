@@ -4,7 +4,7 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
-## [3.4.0] - 2026-05-28
+## [3.4.0] - 2026-07-29
 - Add Python 3.14 support (upper bound `<4` added to `requires-python`)
 - Update `modular-cli-sdk` from 3.1.5 to 4.0.0
 - Relax dependency version constraints to ranges instead of pinned versions:
